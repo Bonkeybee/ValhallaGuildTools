@@ -41,16 +41,16 @@ local function ConstructPlayerTableFromHistory(timeframeInDays, includeTests)
 end
 
 function PrintDungeonList(timeframeInDays, includeTests)
-	LOG(format("[%s] %s", MODULE_NAME, TableToString(ConstructPlayerTableFromHistory(timeframeInDays, includeTests), ",", true)))
+	VGT.Log(VGT.LOG_TYPE.SYSTEM, "%s", TableToString(ConstructPlayerTableFromHistory(timeframeInDays, includeTests), ",", true))
 end
 
 local function CheckLocalDBForBossKill(key, value)
 	if (MY_EPDB[key] == nil) then
 		MY_EPDB[key] = value
 	else
-		LOG(format("[%s] !! YOUR KILL WAS NOT RECORDED !!", MODULE_NAME))
-		LOG(format("[%s] ERROR - record %s already exists in local DB. Contact an officer for assistance.", MODULE_NAME, key))
-		LOG(format("[%s] !! YOUR KILL WAS NOT RECORDED !!", MODULE_NAME))
+		VGT.Log(VGT.LOG_TYPE.WARN, "!! YOUR KILL WAS NOT RECORDED !!")
+		VGT.Log(VGT.LOG_TYPE.WARN, "WARN - record %s already exists in local DB. Contact an officer for assistance.", key)
+		VGT.Log(VGT.LOG_TYPE.WARN, "!! YOUR KILL WAS NOT RECORDED !!")
 	end
 end
 
@@ -59,23 +59,23 @@ local function SaveAndSendBossKill(key, value)
 	if (record == nil or record == "") then
 		VGT_EPDB[key] = value
 		local message = format("%s;%s", key, value)
-		LOG(format("[%s] saving %s and sending to guild.", MODULE_NAME, message), true)
+		VGT.Log(VGT.LOG_TYPE.DEBUG, "saving %s and sending to guild.", message)
 		ACE:SendCommMessage(MODULE_NAME, message, "GUILD")
 	else
-		LOG(format("[%s] record %s already exists in DB before it could be saved.", MODULE_NAME, message), true)
+		VGT.Log(VGT.LOG_TYPE.DEBUG, "record %s already exists in DB before it could be saved.", message)
 	end
 end
 
 function HandleUnitDeath(creatureUID, dungeonName, bossName)
 	local timestamp = GetServerTime()
-	LOG(format("[%s] killed %s in %s.", MODULE_NAME, bossName, dungeonName), true)
+	VGT.Log(VGT.LOG_TYPE.DEBUG, "killed %s in %s.", bossName, dungeonName)
 	local guildName = GetGuildInfo("player")
 	local groupedGuildies = CheckGroupForGuildies()
 	if (guildName ~= nil and next(groupedGuildies) ~= nil) then
 		local playerName = UnitName("player")
 		table.insert(groupedGuildies, playerName)
 		local groupedGuildiesStr = TableToString(groupedGuildies, ",", true)
-		LOG(format("[%s] killed %s in %s as a guild with %s", MODULE_NAME, bossName, dungeonName, groupedGuildiesStr))
+		VGT.Log(VGT.LOG_TYPE.INFO, "killed %s in %s as a guild with %s", bossName, dungeonName, groupedGuildiesStr)
 		local key = format("%s:%s:%s:%s", MODULE_NAME, creatureUID, guildName, groupedGuildiesStr)
 		local value = format("%s:%s:%s", timestamp, dungeonName, bossName)
 		CheckLocalDBForBossKill(key, value)
@@ -87,18 +87,23 @@ end
 -- ##### EVENTS ###############################################
 -- ############################################################
 
-local function HandleInstanceChangeEvent(event)
-	local iName, iType, _, _, _, _, _, iID, _, _ = GetInstanceInfo()
-	if (iType == "party" or iType == "raid") then
-		FRAME:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+local function HandleInstanceChangeEvent()
+	local _, instanceType, _, _, _, _, _, instanceID, _, _ = GetInstanceInfo()
+	if (instanceType == "party" or instanceType == "raid") then
+		local dungeonName = VGT.dungeons[tonumber(instanceID)]
+		if (dungeonName ~= nil) then
+			VGT.Log(VGT.LOG_TYPE.INFO, "Started logging for %s, goodluck!", dungeonName)
+			FRAME:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+		end
 	else
 		FRAME:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	end
 end
 
-local function HandleCombatLogEvent(event)
-	local cTime, cEvent, _, _, _, _, _, cUID, cName, _, _ = CombatLogGetCurrentEventInfo()
-	local s, cTypeID, cInstanceUID, cInstanceID, cUnitUID, cUnitID, hex = strsplit("-", cUID)
+local function HandleCombatLogEvent()
+	local cTime, cEvent, _, _, _, _, _, cUID, _, _, _ = CombatLogGetCurrentEventInfo()
+	--TODO: possibly use cTime instead of GetServerTime(), if it's accurate across clients
+	local _, cTypeID, cInstanceUID, cInstanceID, cUnitUID, cUnitID, hex = strsplit("-", cUID)
 	if (cEvent == "UNIT_DIED") then
 		local creatureUID = StringAppend(cTypeID, cInstanceUID, cInstanceID, cUnitUID, cUnitID, hex)
 		local dungeonName = VGT.dungeons[tonumber(cInstanceID)]
@@ -109,7 +114,7 @@ local function HandleCombatLogEvent(event)
 	end
 end
 
-local function HandleMessageReceivedEvent(prefix, message, distribution, sender)
+local function HandleMessageReceivedEvent(prefix, message, _, sender)
 	if (prefix ~= MODULE_NAME) then
 		return
 	end
@@ -130,7 +135,7 @@ local function HandleMessageReceivedEvent(prefix, message, distribution, sender)
 			local guildName = GetMyGuildName()
 			if (guildName ~= nil and guildName == guildNameFromHistory) then
 				local message = format("%s;%s", k, v)
-				LOG(format("[%s] sending %s to %s for SYNCHRONIZATION_REQUEST.", MODULE_NAME, message, sender), true)
+				VGT.Log(VGT.LOG_TYPE.DEBUG, "sending %s to %s for SYNCHRONIZATION_REQUEST.", message, sender)
 				ACE:SendCommMessage(MODULE_NAME, message, "WHISPER", sender, "BULK")
 			end
 		end
@@ -138,16 +143,16 @@ local function HandleMessageReceivedEvent(prefix, message, distribution, sender)
 		local key, value = strsplit(";", message)
 		local record = VGT_EPDB[key]
 		if (record == nil or record == "") then
-			LOG(format("[%s] saving record %s from %s.", MODULE_NAME, message, sender), true)
+			VGT.Log(VGT.LOG_TYPE.DEBUG, "saving record %s from %s.", message, sender)
 			VGT_EPDB[key] = value
 		else
-			LOG(format("[%s] record %s from %s already exists in DB.", MODULE_NAME, message, sender), true)
+			VGT.Log(VGT.LOG_TYPE.DEBUG, "record %s from %s already exists in DB.", message, sender)
 		end
 	end
 end
 
 local initialized = false
-local function OnEvent(self, event, arg1, arg2, arg3)
+local function OnEvent(_, event)
 	if (not initialized and event == "ADDON_LOADED") then
 		initialized = true
 		if (VGT_EPDB == nil) then
@@ -155,6 +160,7 @@ local function OnEvent(self, event, arg1, arg2, arg3)
 		end
 		ACE:RegisterComm(MODULE_NAME, HandleMessageReceivedEvent)
 		ACE:SendCommMessage(MODULE_NAME, MODULE_NAME..":SYNCHRONIZATION_REQUEST", "GUILD")
+		VGT.Log(VGT.LOG_TYPE.DEBUG, "initialized with version %s", VERSION)
 	end
 
 	if (event == "PLAYER_ENTERING_WORLD") then

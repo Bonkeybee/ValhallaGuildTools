@@ -11,6 +11,7 @@
 ## Version: 11302.7
 
 embeds.xml
+VGT-Logging.lua
 VGT-Core.lua
 VGT-EP.lua
 VGT-DungeonData.lua
