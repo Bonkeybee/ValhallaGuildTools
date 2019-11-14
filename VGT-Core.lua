@@ -2,6 +2,7 @@ ADDON_NAME, VGT = ...
 VERSION = GetAddOnMetadata(ADDON_NAME, "Version")
 FRAME = CreateFrame("Frame")
 ACE = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceComm-3.0")
+local MODULE_NAME = "VGT-Core"
 
 -- ############################################################
 -- ##### HELPERS ##############################################
@@ -118,7 +119,7 @@ function CheckGroupForGuildies()
 		local groupMember = groupMembers[i]
 		if (IsInMyGuild(groupMember)) then
 			guildGroupMembers[p] = groupMember
-			VGT.Log(VGT.LOG_TYPE.INFO, "%s is in my guild", guildGroupMembers[p])
+			Log(LOG_LEVEL.DEBUG, "%s is in my guild", guildGroupMembers[p])
 			p = p + 1
 		end
 	end
@@ -126,9 +127,83 @@ function CheckGroupForGuildies()
 end
 
 function PrintAbout()
-	VGT.Log(VGT.LOG_TYPE.SYSTEM, "installed version: %s", VERSION)
+	Log(LOG_LEVEL.SYSTEM, "installed version: %s", VERSION)
 end
 
+function PrintHelp()
+	Log(LOG_LEVEL.SYSTEM, "Command List:")
+	Log(LOG_LEVEL.SYSTEM, "/vgt about - version information")
+	Log(LOG_LEVEL.SYSTEM, "/vgt loglevel <%s> - set the addon verbosity (%s)", TableToString(LOG_LEVELS, "|"), LOG_LEVELS[logLevel])
+	Log(LOG_LEVEL.SYSTEM, "/vgt dungeontest - sends a dungeon kill test event")
+	Log(LOG_LEVEL.SYSTEM, "/vgt dungeons [timeframeInDays:7] - list of players that killed a dungeon boss within the timeframe")
+end
+
+local hasNotifiedNewVersion = false
+function HandleCoreMessageReceivedEvent(prefix, message, _, sender)
+	if (prefix ~= MODULE_NAME) then
+		return
+	end
+
+	local module, event = strsplit(":", message)
+	if (module ~= MODULE_NAME) then
+		return
+	end
+
+	local playerName = UnitName("player")
+	if (sender == playerName) then
+		return
+	end
+
+	if (event == "SYNCHRONIZATION_REQUEST") then
+		local message = VERSION
+		Log(LOG_LEVEL.TRACE, "sending %s to %s for %s:SYNCHRONIZATION_REQUEST.", message, sender, MODULE_NAME)
+		ACE:SendCommMessage(MODULE_NAME, message, "WHISPER", sender, "ALERT")
+	else
+		local version = tonumber(message)
+		local myVersion = tonumber(VERSION)
+		if (hasNotifiedNewVersion == false and addonVersion > tonumber(VERSION)) then
+			hasNotifiedNewVersion = true
+			Log(LOG_LEVEL.WARN, "there is a newer version of this addon [%s]", version)
+		end
+	end
+end
+
+local initialized = false
+local function OnEvent(_, event)
+	if (not initialized and event == "ADDON_LOADED") then
+		if (VGT_CONFIG == nil) then
+			VGT_CONFIG = {
+				logLevel = LOG.LEVELS[LOG_LEVEL.INFO]
+			}
+			logLevel = VGT_CONFIG.logLevel
+		else
+			logLevel = VGT_CONFIG.logLevel
+		end
+		ACE:RegisterComm(MODULE_NAME, HandleCoreMessageReceivedEvent)
+		ACE:SendCommMessage(MODULE_NAME, MODULE_NAME..":SYNCHRONIZATION_REQUEST", "GUILD")
+
+		VGT_EP_Initialize()
+
+		initialized = true
+		Log(LOG_LEVEL.TRACE, "initialized with version %s", VERSION)
+	end
+
+	if (event == "PLAYER_ENTERING_WORLD") then
+		HandleInstanceChangeEvent(event)
+	end
+
+	if (initialized and event == "COMBAT_LOG_EVENT_UNFILTERED") then
+		HandleCombatLogEvent(event)
+	end
+
+	if (initialized and event == "PLAYER_LOGOUT") then
+		VGT_CONFIG.logLevel = logLevel
+	end
+end
+FRAME:RegisterEvent("ADDON_LOADED")
+FRAME:RegisterEvent("PLAYER_ENTERING_WORLD")
+FRAME:RegisterEvent("PLAYER_LOGOUT")
+FRAME:SetScript("OnEvent", OnEvent)
 
 -- ############################################################
 -- ##### SLASH COMMANDS #######################################
@@ -137,20 +212,20 @@ end
 SLASH_VGT1 = "/vgt"
 SlashCmdList["VGT"] = function(message)
 	local command, arg1 = strsplit(" ", message)
+	if (command == "" or command == "help") then
+		PrintHelp()
+		return
+	end
 
 	if (command == "about") then
 		PrintAbout()
 	elseif (command == "loglevel") then
-		VGT.SetLogLevel(arg1)
-	elseif (command == "eptest") then
+		SetLogLevel(arg1)
+	elseif (command == "dungeontest") then
 		HandleUnitDeath("TEST"..RandomUUID(), "TestDungeon", "TestBoss")
 	elseif (command == "dungeons") then
 		PrintDungeonList(tonumber(arg1), VGT.debug)
 	else
-		VGT.Log(VGT.LOG_TYPE.SYSTEM, "Command List:")
-		VGT.Log(VGT.LOG_TYPE.SYSTEM, "/vgt about - displays version information about the addon")
-		VGT.Log(VGT.LOG_TYPE.SYSTEM, "/vgt loglevel <%s> - changes the verbosity of addon messages", TableToString(VGT.LOG_TYPES, "|"))
-		VGT.Log(VGT.LOG_TYPE.SYSTEM, "/vgt dungeontest - sends a dungeon kill test event")
-		VGT.Log(VGT.LOG_TYPE.SYSTEM, "/vgt dungeons [timeframeInDays:7] - prints the list of players that killed a dungeon boss within the timeframe")
+		Log(LOG_LEVEL.ERROR, "invalid command - type `/vgt help` for a list of commands")
 	end
 end
