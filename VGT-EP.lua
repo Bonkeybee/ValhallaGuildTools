@@ -1,6 +1,7 @@
 local MODULE_NAME = "VGT-EP"
 local MY_EPDB = {}
 local CleanDatabase = CreateFrame("Frame");
+local PushDatabase = CreateFrame("Frame");
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
@@ -174,6 +175,35 @@ function CleanDatabase:onUpdate(sinceLastUpdate)
       cleanRecord(currentKey, currentValue)
     end
     self.sinceLastUpdate = 0
+  end
+end
+
+local commAvailability = function()
+  return (floor(_G.ChatThrottleLib:UpdateAvail()) / 4000) * 100
+end
+
+local synchronize
+local firstSynchronizeKey
+local currentSynchronizeKey
+function PushDatabase:onUpdate(sinceLastUpdate, key)
+  self.sinceLastUpdate = (self.sinceLastUpdate or 0) + sinceLastUpdate
+  if (self.sinceLastUpdate >= 0.1) then
+    if (synchronize and commAvailability() >= 50) then
+      key2, value = next(VGT_EPDB, key2)
+      if (key2 == key) then
+        synchronize = false
+        key = nil
+      end
+      if (key == nil) then
+        key = key2
+      end
+      if (key2 ~= nil) then
+        local message = format("%s;%s", key2, value)
+        VGT.Log(VGT.LOG_LEVEL.TRACE, "sending %s to GUILD for %s:SYNCHRONIZATION_REQUEST.", message, MODULE_NAME)
+        VGT.LIBS:SendCommMessage(MODULE_NAME, message, "GUILD", nil, "BULK")
+      end
+      self.sinceLastUpdate = 0
+    end
   end
 end
 

@@ -144,22 +144,20 @@ function VGT.TableToString(t, d, keys, sort, line)
     t = nt
   end
 
-  for k, v in pairs(t) do
-    s = s..d
-    if (type(v) == "table") then
-      s = s..VGT.TableToString(v, d, keys, sort, line)
+  s = s..d
+  if (type(v) == "table") then
+    s = s..VGT.TableToString(v, d, keys, sort, line)
+  else
+    local c = nil
+    if (keys) then
+      c = k
     else
-      local c = nil
-      if (keys) then
-        c = k
-      else
-        c = v
-      end
-      if (line) then
-        s = s..c.."\n"
-      else
-        s = s..c
-      end
+      c = v
+    end
+    if (line) then
+      s = s..c.."\n"
+    else
+      s = s..c
     end
   end
 
