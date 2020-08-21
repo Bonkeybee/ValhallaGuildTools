@@ -1,0 +1,54 @@
+name: Upload Release Asset
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch:
+    branches:
+    - master
+jobs:
+  build:
+    name: Upload Release Asset
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find Latest Tag
+        id: latest_tag
+        uses: oprypin/find-latest-tag@v1.0.2
+        with:
+          repository: Bonkeybee/ValhallaGuildTools
+          releases-only: true
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Parse TOC
+        id: toc
+        run: "echo ::set-output name=addon_version::$(cat ValhallaGuildTools.toc | grep -oP '(?<=## Version: ).*')"
+
+      - name: Archive Project
+        run: cd .. && zip -r ValhallaGuildTools-classic ValhallaGuildTools -x *.git*
+
+      - name: Create Release
+        if: ${{ steps.latest_tag.outputs.tag != steps.toc.outputs.addon_version }}
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.toc.outputs.addon_version }}
+          release_name: ${{ steps.toc.outputs.addon_version }}
+
+      - name: Upload Release Asset
+        if: ${{ steps.latest_tag.outputs.tag != steps.toc.outputs.addon_version }}
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ../ValhallaGuildTools-classic.zip
+          asset_name: ValhallaGuildTools-classic.zip
+          asset_content_type: application/zip
