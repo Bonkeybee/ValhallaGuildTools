@@ -1,5 +1,4 @@
 VGT_ADDON_NAME, VGT = ...
-local MODULE_NAME = "VGT-Config"
 
 VGT.OPTIONS = {}
 VGT.LOG_LEVEL = {}
@@ -80,8 +79,12 @@ local options = {
       name = "Enable",
       desc = "REQUIRES RELOAD",
       type = "toggle",
-      set = function(info, val) VGT.OPTIONS.enabled = val end,
-      get = function(info) return VGT.OPTIONS.enabled end
+      set = function(_, val)
+        VGT.OPTIONS.enabled = val
+      end,
+      get = function(_)
+        return VGT.OPTIONS.enabled
+      end
     },
     vgt_douse = {
       name = "VGT-Douse",
@@ -91,9 +94,13 @@ local options = {
           name = "Enable",
           desc = "REQUIRES RELOAD",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.DOUSE.enabled = val end,
-          get = function(info) return VGT.OPTIONS.DOUSE.enabled end
-        },
+          set = function(_, val)
+            VGT.OPTIONS.DOUSE.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.DOUSE.enabled
+          end
+        }
       }
     },
     vgt_ep = {
@@ -104,9 +111,13 @@ local options = {
           name = "Enable",
           desc = "REQUIRES RELOAD",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.EP.enabled = val end,
-          get = function(info) return VGT.OPTIONS.EP.enabled end
-        },
+          set = function(_, val)
+            VGT.OPTIONS.EP.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.EP.enabled
+          end
+        }
       }
     },
     vgt_logging = {
@@ -116,17 +127,25 @@ local options = {
         enable = {
           name = "Enable",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.LOG.enabled = val end,
-          get = function(info) return VGT.OPTIONS.LOG.enabled end
+          set = function(_, val)
+            VGT.OPTIONS.LOG.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOG.enabled
+          end
         },
         log_level = {
           name = "Log Level",
           desc = "verbosity of the addon",
           type = "select",
           values = VGT.LOG_LEVELS,
-          set = function(info, val) VGT.OPTIONS.LOG.logLevel = val end,
-          get = function(info) return VGT.OPTIONS.LOG.logLevel end
-        },
+          set = function(_, val)
+            VGT.OPTIONS.LOG.logLevel = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOG.logLevel
+          end
+        }
       }
     },
     vgt_map = {
@@ -138,32 +157,48 @@ local options = {
           name = "Enable",
           desc = "REQUIRES RELOAD",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.MAP.enabled = val end,
-          get = function(info) return VGT.OPTIONS.MAP.enabled end
+          set = function(_, val)
+            VGT.OPTIONS.MAP.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.MAP.enabled
+          end
         },
         send_my_location = {
           order = 1,
           name = "Send My Location",
           desc = "sends your location to other addon users",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.MAP.sendMyLocation = val end,
-          get = function(info) return VGT.OPTIONS.MAP.sendMyLocation end
+          set = function(_, val)
+            VGT.OPTIONS.MAP.sendMyLocation = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.MAP.sendMyLocation
+          end
         },
         show_me = {
           order = 2,
           name = "Show My Pin",
           desc = "shows your own pin on the map",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.MAP.showMe = val end,
-          get = function(info) return VGT.OPTIONS.MAP.showMe end
+          set = function(_, val)
+            VGT.OPTIONS.MAP.showMe = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.MAP.showMe
+          end
         },
         show_minimap_oob = {
           order = 3,
           name = "Show Distant Players on Minimap",
           desc = "shows party member pins on the minimap borders if they are out of range",
           type = "toggle",
-          set = function(info, val) VGT.OPTIONS.MAP.showMinimapOutOfBounds = val end,
-          get = function(info) return VGT.OPTIONS.MAP.showMinimapOutOfBounds end
+          set = function(_, val)
+            VGT.OPTIONS.MAP.showMinimapOutOfBounds = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.MAP.showMinimapOutOfBounds
+          end
         },
         map_mode = {
           order = 4,
@@ -176,8 +211,12 @@ local options = {
           },
           type = "select",
           style = "dropdown",
-          get = function(info) return VGT.OPTIONS.MAP.mode end,
-          set = function(info, val) VGT.OPTIONS.MAP.mode = val end
+          get = function(_)
+            return VGT.OPTIONS.MAP.mode
+          end,
+          set = function(_, val)
+            VGT.OPTIONS.MAP.mode = val
+          end
         }
       }
     }

@@ -1,13 +1,12 @@
-## Interface: 11304
-## X-Min-Interface: 11304
+## Interface: 11305
 ## Title: ValhallaGuildTools
 ## Notes: Valhalla Guild Tools
-## SavedVariables: VGT_OPTIONS
+## SavedVariables: VGT_OPTIONS, VGT_PRE_DECAY, VGT_POST_DECAY
 ## SavedVariablesPerCharacter: VGT_DUNGEON_DB, VGT_DB_TIMESTAMP
 ## LoadOnDemand: 0
 ## DefaultState: enabled
 ## Author: Bonkeybee
-## Version: 11304.67
+## Version: 11305.68
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -37,4 +36,3 @@ VGT-EP.lua
 VGT-Map.lua
 VGT-DungeonData.lua
 VGT-SlashCommand.lua
-VGT-Reminder.lua

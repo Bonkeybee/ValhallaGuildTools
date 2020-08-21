@@ -1,17 +1,15 @@
 VGT_ADDON_NAME, VGT = ...
 VGT.VERSION = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
-VGT.LIBS = LibStub("AceAddon-3.0"):NewAddon(VGT_ADDON_NAME,
-"AceComm-3.0", "AceTimer-3.0", "AceEvent-3.0")
+VGT.LIBS = LibStub("AceAddon-3.0"):NewAddon(VGT_ADDON_NAME, "AceComm-3.0", "AceTimer-3.0", "AceEvent-3.0")
 VGT.LIBS.HBD = LibStub("HereBeDragons-2.0")
 VGT.LIBS.HBDP = LibStub("HereBeDragons-Pins-2.0")
 VGT.CORE_FRAME = CreateFrame("Frame")
 local MODULE_NAME = "VGT-Core"
 
-local REQUEST_VERSION_MESSAGE = "ReqV";
-local RESPOND_VERSION_MESSAGE = "ResV";
-local RESPOND_VERSION_MESSAGE_LENGTH = string.len(RESPOND_VERSION_MESSAGE);
-local EnumeratingUsers = false;
-local users = {};
+local REQUEST_VERSION_MESSAGE = "ReqV"
+local RESPOND_VERSION_MESSAGE = "ResV"
+local RESPOND_VERSION_MESSAGE_LENGTH = string.len(RESPOND_VERSION_MESSAGE)
+local users = {}
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
@@ -52,9 +50,9 @@ local handleCoreMessageReceivedEvent = function(prefix, message, _, sender)
   end
 
   if (message == REQUEST_VERSION_MESSAGE) then
-    VGT.LIBS:SendCommMessage(MODULE_NAME, RESPOND_VERSION_MESSAGE..VGT.VERSION, "WHISPER", sender);
+    VGT.LIBS:SendCommMessage(MODULE_NAME, RESPOND_VERSION_MESSAGE .. VGT.VERSION, "WHISPER", sender)
   elseif (string.sub(message, 1, RESPOND_VERSION_MESSAGE_LENGTH) == RESPOND_VERSION_MESSAGE) then
-    users[sender] = string.sub(message, RESPOND_VERSION_MESSAGE_LENGTH + 1);
+    users[sender] = string.sub(message, RESPOND_VERSION_MESSAGE_LENGTH + 1)
   else
     local playerName = UnitName("player")
     if (sender == playerName) then
@@ -64,7 +62,7 @@ local handleCoreMessageReceivedEvent = function(prefix, message, _, sender)
     local event, version = strsplit(":", message)
     if (event == "SYNCHRONIZATION_REQUEST") then
       if (not warnedPlayers[sender] and version ~= nil and tonumber(version) < tonumber(VGT.VERSION)) then
-        VGT.LIBS:SendCommMessage(MODULE_NAME, "VERSION:"..VGT.VERSION, "WHISPER", sender)
+        VGT.LIBS:SendCommMessage(MODULE_NAME, "VERSION:" .. VGT.VERSION, "WHISPER", sender)
         warnedPlayers[sender] = true
       end
     elseif (event == "VERSION") then
@@ -94,25 +92,24 @@ local function onEvent(_, event)
     end
     if (loaded) then
       if (event == "PLAYER_ENTERING_WORLD") then
-        handleInstanceChangeEvent(event)
+        handleInstanceChangeEvent()
         if (not entered) then
           GuildRoster()
           if (IsInGuild()) then
-            VGT.LIBS:SendCommMessage(MODULE_NAME, "SYNCHRONIZATION_REQUEST:"..VGT.VERSION, "GUILD")
+            VGT.LIBS:SendCommMessage(MODULE_NAME, "SYNCHRONIZATION_REQUEST:" .. VGT.VERSION, "GUILD")
           end
           VGT.Log(VGT.LOG_LEVEL.TRACE, "initialized with version %s", VGT.VERSION)
           entered = true
         end
       end
       if (not rostered and event == "GUILD_ROSTER_UPDATE") then
-
         if (IsInGuild()) then
           VGT.EP_Initialize()
           rostered = true
         end
       end
       if (event == "COMBAT_LOG_EVENT_UNFILTERED") then
-        VGT.HandleCombatLogEvent(event)
+        VGT.HandleCombatLogEvent()
       end
     end
   end

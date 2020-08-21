@@ -40,29 +40,33 @@ local hiddenAppearanceData = {
 -- ############################################################
 
 local colorString = function(colorHex, str)
-  return "|c"..colorHex..str.."|r"
+  return "|c" .. colorHex .. str .. "|r"
 end
 
 local getClass = function(name, guildIndex)
   if (guildIndex ~= nil) then
-    return select(11, GetGuildRosterInfo(guildIndex));
+    return select(11, GetGuildRosterInfo(guildIndex))
   end
 
   if (UnitPlayerOrPetInParty(name)) then
     for i = 1, 5 do
-      local unitId = "party"..i
+      local unitId = "party" .. i
       if (UnitName(unitId) == name) then
         local class = select(2, UnitClass(unitId))
-        if class then return class end
+        if class then
+          return class
+        end
       end
     end
   end
   if (UnitPlayerOrPetInRaid(name)) then
     for i = 1, 40 do
-      local unitId = "raid"..i
+      local unitId = "raid" .. i
       if (UnitName(unitId) == name) then
         local class = select(2, UnitClass(unitId))
-        if class then return class end
+        if class then
+          return class
+        end
       end
     end
   end
@@ -71,7 +75,9 @@ local getClass = function(name, guildIndex)
     local fullname, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
     if (fullname ~= nil) then
       local memberName = strsplit(NAME_SEPERATOR, fullname)
-      if (memberName == name) then return class end
+      if (memberName == name) then
+        return class
+      end
     end
   end
 end
@@ -84,58 +90,58 @@ local formatPlayerTooltip = function(player, class)
   local text = colorString(select(4, GetClassColor(class)), player.Name)
 
   if (player.HP ~= nil) then
-    return text..HP_SEPERATOR..colorString("ff"..VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)), VGT.Round(player.HP * 100, 0)..PERCENT)
+    return text .. HP_SEPERATOR .. colorString("ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)), VGT.Round(player.HP * 100, 0) .. PERCENT)
   end
 end
 
 local getGuildNumber = function(name)
-  local numTotalMembers = GetNumGuildMembers();
+  local numTotalMembers = GetNumGuildMembers()
   for i = 1, numTotalMembers do
-    local fullname = select(1, GetGuildRosterInfo(i));
+    local fullname = select(1, GetGuildRosterInfo(i))
     if (fullname ~= nil) then
-      local memberName = strsplit(NAME_SEPERATOR, fullname);
+      local memberName = strsplit(NAME_SEPERATOR, fullname)
       if (name == memberName) then
-        return i;
+        return i
       end
     end
   end
-  return nil;
+  return nil
 end
 
 local formatTooltip = function(player, distance)
-  local text = "";
-  local class;
-  local zone;
+  local text = ""
+  local class
+  local zone
 
   if (not player.NotInGuild and player.GuildNumber == nil) then
-    player.GuildNumber = getGuildNumber(player.Name);
+    player.GuildNumber = getGuildNumber(player.Name)
     if (player.GuildNumber == nil) then
-      player.NotInGuild = true;
+      player.NotInGuild = true
     end
   end
 
   if (player.GuildNumber ~= nil) then
-    _, _, _, _, _, zone, _, _, _, _, class = GetGuildRosterInfo(player.GuildNumber);
-    player.Class = class;
-    if(zone ~= nil) then
-      text = zone..NEW_LINE
+    _, _, _, _, _, zone, _, _, _, _, class = GetGuildRosterInfo(player.GuildNumber)
+    player.Class = class
+    if (zone ~= nil) then
+      text = zone .. NEW_LINE
     end
   elseif (player.Zone ~= nil) then
-    text = player.Zone..NEW_LINE
+    text = player.Zone .. NEW_LINE
   end
 
-  text = text..formatPlayerTooltip(player, class)
+  text = text .. formatPlayerTooltip(player, class)
 
   for _, otherPlayer in pairs(players) do
     if (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and (abs(player.X - otherPlayer.X) + abs(player.Y - otherPlayer.Y) < distance)) then
-      text = text..NEW_LINE..formatPlayerTooltip(otherPlayer, otherPlayer.Class)
+      text = text .. NEW_LINE .. formatPlayerTooltip(otherPlayer, otherPlayer.Class)
     end
   end
 
   return text
 end
 
-local onLeavePin = function(self)
+local onLeavePin = function(_)
   GameTooltip:Hide()
 end
 
@@ -214,20 +220,6 @@ local createMinimapPin = function(player)
   player.MinimapTexture = pin.Texture
 end
 
-local isDungeonCoords = function(x, y, instanceMapId, decimals)
-  for key, value in pairs(VGT.raids) do
-    if (value and not tonumber(value) and x == VGT.Round(value[2], decimals or 0) and y == VGT.Round(value[3], decimals or 0) and instanceMapId == value[4]) then
-      return true
-    end
-  end
-  for key, value in pairs(VGT.dungeons) do
-    if (value and not tonumber(value) and x == VGT.Round(value[2], decimals or 0) and y == VGT.Round(value[3], decimals or 0) and instanceMapId == value[4]) then
-      return true
-    end
-  end
-  return false
-end
-
 local addOrUpdatePlayer = function(name, x, y, continentId, hp, fromCommMessage, zone)
   local player = players[name]
   if (not player) then
@@ -285,12 +277,30 @@ local sendMyLocation = function(target)
     local x, y, instanceMapId = worldPosition()
     local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
     if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
-      local data = instanceMapId..DELIMITER..x..DELIMITER..y..DELIMITER..hp
+      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
       if (target ~= nil) then
         VGT.LIBS:SendCommMessage(MODULE_NAME, data, WHISPER_CHANNEL, target, COMM_PRIORITY)
       else
         if (IsInGuild()) then
           VGT.LIBS:SendCommMessage(MODULE_NAME, data, COMM_CHANNEL, nil, COMM_PRIORITY)
+        end
+      end
+    end
+  end
+end
+local lastPublicSend = 0
+local sendMyLocationChat = function()
+  if (IsInGuild() and VGT.OPTIONS.MAP.sendMyLocation) then
+    local x, y, instanceMapId = worldPosition()
+    local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
+    if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
+      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
+      if (GetServerTime() - lastPublicSend > 36) then
+        lastPublicSend = GetServerTime()
+        local id = GetChannelName("VGTMAP")
+        if (id) then
+          SetChannelOwner("VGTMAP", "Bonkeybee")
+          SendChatMessage(data, "CHANNEL", nil, id)
         end
       end
     end
@@ -313,7 +323,7 @@ end
 local toggleBlizzardPins = function(show)
   if (not blizzardPins) then
     for bpin in VGT.LIBS.HBDP.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
-      blizzardPins = bpin;
+      blizzardPins = bpin
       if (not originalRaidAppearanceData) then
         originalPartyAppearanceData = bpin.unitAppearanceData["raid"]
       end
@@ -343,7 +353,7 @@ local updatePins = function()
     if (player.PendingLocationChange) then
       --VGT.LIBS.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
       --VGT.LIBS.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
-      updatePinColors(name, player);
+      updatePinColors(name, player)
       if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
         if (VGT.OPTIONS.MAP.mode ~= "minimap") then
           VGT.LIBS.HBDP:AddWorldMapIconWorld(MODULE_NAME, player.WorldmapPin, player.ContinentId, player.X, player.Y, 3, "PIN_FRAME_LEVEL_GROUP_MEMBER")
@@ -390,17 +400,18 @@ local updatePartyMembers = function()
   if (VGT.OPTIONS.MAP.showMe) then
     addOrUpdatePartyMember("player")
   else
-    destroyPlayer(UnitName(PLAYER))
+    destroyPlayer(UnitName("player"))
   end
-  if (UnitPlayerOrPetInRaid("player")) then
+  if (IsInRaid()) then
     for i = 1, 40 do
-      addOrUpdatePartyMember("raid"..i)
-    end
-  else
-    if (UnitPlayerOrPetInParty("player")) then
-      for i = 1, 5 do
-        addOrUpdatePartyMember("party"..i)
+      local unit = "raid" .. i
+      if (not UnitIsUnit(unit, "player")) then
+        addOrUpdatePartyMember(unit)
       end
+    end
+  elseif (IsInGroup()) then
+    for i = 1, 4 do
+      addOrUpdatePartyMember("party" .. i)
     end
   end
 end
@@ -410,13 +421,13 @@ local parseMessage = function(message)
   return tonumber(continentIdString), tonumber(xString), tonumber(yString), tonumber(hpString)
 end
 
-local handleMapMessageReceivedEvent = function(prefix, message, distribution, sender)
+local handleMapMessageReceivedEvent = function(prefix, message, _, sender)
   if (prefix ~= MODULE_NAME) then
     return
   end
 
   if (message == REQUEST_LOCATION_MESSAGE) then
-    sendMyLocation(sender);
+    sendMyLocation(sender)
   else
     local continentId, x, y, hp = parseMessage(message)
 
@@ -428,18 +439,18 @@ end
 
 local onEvent = function(_, event)
   if (event == "GUILD_ROSTER_UPDATE") then
-    for name, player in pairs(players) do
-      player.GuildNumber = nil;
+    for _, player in pairs(players) do
+      player.GuildNumber = nil
     end
   elseif (event == "PLAYER_TARGET_CHANGED") then
-    local targetName = UnitName("target"); -- UnitIsUnit does not work for non-grouped units.
+    local targetName = UnitName("target") -- UnitIsUnit does not work for non-grouped units.
     for name, player in pairs(players) do
       if (name == targetName) then
-        player.Targeted = true;
-        updatePinColors(name, player);
+        player.Targeted = true
+        updatePinColors(name, player)
       elseif (player.Targeted) then
-        player.Targeted = false;
-        updatePinColors(name, player);
+        player.Targeted = false
+        updatePinColors(name, player)
       end
     end
   end
@@ -447,9 +458,11 @@ end
 
 local cleanUnusedPins = function()
   for name, player in pairs(players) do
-    if (not VGT.OPTIONS.MAP.enabled or -- remove all pins if the addon is disabled.
-      (not UnitInParty(name) and not player.HasCommMessages and not UnitIsUnit(name, PLAYER)) or -- remove non-party members that aren't sending comm messages
-    (player.HasCommMessages and player.LastCommReceived and (GetTime() - player.LastCommReceived) > 180)) then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
+    if
+      (not VGT.OPTIONS.MAP.enabled or -- remove all pins if the addon is disabled.
+        (not UnitInParty(name) and not player.HasCommMessages and not UnitIsUnit(name, PLAYER)) or -- remove non-party members that aren't sending comm messages
+        (player.HasCommMessages and player.LastCommReceived and (GetTime() - player.LastCommReceived) > 180))
+     then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
       destroyPlayer(name)
     elseif (VGT.OPTIONS.MAP.mode == "minimap") then -- remove the worldmap pin if the user changed to minimap only.
       VGT.LIBS.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
@@ -506,6 +519,15 @@ function VGT.Map_Initialize()
       FRAME:RegisterEvent("PLAYER_TARGET_CHANGED")
       FRAME:SetScript("OnEvent", onEvent)
       FRAME:SetScript("OnUpdate", main)
+      JoinChannelByName("VGTMAP", "7cd3b0c3")
+      hooksecurefunc("SendChatMessage", sendMyLocationChat)
+      hooksecurefunc("AssistUnit", sendMyLocationChat)
+      hooksecurefunc("TargetUnit", sendMyLocationChat)
+      hooksecurefunc("TargetLastFriend", sendMyLocationChat)
+      hooksecurefunc("TargetLastTarget", sendMyLocationChat)
+      hooksecurefunc("UseAction", sendMyLocationChat)
+      hooksecurefunc("CastSpellByName", sendMyLocationChat)
+      hooksecurefunc("SpellTargetUnit", sendMyLocationChat)
     end
   end
 end

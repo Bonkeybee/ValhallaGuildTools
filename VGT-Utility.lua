@@ -10,7 +10,7 @@ function VGT.CommAvailability()
 end
 
 function VGT.IsInRaid()
-  if(select(2, IsInInstance()) == "raid") then
+  if (select(2, IsInInstance()) == "raid") then
     return true
   else
     return false
@@ -19,13 +19,13 @@ end
 
 function VGT.ColorGradient(perc, ...)
   if perc >= 1 then
-    local r, g, b = select(select('#', ...) - 2, ...)
+    local r, g, b = select(select("#", ...) - 2, ...)
     return r, g, b
   elseif perc <= 0 then
     local r, g, b = ...
     return r, g, b
   end
-  local num = select('#', ...) / 3
+  local num = select("#", ...) / 3
   local segment, relperc = math.modf(perc * (num - 1))
   local r1, g1, b1, r2, g2, b2 = select((segment * 3) + 1, ...)
   return r1 + (r2 - r1) * relperc, g1 + (g2 - g1) * relperc, b1 + (b2 - b1) * relperc
@@ -124,9 +124,9 @@ function VGT.TableToString(t, d, keys, sort, line)
   end
 
   for k, v in pairs(t) do
-    s = s..d
+    s = s .. d
     if (type(v) == "table") then
-      s = s..VGT.TableToString(v, d, keys, sort, line)
+      s = s .. VGT.TableToString(v, d, keys, sort, line)
     else
       local c = nil
       if (keys) then
@@ -135,9 +135,9 @@ function VGT.TableToString(t, d, keys, sort, line)
         c = v
       end
       if (line) then
-        s = s..c.."\n"
+        s = s .. c .. "\n"
       else
-        s = s..c
+        s = s .. c
       end
     end
   end
@@ -148,8 +148,6 @@ function VGT.TableToString(t, d, keys, sort, line)
     return s
   end
 end
-
-
 
 function VGT.TableContains(t, m)
   if (t == nil) then
@@ -172,8 +170,15 @@ function VGT.TableContains(t, m)
 end
 
 function VGT.RandomUUID()
-  local template = 'xxxxxxxx'
-  return string.gsub(template, '[xy]', function (c) local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb) return string.format('%x', v) end)
+  local template = "xxxxxxxx"
+  return string.gsub(
+    template,
+    "[xy]",
+    function(c)
+      local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
+      return string.format("%x", v)
+    end
+  )
 end
 
 function VGT.GetMyGuildName()
@@ -223,10 +228,9 @@ function VGT.CheckGroupForGuildies()
   end
 
   if (IsInRaid()) then
-    local raidList = {}
     local p = 0
     for i = 1, 40 do
-      local name, _, _, _, _, _, _, online = GetRaidRosterInfo(i)
+      local name, _, _, _, _, _, _, _ = GetRaidRosterInfo(i)
       if (VGT.IsInMyGuild(name)) then
         guildGroupMembers[p] = name
         VGT.Log(VGT.LOG_LEVEL.TRACE, "%s is in my guild", guildGroupMembers[p])
@@ -249,7 +253,7 @@ function VGT.TableSize(t)
   end
 
   local c = 0
-  for k, v in pairs(t) do
+  for _, v in pairs(t) do
     if (v ~= nil) then
       c = c + 1
     end
@@ -259,22 +263,25 @@ end
 
 function VGT.EnumerateUsers(callback, wait)
   if (EnumeratingUsers) then
-    return;
+    return
   end
-  EnumeratingUsers = true;
+  EnumeratingUsers = true
 
   if (IsInGuild()) then
-    VGT.LIBS:SendCommMessage(MODULE_NAME, REQUEST_VERSION_MESSAGE, "GUILD");
+    VGT.LIBS:SendCommMessage(MODULE_NAME, REQUEST_VERSION_MESSAGE, "GUILD")
   end
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "Requesting addon user info...");
+  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "Requesting addon user info...")
 
   if (not wait) then
-    wait = 3;
+    wait = 3
   end
 
-  C_Timer.After(wait, function()
-    callback(users);
-    EnumeratingUsers = false;
-    users = {};
-  end);
+  C_Timer.After(
+    wait,
+    function()
+      callback(users)
+      EnumeratingUsers = false
+      users = {}
+    end
+  )
 end
