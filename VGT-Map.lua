@@ -90,7 +90,12 @@ local formatPlayerTooltip = function(player, class)
   local text = colorString(select(4, GetClassColor(class)), player.Name)
 
   if (player.HP ~= nil) then
-    return text .. HP_SEPERATOR .. colorString("ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)), VGT.Round(player.HP * 100, 0) .. PERCENT)
+    return text ..
+      HP_SEPERATOR ..
+        colorString(
+          "ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)),
+          VGT.Round(player.HP * 100, 0) .. PERCENT
+        )
   end
 end
 
@@ -133,7 +138,10 @@ local formatTooltip = function(player, distance)
   text = text .. formatPlayerTooltip(player, class)
 
   for _, otherPlayer in pairs(players) do
-    if (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and (abs(player.X - otherPlayer.X) + abs(player.Y - otherPlayer.Y) < distance)) then
+    if
+      (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and
+        (math.abs(player.X - otherPlayer.X) + math.abs(player.Y - otherPlayer.Y) < distance))
+     then
       text = text .. NEW_LINE .. formatPlayerTooltip(otherPlayer, otherPlayer.Class)
     end
   end
@@ -356,10 +364,25 @@ local updatePins = function()
       updatePinColors(name, player)
       if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
         if (VGT.OPTIONS.MAP.mode ~= "minimap") then
-          VGT.LIBS.HBDP:AddWorldMapIconWorld(MODULE_NAME, player.WorldmapPin, player.ContinentId, player.X, player.Y, 3, "PIN_FRAME_LEVEL_GROUP_MEMBER")
+          VGT.LIBS.HBDP:AddWorldMapIconWorld(
+            MODULE_NAME,
+            player.WorldmapPin,
+            player.ContinentId,
+            player.X,
+            player.Y,
+            3,
+            "PIN_FRAME_LEVEL_GROUP_MEMBER"
+          )
         end
         if (VGT.OPTIONS.MAP.mode ~= "map" and not UnitIsUnit(name, "player")) then
-          VGT.LIBS.HBDP:AddMinimapIconWorld(MODULE_NAME, player.MinimapPin, player.ContinentId, player.X, player.Y, VGT.OPTIONS.MAP.showMinimapOutOfBounds and UnitInParty(name))
+          VGT.LIBS.HBDP:AddMinimapIconWorld(
+            MODULE_NAME,
+            player.MinimapPin,
+            player.ContinentId,
+            player.X,
+            player.Y,
+            VGT.OPTIONS.MAP.showMinimapOutOfBounds and UnitInParty(name)
+          )
         end
       end
       player.PendingLocationChange = false
@@ -376,7 +399,15 @@ local addOrUpdatePartyMember = function(unit)
     if (x == nil or y == nil) then
       local dungeon = (VGT.dungeons[continentOrInstanceId] or VGT.raids[continentOrInstanceId])
       if (dungeon ~= nil and dungeon[2] ~= nil and dungeon[3] ~= nil and dungeon[4] ~= nil) then
-        addOrUpdatePlayer(name, dungeon[2], dungeon[3], dungeon[4], UnitHealth(unit) / UnitHealthMax(unit), false, dungeon[1])
+        addOrUpdatePlayer(
+          name,
+          dungeon[2],
+          dungeon[3],
+          dungeon[4],
+          UnitHealth(unit) / UnitHealthMax(unit),
+          false,
+          dungeon[1]
+        )
         return
       else
         --destroyPlayer(name) -- Unit is in an unknown instance. Don't show a pin.

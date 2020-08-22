@@ -6,7 +6,7 @@ VGT.VERSION = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
 -- ############################################################
 
 function VGT.CommAvailability()
-  return (floor(_G.ChatThrottleLib:UpdateAvail()) / 4000) * 100
+  return (math.floor(_G.ChatThrottleLib:UpdateAvail()) / 4000) * 100
 end
 
 function VGT.IsInRaid()

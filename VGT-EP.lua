@@ -89,7 +89,7 @@ local validateRecord = function(guildName, timestamp, dungeonName, bossName, sen
   return false
 end
 
-function CleanDatabase:onUpdate(sinceLastUpdate, firstPlayerKey, currentPlayerKey, currentGuidKey)
+function CleanDatabase:onUpdate(_, firstPlayerKey, _, currentGuidKey)
   local guildName = VGT.GetMyGuildName()
   if (guildName == nil or VGT_DUNGEON_DB[guildName] == nil or VGT.IsInRaid() or VGT.withinDays(VGT_DB_TIMESTAMP, 0)) then
     -- Stop the loop
@@ -157,7 +157,7 @@ function CleanDatabase:onUpdate(sinceLastUpdate, firstPlayerKey, currentPlayerKe
 end
 
 -- Send a snapshot of the EPDB
-function PushDatabase:onUpdate(sinceLastUpdate, firstPlayerKey, currentPlayerKey, currentGuidKey)
+function PushDatabase:onUpdate(sinceLastUpdate, firstPlayerKey, _, currentGuidKey)
   self.sinceLastUpdate = (self.sinceLastUpdate or 0) + sinceLastUpdate
   if (synchronize and not cleaning and VGT.CommAvailability() > 50 and self.sinceLastUpdate >= 0.05 and IsInGuild()) then
     local guildName = VGT.GetMyGuildName()
@@ -556,8 +556,8 @@ VGT.decay = function()
     if (officernote) then
       local ep, gp = strsplit(",", officernote)
       if (ep and gp) then
-        ep = floor(ep * 0.8)
-        gp = floor(max(gp * 0.8, 50))
+        ep = math.floor(ep * 0.8)
+        gp = math.floor(max(gp * 0.8, 50))
         GuildRosterSetOfficerNote(index, ep .. "," .. gp)
         VGT_POST_DECAY[name] = ep .. "," .. gp
       else
