@@ -228,6 +228,7 @@ function VGT.CheckGroupForGuildies()
   end
 
   if (IsInRaid()) then
+    local guildGroupMembers = {}
     local p = 0
     for i = 1, 40 do
       local name, _, _, _, _, _, _, _ = GetRaidRosterInfo(i)
@@ -259,29 +260,4 @@ function VGT.TableSize(t)
     end
   end
   return c
-end
-
-function VGT.EnumerateUsers(callback, wait)
-  if (EnumeratingUsers) then
-    return
-  end
-  EnumeratingUsers = true
-
-  if (IsInGuild()) then
-    VGT.LIBS:SendCommMessage(MODULE_NAME, REQUEST_VERSION_MESSAGE, "GUILD")
-  end
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "Requesting addon user info...")
-
-  if (not wait) then
-    wait = 3
-  end
-
-  C_Timer.After(
-    wait,
-    function()
-      callback(users)
-      EnumeratingUsers = false
-      users = {}
-    end
-  )
 end

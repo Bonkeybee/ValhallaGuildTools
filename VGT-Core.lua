@@ -4,12 +4,9 @@ VGT.LIBS = LibStub("AceAddon-3.0"):NewAddon(VGT_ADDON_NAME, "AceComm-3.0", "AceT
 VGT.LIBS.HBD = LibStub("HereBeDragons-2.0")
 VGT.LIBS.HBDP = LibStub("HereBeDragons-Pins-2.0")
 VGT.CORE_FRAME = CreateFrame("Frame")
-local MODULE_NAME = "VGT-Core"
+VGT.CoreMessageReceived = EventHandler:New()
 
-local REQUEST_VERSION_MESSAGE = "ReqV"
-local RESPOND_VERSION_MESSAGE = "ResV"
-local RESPOND_VERSION_MESSAGE_LENGTH = string.len(RESPOND_VERSION_MESSAGE)
-local users = {}
+local MODULE_NAME = "VGT-Core"
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
@@ -30,7 +27,12 @@ local handleInstanceChangeEvent = function()
         VGT.Log(VGT.LOG_LEVEL.INFO, "Started logging for %s, goodluck!", dungeonName)
         VGT.CORE_FRAME:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
       else
-        VGT.Log(VGT.LOG_LEVEL.DEBUG, "Entered %s(%s) but it is not a tracked dungeon.", (dungeonName or "?"), (instanceID or "?"))
+        VGT.Log(
+          VGT.LOG_LEVEL.DEBUG,
+          "Entered %s(%s) but it is not a tracked dungeon.",
+          (dungeonName or "?"),
+          (instanceID or "?")
+        )
       end
     end
   else
@@ -38,41 +40,9 @@ local handleInstanceChangeEvent = function()
   end
 end
 
--- ############################################################
--- ##### GLOBAL FUNCTIONS #####################################
--- ############################################################
-
-local warned = false
-local warnedPlayers = {}
 local handleCoreMessageReceivedEvent = function(prefix, message, _, sender)
-  if (prefix ~= MODULE_NAME) then
-    return
-  end
-
-  if (message == REQUEST_VERSION_MESSAGE) then
-    VGT.LIBS:SendCommMessage(MODULE_NAME, RESPOND_VERSION_MESSAGE .. VGT.VERSION, "WHISPER", sender)
-  elseif (string.sub(message, 1, RESPOND_VERSION_MESSAGE_LENGTH) == RESPOND_VERSION_MESSAGE) then
-    users[sender] = string.sub(message, RESPOND_VERSION_MESSAGE_LENGTH + 1)
-  else
-    local playerName = UnitName("player")
-    if (sender == playerName) then
-      return
-    end
-
-    local event, version = strsplit(":", message)
-    if (event == "SYNCHRONIZATION_REQUEST") then
-      if (not warnedPlayers[sender] and version ~= nil and tonumber(version) < tonumber(VGT.VERSION)) then
-        VGT.LIBS:SendCommMessage(MODULE_NAME, "VERSION:" .. VGT.VERSION, "WHISPER", sender)
-        warnedPlayers[sender] = true
-      end
-    elseif (event == "VERSION") then
-      local myVersion = tonumber(VGT.VERSION)
-      local theirVersion = tonumber(version)
-      if (not warned and myVersion < theirVersion) then
-        VGT.Log(VGT.LOG_LEVEL.WARN, "there is a newer version of this addon (%s < %s)", myVersion, theirVersion)
-        warned = true
-      end
-    end
+  if prefix == MODULE_NAME then
+    VGT.CoreMessageReceived(message, sender)
   end
 end
 
@@ -95,9 +65,7 @@ local function onEvent(_, event)
         handleInstanceChangeEvent()
         if (not entered) then
           GuildRoster()
-          if (IsInGuild()) then
-            VGT.LIBS:SendCommMessage(MODULE_NAME, "SYNCHRONIZATION_REQUEST:" .. VGT.VERSION, "GUILD")
-          end
+          VGT.VersionChecker:Check()
           VGT.Log(VGT.LOG_LEVEL.TRACE, "initialized with version %s", VGT.VERSION)
           entered = true
         end
@@ -122,3 +90,11 @@ VGT.CORE_FRAME:RegisterEvent("PLAYER_ENTERING_WORLD")
 VGT.CORE_FRAME:RegisterEvent("GUILD_ROSTER_UPDATE")
 VGT.CORE_FRAME:RegisterEvent("PLAYER_LOGOUT")
 VGT.CORE_FRAME:SetScript("OnEvent", onEvent)
+
+-- ############################################################
+-- ##### GLOBAL FUNCTIONS #####################################
+-- ############################################################
+
+function VGT:SendCoreMessage(message, channel, target)
+  self.LIBS:SendCommMessage(MODULE_NAME, message, channel, target)
+end
