@@ -9,6 +9,8 @@ local data
 local MINIMUM_GP = 50
 local MAX_TIME_TO_KEEP = 30
 local MAX_TIME_TO_KEEP_RAID = 8
+local DUNGEON_REWARD = 70
+local RAID_REWARD = 140
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
@@ -80,10 +82,7 @@ local validateGuild = function(guild, sender)
 end
 
 local validateRecord = function(guildName, timestamp, dungeonName, bossName, sender)
-  if
-    (validateGuild(guildName, sender) and validateTime(timestamp, sender) and validateDungeon(dungeonName, sender) and
-      validateBoss(bossName, sender))
-   then
+  if (validateGuild(guildName, sender) and validateTime(timestamp, sender) and validateDungeon(dungeonName, sender) and validateBoss(bossName, sender)) then
     return true
   end
   return false
@@ -138,10 +137,7 @@ function CleanDatabase:onUpdate(_, firstPlayerKey, _, currentGuidKey)
       end
 
       -- Check if data is valid
-      if
-        (not data or type(data) ~= "table" or not dungeonData or
-          not validateRecord(guildName, data[1], dungeonData[1], VGT.bosses[bossId], nil))
-       then
+      if (not data or type(data) ~= "table" or not dungeonData or not validateRecord(guildName, data[1], dungeonData[1], VGT.bosses[bossId], nil)) then
         VGT.Log(VGT.LOG_LEVEL.DEBUG, "CLEANING %s", self.currentGuidKey)
         VGT_DUNGEON_DB[guildName][self.currentPlayerKey][self.currentGuidKey] = nil
         if (VGT.Count(VGT_DUNGEON_DB[guildName][self.currentPlayerKey]) == 0) then
@@ -249,11 +245,7 @@ local handleUnitDeath = function(timestamp, creatureUID, _, dungeonName, _, boss
         VGT.LIBS:SendCommMessage(MODULE_NAME, message, "GUILD", nil)
       end
     else
-      VGT.Log(
-        VGT.LOG_LEVEL.DEBUG,
-        "skipping boss kill event because you are not in a group with any guild members of %s",
-        guildName
-      )
+      VGT.Log(VGT.LOG_LEVEL.DEBUG, "skipping boss kill event because you are not in a group with any guild members of %s", guildName)
     end
   else
     VGT.Log(VGT.LOG_LEVEL.DEBUG, "skipping boss kill event because you are not in a guild")
@@ -297,24 +289,10 @@ local handleEPMessageReceivedEvent = function(prefix, message, distribution, sen
               VGT_DUNGEON_DB[guildName][players[i]] = {}
             end
             if (VGT_DUNGEON_DB[guildName][players[i]][creatureUID] == nil) then
-              VGT.Log(
-                VGT.LOG_LEVEL.DEBUG,
-                "saving record %s:%s:%s from %s.",
-                guildName,
-                players[i],
-                creatureUID,
-                sender
-              )
+              VGT.Log(VGT.LOG_LEVEL.DEBUG, "saving record %s:%s:%s from %s.", guildName, players[i], creatureUID, sender)
               VGT_DUNGEON_DB[guildName][players[i]][creatureUID] = {timestamp}
             else
-              VGT.Log(
-                VGT.LOG_LEVEL.TRACE,
-                "record %s:%s:%s from %s already exists.",
-                guildName,
-                players[i],
-                creatureUID,
-                sender
-              )
+              VGT.Log(VGT.LOG_LEVEL.TRACE, "record %s:%s:%s from %s already exists.", guildName, players[i], creatureUID, sender)
             end
           end
         end
@@ -453,7 +431,7 @@ VGT.rewardEP = function(test)
       if (gp == nil or gp == "" or not tonumber(gp)) then
         gp = MINIMUM_GP
       end
-      local bonus = (10 * count)
+      local bonus = ((DUNGEON_REWARD / 5) * count)
       ep = ep + bonus
 
       if (not test) then
@@ -521,7 +499,7 @@ VGT.rewardRaidEP = function(test)
       if (gp == nil or gp == "" or not tonumber(gp)) then
         gp = MINIMUM_GP
       end
-      local bonus = 100
+      local bonus = RAID_REWARD
       ep = ep + bonus
 
       if (not test) then
@@ -580,17 +558,13 @@ VGT.PrintPlayerStatistics = function(playerName)
 
   playerName = playerName:gsub("^%l", string.upper)
 
-  local player, killCount, _, mostKilledBossName, mostKilledBossCount, mostKilledBossDungeonName =
-    playerStatistics(playerName)
+  local player, killCount, _, mostKilledBossName, mostKilledBossCount, mostKilledBossDungeonName = playerStatistics(playerName)
   VGT.Log(VGT.LOG_LEVEL.SYSTEM, format("%s Statistics", player))
   if (killCount == 0) then
     VGT.Log(VGT.LOG_LEVEL.SYSTEM, "  no recorded statistics found.")
   else
     VGT.Log(VGT.LOG_LEVEL.SYSTEM, format("  total bosses killed: %s", killCount))
-    VGT.Log(
-      VGT.LOG_LEVEL.SYSTEM,
-      format("  most killed boss: %sx %s (%s)", mostKilledBossCount, mostKilledBossName, mostKilledBossDungeonName)
-    )
+    VGT.Log(VGT.LOG_LEVEL.SYSTEM, format("  most killed boss: %sx %s (%s)", mostKilledBossCount, mostKilledBossName, mostKilledBossDungeonName))
   end
 end
 
@@ -603,10 +577,7 @@ VGT.PrintDungeonLeaderboard = function()
   table.sort(top, tableSortTop)
   VGT.Log(VGT.LOG_LEVEL.SYSTEM, format("#### DUNGEON LEADERBOARD (%s days) ####", MAX_TIME_TO_KEEP))
   for i = 1, 5 do
-    VGT.Log(
-      VGT.LOG_LEVEL.SYSTEM,
-      format("  %s killed %s bosses (%s %s kills)", top[i][1], top[i][2], top[i][4], top[i][3])
-    )
+    VGT.Log(VGT.LOG_LEVEL.SYSTEM, format("  %s killed %s bosses (%s %s kills)", top[i][1], top[i][2], top[i][4], top[i][3]))
   end
 end
 
