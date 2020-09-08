@@ -12,8 +12,8 @@ VGT.raids[249] = {"Onyxia's Lair", -3754.4, -4750.4, 1}
 VGT.raids["Blackwing Lair"] = 469
 VGT.raids[469] = {"Blackwing Lair", -1228.4, -7524.7, 0}
 
-VGT.raids["Temple of Ahn'Qirah"] = 531
-VGT.raids[531] = {"Temple of Ahn'Qirah", 123, 123, 1} --TODO UPDATE POSITION
+VGT.raids["Temple of Ahn'Qiraj"] = 531
+VGT.raids[531] = {"Temple of Ahn'Qiraj", 1993.3000488281, -8239, 1}
 
 VGT.raids["Naxxramas"] = 533
 VGT.raids[533] = {"Naxxramas", 123, 123, 0} --TODO UPDATE POSITION
@@ -43,21 +43,21 @@ VGT.bosses[11380] = "Jin'do the Hexxer"
 VGT.trackedRaids["Zul'Gurub"] = true
 VGT.trackedRaids[309] = true
 
-VGT.raids["Ruins of Ahn'Qirah"] = 509
-VGT.raids[509] = {"Ruins of Ahn'Qirah", 123, 123, 1} --TODO UPDATE POSITION
+VGT.raids["Ruins of Ahn'Qiraj"] = 509
+VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4000244141, -8415.7001953125, 1} --TODO UPDATE POSITION
 VGT.bosses["Kurinnaxx"] = {15348, 509}
-VGT.bosses[15348] = {"Kurinnaxx"}
+VGT.bosses[15348] = "Kurinnaxx"
 VGT.bosses["General Rajaxx"] = {15341, 509}
-VGT.bosses[15341] = {"General Rajaxx"}
+VGT.bosses[15341] = "General Rajaxx"
 VGT.bosses["Moam"] = {15340, 509}
-VGT.bosses[15340] = {"Moam"}
+VGT.bosses[15340] = "Moam"
 VGT.bosses["Buru the Gorger"] = {15370, 509}
-VGT.bosses[15370] = {"Buru the Gorger"}
+VGT.bosses[15370] = "Buru the Gorger"
 VGT.bosses["Ayamiss the Hunter"] = {15369, 509}
-VGT.bosses[15369] = {"Ayamiss the Hunter"}
+VGT.bosses[15369] = "Ayamiss the Hunter"
 VGT.bosses["Ossirian the Unscarred"] = {15339, 509}
-VGT.bosses[15339] = {"Ossirian the Unscarred"}
-VGT.trackedRaids["Ruins of Ahn'Qirah"] = true
+VGT.bosses[15339] = "Ossirian the Unscarred"
+VGT.trackedRaids["Ruins of Ahn'Qiraj"] = true
 VGT.trackedRaids[509] = true
 
 VGT.dungeons["Ragefire Chasm"] = 389
