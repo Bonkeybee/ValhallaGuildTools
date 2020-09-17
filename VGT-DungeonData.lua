@@ -6,14 +6,16 @@ VGT.trackedRaids = {}
 VGT.raids["Molten Core"] = 409
 VGT.raids[409] = {"Molten Core", -1039.7, -7508.3, 0}
 
-VGT.raids["Onyxia's Lair"] = 249
-VGT.raids[249] = {"Onyxia's Lair", -3754.4, -4750.4, 1}
+VGT.dungeons["Onyxia's Lair"] = 249
+VGT.dungeons[249] = {"Onyxia's Lair", -3754.4, -4750.4, 1}
+VGT.bosses["Onyxia"] = {10184, 249, 5}
+VGT.bosses[10184] = "Onyxia"
 
 VGT.raids["Blackwing Lair"] = 469
 VGT.raids[469] = {"Blackwing Lair", -1228.4, -7524.7, 0}
 
 VGT.raids["Temple of Ahn'Qiraj"] = 531
-VGT.raids[531] = {"Temple of Ahn'Qiraj", 1993.3000488281, -8239, 1}
+VGT.raids[531] = {"Temple of Ahn'Qiraj", 1993.3, -8239, 1}
 
 VGT.raids["Naxxramas"] = 533
 VGT.raids[533] = {"Naxxramas", 123, 123, 0} --TODO UPDATE POSITION
@@ -44,7 +46,7 @@ VGT.trackedRaids["Zul'Gurub"] = true
 VGT.trackedRaids[309] = true
 
 VGT.raids["Ruins of Ahn'Qiraj"] = 509
-VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4000244141, -8415.7001953125, 1} --TODO UPDATE POSITION
+VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4, -8415.7, 1} --TODO UPDATE POSITION
 VGT.bosses["Kurinnaxx"] = {15348, 509}
 VGT.bosses[15348] = "Kurinnaxx"
 VGT.bosses["General Rajaxx"] = {15341, 509}

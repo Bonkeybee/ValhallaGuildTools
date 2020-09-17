@@ -386,22 +386,27 @@ VGT.rewardEP = function(test)
   end
 
   local players = {}
-  for _ = 1, 5 do
+  local maxCount = 5
+  for _ = 1, maxCount do
     local currentTime = GetServerTime()
     for player, playerData in pairs(VGT_DUNGEON_DB[VGT.GetMyGuildName()]) do
       local oldestTimestamp = currentTime
       local oldestGuid
       local killCount = 0
       for guid, guidData in pairs(playerData) do
-        local _, dungeonId, _ = strsplit("-", guid)
-        dungeonId = tonumber(dungeonId)
-        local timestamp = tonumber(guidData[1])
-        local rewarded = guidData[2]
-        if (VGT.withinDays(timestamp, MAX_TIME_TO_KEEP) and not rewarded and not VGT.trackedRaids[dungeonId]) then
-          killCount = killCount + 1
-          if (timestamp < oldestTimestamp) then
-            oldestTimestamp = timestamp
-            oldestGuid = guid
+        if (killCount < maxCount) then
+          local _, dungeonId, bossId = strsplit("-", guid)
+          dungeonId = tonumber(dungeonId)
+          bossId = tonumber(bossId)
+          local value = (VGT.bosses[VGT.bosses[bossId]][3] or 1)
+          local timestamp = tonumber(guidData[1])
+          local rewarded = guidData[2]
+          if (VGT.withinDays(timestamp, MAX_TIME_TO_KEEP) and not rewarded and not VGT.trackedRaids[dungeonId]) then
+            killCount = min(killCount + value, maxCount)
+            if (timestamp < oldestTimestamp) then
+              oldestTimestamp = timestamp
+              oldestGuid = guid
+            end
           end
         end
       end
