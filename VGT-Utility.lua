@@ -261,3 +261,30 @@ function VGT.TableSize(t)
   end
   return c
 end
+
+function VGT.DeepCopy(orig)
+  local orig_type = type(orig)
+  local copy
+  if orig_type == "table" then
+    copy = {}
+    for orig_key, orig_value in next, orig, nil do
+      copy[VGT.DeepCopy(orig_key)] = VGT.DeepCopy(orig_value)
+    end
+    setmetatable(copy, VGT.DeepCopy(getmetatable(orig)))
+  else -- number, string, boolean, etc
+    copy = orig
+  end
+  return copy
+end
+
+VGT.timeStampToDaysFromNow = function(timestamp)
+  return (GetServerTime() - (timestamp or 0)) / (60 * 60 * 24)
+end
+
+VGT.withinDays = function(timestamp, days)
+  local daysSinceTimestamp = VGT.timeStampToDaysFromNow(timestamp)
+  if (daysSinceTimestamp > -0.01 and daysSinceTimestamp < (days or 0)) then
+    return true
+  end
+  return false
+end

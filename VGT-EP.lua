@@ -16,39 +16,12 @@ local RAID_REWARD = 140
 -- ##### LOCAL FUNCTIONS ######################################
 -- ############################################################
 
-local function deepcopy(orig)
-  local orig_type = type(orig)
-  local copy
-  if orig_type == "table" then
-    copy = {}
-    for orig_key, orig_value in next, orig, nil do
-      copy[deepcopy(orig_key)] = deepcopy(orig_value)
-    end
-    setmetatable(copy, deepcopy(getmetatable(orig)))
-  else -- number, string, boolean, etc
-    copy = orig
-  end
-  return copy
-end
-
-local timeStampToDaysFromNow = function(timestamp)
-  return (GetServerTime() - (timestamp or 0)) / (60 * 60 * 24)
-end
-
-VGT.withinDays = function(timestamp, days)
-  local daysSinceTimestamp = timeStampToDaysFromNow(timestamp)
-  if (daysSinceTimestamp > -0.01 and daysSinceTimestamp < (days or 0)) then
-    return true
-  end
-  return false
-end
-
 local validateTime = function(timestamp, sender)
   timestamp = tonumber(timestamp)
   if (timestamp and VGT.withinDays(timestamp, MAX_TIME_TO_KEEP)) then
     return true
   end
-  VGT.Log(VGT.LOG_LEVEL.TRACE, "invalid timestamp %s from %s", timeStampToDaysFromNow(timestamp), VGT.Safe(sender))
+  VGT.Log(VGT.LOG_LEVEL.TRACE, "invalid timestamp %s from %s", VGT.timeStampToDaysFromNow(timestamp), VGT.Safe(sender))
   return false
 end
 
@@ -672,7 +645,7 @@ VGT.EP_Initialize = function()
           PushDatabase:onUpdate(sinceLastUpdate, firstPlayerKey, currentPlayerKey, currentGuidKey)
         end
       )
-      dbSnapshot = deepcopy(VGT_DUNGEON_DB)
+      dbSnapshot = VGT.DeepCopy(VGT_DUNGEON_DB)
       synchronize = true
       VGT.LIBS:RegisterComm(MODULE_NAME, handleEPMessageReceivedEvent)
       initialized = true
