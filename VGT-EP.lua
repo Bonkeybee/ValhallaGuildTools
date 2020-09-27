@@ -492,39 +492,6 @@ VGT.rewardRaidEP = function(test)
   return players
 end
 
-VGT.decay = function()
-  VGT_PRE_DECAY = {}
-  VGT_POST_DECAY = {}
-
-  local guildTable = {}
-  for i = 1, 1000 do
-    local fullname, _, _, _, _, _, _, officernote = GetGuildRosterInfo(i)
-    if (fullname) then
-      local name = strsplit("-", fullname)
-      guildTable[name] = {i, officernote}
-      VGT_PRE_DECAY[name] = officernote
-    end
-  end
-
-  for name, rosterInfo in pairs(guildTable) do
-    local index = rosterInfo[1]
-    local officernote = rosterInfo[2]
-    if (officernote) then
-      local ep, gp = strsplit(",", officernote)
-      if (ep and gp) then
-        ep = math.floor(ep * 0.8)
-        gp = math.floor(max(gp * 0.8, 50))
-        GuildRosterSetOfficerNote(index, ep .. "," .. gp)
-        VGT_POST_DECAY[name] = ep .. "," .. gp
-      else
-        print("EPGP " .. name .. " NOT DECAYED, EPGP(" .. (ep or "nil") .. "/" .. (gp or "nil") .. ")")
-      end
-    end
-  end
-
-  SendChatMessage("EPGP decayed by 20%", "OFFICER")
-end
-
 local function tableSortTop(a, b)
   return a[2] > b[2]
 end
