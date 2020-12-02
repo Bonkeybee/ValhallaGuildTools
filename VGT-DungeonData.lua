@@ -3,6 +3,19 @@ VGT.dungeons = {}
 VGT.bosses = {}
 VGT.trackedRaids = {}
 
+VGT.bosses["Azuregos"] = {6109, 0}
+VGT.bosses[6109] = {"Azuregos", 0}
+VGT.bosses["Lord Kazzak"] = {12397, 0}
+VGT.bosses[12397] = {"Lord Kazzak", 0}
+VGT.bosses["Ysondre"] = {14887, 0}
+VGT.bosses[14887] = {"Ysondre", 0}
+VGT.bosses["Emeriss"] = {14889, 0}
+VGT.bosses[14888] = {"Lethon", 0}
+VGT.bosses["Lethon"] = {14888, 0}
+VGT.bosses[14889] = {"Ermeriss", 0}
+VGT.bosses["Taerar"] = {14890, 0}
+VGT.bosses[14890] = {"Taerar", 0}
+
 VGT.raids["Molten Core"] = 409
 VGT.raids[409] = {"Molten Core", -1039.7, -7508.3, 0}
 
@@ -46,7 +59,7 @@ VGT.trackedRaids["Zul'Gurub"] = true
 VGT.trackedRaids[309] = true
 
 VGT.raids["Ruins of Ahn'Qiraj"] = 509
-VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4, -8415.7, 1} --TODO UPDATE POSITION
+VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4, -8415.7, 1}
 VGT.bosses["Kurinnaxx"] = {15348, 509}
 VGT.bosses[15348] = "Kurinnaxx"
 VGT.bosses["General Rajaxx"] = {15341, 509}

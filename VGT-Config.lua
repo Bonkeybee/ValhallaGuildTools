@@ -46,6 +46,8 @@ VGT.DefaultConfig = function(VGT_OPTIONS)
   VGT_OPTIONS.LOG = default(VGT_OPTIONS.LOG, {})
   VGT_OPTIONS.MAP = default(VGT_OPTIONS.MAP, {})
   VGT_OPTIONS.EP.enabled = default(VGT_OPTIONS.EP.enabled, true)
+  VGT_OPTIONS.LOTTERY = default(VGT_OPTIONS.LOTTERY, {})
+  VGT_OPTIONS.LOTTERY.enabled = default(VGT_OPTIONS.LOTTERY.enabled, true)
   VGT_OPTIONS.LOG.enabled = default(VGT_OPTIONS.LOG.enabled, true)
   VGT_OPTIONS.LOG.logLevel = default(VGT_OPTIONS.LOG.logLevel, VGT.LOG.LEVELS[VGT.LOG_LEVEL.INFO])
   VGT_OPTIONS.MAP.enabled = default(VGT_OPTIONS.MAP.enabled, true)
@@ -57,6 +59,8 @@ VGT.DefaultConfig = function(VGT_OPTIONS)
   else
     VGT_OPTIONS.MAP.showMe = default(VGT_OPTIONS.MAP.showMe, false)
   end
+  VGT_OPTIONS.FUN = default(VGT_OPTIONS.FUN, {})
+  VGT_OPTIONS.FUN.enabled = default(VGT_OPTIONS.FUN.enabled, true)
   return VGT_OPTIONS
 end
 

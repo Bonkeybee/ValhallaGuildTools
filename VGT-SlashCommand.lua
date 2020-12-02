@@ -66,6 +66,10 @@ SlashCmdList["VGT"] = function(message)
     --   VGT.Log(VGT.LOG_LEVEL.ERROR, "invalid command - type `/vgt help` for a list of commands")
     -- end
     print("these commands are temporarily disabled")
+  elseif (command == "fun") then
+    VGT_OPTIONS.FUN.enabled = true
+  elseif (command == "nofun") then
+    VGT_OPTIONS.FUN.enabled = false
   elseif (command == "pr") then
     VGT.PrintPR(arg1)
   elseif (command == "users") then

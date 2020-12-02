@@ -9,8 +9,8 @@ local data
 local MINIMUM_GP = 50
 local MAX_TIME_TO_KEEP = 30
 local MAX_TIME_TO_KEEP_RAID = 8
-local DUNGEON_REWARD = 70
-local RAID_REWARD = 140
+local DUNGEON_REWARD = 100
+local RAID_REWARD = 200
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
