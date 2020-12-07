@@ -31,7 +31,7 @@ VGT.raids["Temple of Ahn'Qiraj"] = 531
 VGT.raids[531] = {"Temple of Ahn'Qiraj", 1993.3, -8239, 1}
 
 VGT.raids["Naxxramas"] = 533
-VGT.raids[533] = {"Naxxramas", 123, 123, 0} --TODO UPDATE POSITION
+VGT.raids[533] = {"Naxxramas", 3132.7, -3731.2, 0} --TODO UPDATE POSITION
 
 VGT.raids["Zul'Gurub"] = 309
 VGT.raids[309] = {"Zul'Gurub", -1206.9, -11916.2, 0}
