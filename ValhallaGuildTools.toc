@@ -1,4 +1,4 @@
-## Interface: 11305
+## Interface: 11306
 ## Title: ValhallaGuildTools
 ## Notes: Valhalla Guild Tools
 ## SavedVariables: VGT_OPTIONS, VGT_PRE_DECAY, VGT_POST_DECAY, VGT_LOTTERY_DB
@@ -6,7 +6,7 @@
 ## LoadOnDemand: 0
 ## DefaultState: enabled
 ## Author: Bonkeybee
-## Version: 11306.76
+## Version: 11306.77
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -37,8 +37,8 @@ VGT-Logging.lua
 VGT-EP.lua
 VGT-Lottery.lua
 VGT-Map.lua
-VGT-Fun.lua
 VGT-DungeonData.lua
 VGT-UserFinder.lua
+VGT-ResistCheck.lua
 VGT-VersionChecker.lua
 VGT-SlashCommand.lua
