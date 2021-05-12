@@ -1,6 +1,11 @@
-local _, VGT = ...
 local VersionChecker = {WarnedPlayers = {}, Warned = false}
 VGT.VersionChecker = VersionChecker
+
+function VersionChecker:CheckVersion()
+  if (IsInGuild()) then
+    VGT:SendCoreMessage("SYNCHRONIZATION_REQUEST:" .. VGT.VERSION, "GUILD")
+  end
+end
 
 local function OnCoreMessageReceived(message, sender)
   if not UnitIsUnit(sender, "player") then
@@ -21,10 +26,13 @@ local function OnCoreMessageReceived(message, sender)
   end
 end
 
-function VersionChecker:Check()
-  if (IsInGuild()) then
-    VGT:SendCoreMessage("SYNCHRONIZATION_REQUEST:" .. VGT.VERSION, "GUILD")
+local function OnPlayerEnteringWorld(_, isInitialLogin, isReloadingUI)
+  if (isInitialLogin or isReloadingUI) then
+    VGT.Log(VGT.LOG_LEVEL.TRACE, "initialized with version %s", VGT.VERSION)
+    GuildRoster()
+    VersionChecker:CheckVersion()
   end
 end
 
-VGT.CoreMessageReceived:Add(OnCoreMessageReceived)
+VGT:RegisterEvent("PLAYER_ENTERING_WORLD", OnPlayerEnteringWorld)
+VGT:RegisterCoreMessageHandler(OnCoreMessageReceived)

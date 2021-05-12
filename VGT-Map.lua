@@ -90,7 +90,12 @@ local formatPlayerTooltip = function(player, class)
   local text = colorString(select(4, GetClassColor(class)), player.Name)
 
   if (player.HP ~= nil) then
-    return text .. HP_SEPERATOR .. colorString("ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)), VGT.Round(player.HP * 100, 0) .. PERCENT)
+    return text ..
+      HP_SEPERATOR ..
+        colorString(
+          "ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)),
+          VGT.Round(player.HP * 100, 0) .. PERCENT
+        )
   end
 end
 
@@ -133,7 +138,10 @@ local formatTooltip = function(player, distance)
   text = text .. formatPlayerTooltip(player, class)
 
   for _, otherPlayer in pairs(players) do
-    if (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and (math.abs(player.X - otherPlayer.X) + math.abs(player.Y - otherPlayer.Y) < distance)) then
+    if
+      (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and
+        (math.abs(player.X - otherPlayer.X) + math.abs(player.Y - otherPlayer.Y) < distance))
+     then
       text = text .. NEW_LINE .. formatPlayerTooltip(otherPlayer, otherPlayer.Class)
     end
   end
@@ -175,9 +183,9 @@ local createWorldmapPin = function(player)
   local onEnterPin = function(self)
     GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
     local distance = 50
-    local mapId = VGT.LIBS.HBDP.worldmapProvider:GetMap():GetMapID()
+    local mapId = VGT.HBDP.worldmapProvider:GetMap():GetMapID()
     if (mapId) then
-      local mapData = VGT.LIBS.HBD.mapData[mapId]
+      local mapData = VGT.HBD.mapData[mapId]
       if (mapData and mapData.mapType) then
         --todo: these are just my best guesses of distances. Probably should be tweaked.
         if (mapData.mapType == 1) then --world
@@ -255,19 +263,19 @@ local destroyPlayer = function(name)
   local player = players[name]
   if (player ~= nil) then
     players[name] = nil
-    VGT.LIBS.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-    VGT.LIBS.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+    VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+    VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
     returnToBufferPool(player.WorldmapPin)
     returnToBufferPool(player.MinimapPin)
   end
 end
 
 local worldPosition = function(decimals)
-  local x, y, instanceMapId = VGT.LIBS.HBD:GetPlayerWorldPosition()
-  local dungeon = (VGT.dungeons[instanceMapId] or VGT.raids[instanceMapId])
-  if (dungeon ~= nil and dungeon[2] ~= nil and dungeon[3] ~= nil and dungeon[4] ~= nil) then
-    x = dungeon[2]
-    y = dungeon[3]
+  local x, y, instanceMapId = VGT.HBD:GetPlayerWorldPosition()
+  local instance = VGT:GetInstance(instanceMapId)
+  if (instance) then
+    x = instance.X
+    y = instance.Y
   end
   return VGT.Round(x, decimals or 0), VGT.Round(y, decimals or 0), instanceMapId
 end
@@ -279,33 +287,33 @@ local sendMyLocation = function(target)
     if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
       local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
       if (target ~= nil) then
-        VGT.LIBS:SendCommMessage(MODULE_NAME, data, WHISPER_CHANNEL, target, COMM_PRIORITY)
+        VGT:SendCommMessage(MODULE_NAME, data, WHISPER_CHANNEL, target, COMM_PRIORITY)
       else
         if (IsInGuild()) then
-          VGT.LIBS:SendCommMessage(MODULE_NAME, data, COMM_CHANNEL, nil, COMM_PRIORITY)
+          VGT:SendCommMessage(MODULE_NAME, data, COMM_CHANNEL, nil, COMM_PRIORITY)
         end
       end
     end
   end
 end
-local lastPublicSend = 0
-local sendMyLocationChat = function()
-  if (IsInGuild() and VGT.OPTIONS.MAP.sendMyLocation) then
-    local x, y, instanceMapId = worldPosition()
-    local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
-    if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
-      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
-      if (GetServerTime() - lastPublicSend > 36) then
-        lastPublicSend = GetServerTime()
-        local id = GetChannelName("VGTMAP")
-        if (id) then
-          SetChannelOwner("VGTMAP", "Bonkeybee")
-          SendChatMessage(data, "CHANNEL", nil, id)
-        end
-      end
-    end
-  end
-end
+--local lastPublicSend = 0
+--local sendMyLocationChat = function()
+--  if (IsInGuild() and VGT.OPTIONS.MAP.sendMyLocation) then
+--    local x, y, instanceMapId = worldPosition()
+--    local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
+--    if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
+--      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
+--      if (GetServerTime() - lastPublicSend > 36) then
+--        lastPublicSend = GetServerTime()
+--        local id = GetChannelName("VGTMAP")
+--        if (id) then
+--          SetChannelOwner("VGTMAP", "Bonkeybee")
+--          SendChatMessage(data, "CHANNEL", nil, id)
+--        end
+--      end
+--    end
+--  end
+--end
 
 local updatePinColors = function(name, player)
   if (player.Targeted) then
@@ -322,7 +330,7 @@ end
 
 local toggleBlizzardPins = function(show)
   if (not blizzardPins) then
-    for bpin in VGT.LIBS.HBDP.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
+    for bpin in VGT.HBDP.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
       blizzardPins = bpin
       if (not originalRaidAppearanceData) then
         originalPartyAppearanceData = bpin.unitAppearanceData["raid"]
@@ -351,32 +359,55 @@ end
 local updatePins = function()
   for name, player in pairs(players) do
     if (player.PendingLocationChange) then
-      --VGT.LIBS.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-      --VGT.LIBS.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+      --VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+      --VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
       updatePinColors(name, player)
       if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
         if (VGT.OPTIONS.MAP.mode ~= "minimap") then
-          VGT.LIBS.HBDP:AddWorldMapIconWorld(MODULE_NAME, player.WorldmapPin, player.ContinentId, player.X, player.Y, 3, "PIN_FRAME_LEVEL_GROUP_MEMBER")
+          VGT.HBDP:AddWorldMapIconWorld(
+            MODULE_NAME,
+            player.WorldmapPin,
+            player.ContinentId,
+            player.X,
+            player.Y,
+            3,
+            "PIN_FRAME_LEVEL_GROUP_MEMBER"
+          )
         end
         if (VGT.OPTIONS.MAP.mode ~= "map" and not UnitIsUnit(name, "player")) then
-          VGT.LIBS.HBDP:AddMinimapIconWorld(MODULE_NAME, player.MinimapPin, player.ContinentId, player.X, player.Y, VGT.OPTIONS.MAP.showMinimapOutOfBounds and UnitInParty(name))
+          VGT.HBDP:AddMinimapIconWorld(
+            MODULE_NAME,
+            player.MinimapPin,
+            player.ContinentId,
+            player.X,
+            player.Y,
+            VGT.OPTIONS.MAP.showMinimapOutOfBounds and UnitInParty(name)
+          )
         end
       end
       player.PendingLocationChange = false
     end
   end
-  VGT.LIBS.HBDP.worldmapProvider:RefreshAllData()
+  VGT.HBDP.worldmapProvider:RefreshAllData()
 end
 
 local addOrUpdatePartyMember = function(unit)
   local name = UnitName(unit)
   if (name ~= nil) then
-    local x, y, continentOrInstanceId = VGT.LIBS.HBD:GetUnitWorldPosition(name)
+    local x, y, continentOrInstanceId = VGT.HBD:GetUnitWorldPosition(name)
 
     if (x == nil or y == nil) then
-      local dungeon = (VGT.dungeons[continentOrInstanceId] or VGT.raids[continentOrInstanceId])
-      if (dungeon ~= nil and dungeon[2] ~= nil and dungeon[3] ~= nil and dungeon[4] ~= nil) then
-        addOrUpdatePlayer(name, dungeon[2], dungeon[3], dungeon[4], UnitHealth(unit) / UnitHealthMax(unit), false, dungeon[1])
+      local instance = VGT:GetInstance(continentOrInstanceId)
+      if (instance) then
+        addOrUpdatePlayer(
+          name,
+          instance.X,
+          instance.Y,
+          instance.ContinentId,
+          UnitHealth(unit) / UnitHealthMax(unit),
+          false,
+          instance.Name
+        )
         return
       else
         --destroyPlayer(name) -- Unit is in an unknown instance. Don't show a pin.
@@ -437,25 +468,6 @@ local handleMapMessageReceivedEvent = function(prefix, message, _, sender)
   end
 end
 
-local onEvent = function(_, event)
-  if (event == "GUILD_ROSTER_UPDATE") then
-    for _, player in pairs(players) do
-      player.GuildNumber = nil
-    end
-  elseif (event == "PLAYER_TARGET_CHANGED") then
-    local targetName = UnitName("target") -- UnitIsUnit does not work for non-grouped units.
-    for name, player in pairs(players) do
-      if (name == targetName) then
-        player.Targeted = true
-        updatePinColors(name, player)
-      elseif (player.Targeted) then
-        player.Targeted = false
-        updatePinColors(name, player)
-      end
-    end
-  end
-end
-
 local cleanUnusedPins = function()
   for name, player in pairs(players) do
     if
@@ -465,9 +477,9 @@ local cleanUnusedPins = function()
      then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
       destroyPlayer(name)
     elseif (VGT.OPTIONS.MAP.mode == "minimap") then -- remove the worldmap pin if the user changed to minimap only.
-      VGT.LIBS.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+      VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
     elseif (VGT.OPTIONS.MAP.mode == "map") then -- remove the minimap pin if the user changed to worldmap only.
-      VGT.LIBS.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+      VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
     end
   end
 end
@@ -502,32 +514,46 @@ local main = function()
   end
 end
 
--- ############################################################
--- ##### GLOBAL FUNCTIONS #####################################
--- ############################################################
+local function OnAddonLoaded(_, isInitialLogin, isReloadingUI)
+  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.enabled and VGT.OPTIONS.MAP.enabled and not VGT.MapInitialized) then
+    VGT.MapInitialized = true
+    VGT:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
+    if (IsInGuild()) then
+      VGT:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)
+    end
+    local FRAME = CreateFrame("Frame")
+    FRAME:SetScript("OnUpdate", main)
+  --JoinChannelByName("VGTMAP", "7cd3b0c3")
+  -- hooksecurefunc("SendChatMessage", sendMyLocationChat)
+  -- hooksecurefunc("AssistUnit", sendMyLocationChat)
+  -- hooksecurefunc("TargetUnit", sendMyLocationChat)
+  -- hooksecurefunc("TargetLastFriend", sendMyLocationChat)
+  -- hooksecurefunc("TargetLastTarget", sendMyLocationChat)
+  -- hooksecurefunc("UseAction", sendMyLocationChat)
+  -- hooksecurefunc("CastSpellByName", sendMyLocationChat)
+  -- hooksecurefunc("SpellTargetUnit", sendMyLocationChat)
+  end
+end
 
-function VGT.Map_Initialize()
-  if (VGT.OPTIONS.MAP.enabled) then
-    if (not VGT.MapInitialized) then
-      VGT.MapInitialized = true
-      VGT.LIBS:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
-      if (IsInGuild()) then
-        VGT.LIBS:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)
-      end
-      local FRAME = CreateFrame("Frame")
-      FRAME:RegisterEvent("GUILD_ROSTER_UPDATE")
-      FRAME:RegisterEvent("PLAYER_TARGET_CHANGED")
-      FRAME:SetScript("OnEvent", onEvent)
-      FRAME:SetScript("OnUpdate", main)
-    --JoinChannelByName("VGTMAP", "7cd3b0c3")
-    -- hooksecurefunc("SendChatMessage", sendMyLocationChat)
-    -- hooksecurefunc("AssistUnit", sendMyLocationChat)
-    -- hooksecurefunc("TargetUnit", sendMyLocationChat)
-    -- hooksecurefunc("TargetLastFriend", sendMyLocationChat)
-    -- hooksecurefunc("TargetLastTarget", sendMyLocationChat)
-    -- hooksecurefunc("UseAction", sendMyLocationChat)
-    -- hooksecurefunc("CastSpellByName", sendMyLocationChat)
-    -- hooksecurefunc("SpellTargetUnit", sendMyLocationChat)
+local function OnGuildRosterUpdate()
+  for _, player in pairs(players) do
+    player.GuildNumber = nil
+  end
+end
+
+local function OnPlayerTargetChanged()
+  local targetName = UnitName("target")
+  for name, player in pairs(players) do
+    if (name == targetName) then
+      player.Targeted = true
+      updatePinColors(name, player)
+    elseif (player.Targeted) then
+      player.Targeted = false
+      updatePinColors(name, player)
     end
   end
 end
+
+VGT:RegisterEvent("PLAYER_ENTERING_WORLD", OnAddonLoaded)
+VGT:RegisterEvent("GUILD_ROSTER_UPDATE", OnGuildRosterUpdate)
+VGT:RegisterEvent("PLAYER_TARGET_CHANGED", OnPlayerTargetChanged)

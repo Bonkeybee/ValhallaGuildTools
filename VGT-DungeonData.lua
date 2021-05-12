@@ -1,638 +1,352 @@
-VGT.raids = {}
-VGT.dungeons = {}
-VGT.bosses = {}
-VGT.trackedRaids = {}
+VGT._instances = {}
 
-VGT.bosses["Azuregos"] = {6109, 0}
-VGT.bosses[6109] = {"Azuregos", 0}
-VGT.bosses["Lord Kazzak"] = {12397, 0}
-VGT.bosses[12397] = {"Lord Kazzak", 0}
-VGT.bosses["Ysondre"] = {14887, 0}
-VGT.bosses[14887] = {"Ysondre", 0}
-VGT.bosses["Emeriss"] = {14889, 0}
-VGT.bosses[14888] = {"Lethon", 0}
-VGT.bosses["Lethon"] = {14888, 0}
-VGT.bosses[14889] = {"Ermeriss", 0}
-VGT.bosses["Taerar"] = {14890, 0}
-VGT.bosses[14890] = {"Taerar", 0}
+function VGT:RegisterInstance(instanceId, instanceName, isRaid, x, y, continentId)
+    local instance = {
+        Name = instanceName,
+        Id = instanceId,
+        IsRaid = isRaid,
+        IsDungeon = not isRaid,
+        X = x,
+        Y = y,
+        ContinentId = continentId,
+        Encounters = {}
+    };
 
-VGT.raids["Molten Core"] = 409
-VGT.raids[409] = {"Molten Core", -1039.7, -7508.3, 0}
-VGT.bosses["Lucifron"] = {12118, 409}
-VGT.bosses[12118] = "Lucifron"
-VGT.bosses["Magmadar"] = {01198200, 409}
-VGT.bosses[11982] = "Magmadar"
-VGT.bosses["Gehennas"] = {12259, 409}
-VGT.bosses[12259] = "Gehennas"
-VGT.bosses["Garr"] = {12057, 409}
-VGT.bosses[12057] = "Garr"
-VGT.bosses["Shazzrah"] = {12264, 409}
-VGT.bosses[12264] = "Shazzrah"
-VGT.bosses["Baron Geddon"] = {12056, 409}
-VGT.bosses[12056] = "Baron Geddon"
-VGT.bosses["Golemagg the Incinerator"] = {11988, 409}
-VGT.bosses[11988] = "Golemagg the Incinerator"
-VGT.bosses["Sulfuron Harbinger"] = {12098, 409}
-VGT.bosses[12098] = "Sulfuron Harbinger"
-VGT.bosses["Majordomo Executus"] = {12018, 409}
-VGT.bosses[12018] = "Majordomo Executus"
-VGT.bosses["Ragnaros"] = {11502, 409}
-VGT.bosses[11502] = "Ragnaros"
-VGT.trackedRaids["Molten Core"] = true
-VGT.trackedRaids[409] = true
+    function instance:AddEncounter(encounterId, encounterName)
+        local encounter = { Name = encounterName, Id = encounterId };
+        instance.Encounters[encounterId] = encounter;
+    end
 
-VGT.dungeons["Onyxia's Lair"] = 249
-VGT.dungeons[249] = {"Onyxia's Lair", -3754.4, -4750.4, 1}
-VGT.bosses["Onyxia"] = {10184, 249, 5}
-VGT.bosses[10184] = "Onyxia"
+    self._instances[instanceId] = instance;
+    self._instances[instanceName] = instance;
 
-VGT.raids["Blackwing Lair"] = 469
-VGT.raids[469] = {"Blackwing Lair", -1228.4, -7524.7, 0}
-VGT.bosses["Razorgore the Untamed"] = {12435, 469}
-VGT.bosses[12435] = "Razorgore the Untamed"
-VGT.bosses["Vaelastrasz the Corrupt"] = {13020, 469}
-VGT.bosses[13020] = "Vaelastrasz the Corrupt"
-VGT.bosses["Broodlord Lashlayer"] = {12017, 469}
-VGT.bosses[12017] = "Broodlord Lashlayer"
-VGT.bosses["Firemaw"] = {11983, 469}
-VGT.bosses[11983] = "Firemaw"
-VGT.bosses["Ebonroc"] = {14601, 469}
-VGT.bosses[14601] = "Ebonroc"
-VGT.bosses["Flamegor"] = {11981, 469}
-VGT.bosses[11981] = "Flamegor"
-VGT.bosses["Chromaggus"] = {14020, 469}
-VGT.bosses[14020] = "Chromaggus"
-VGT.bosses["Nefarian"] = {11583, 469}
-VGT.bosses[11583] = "Nefarian"
-VGT.trackedRaids["Blackwing Lair"] = true
-VGT.trackedRaids[469] = true
+    return instance;
+end
 
-VGT.raids["Temple of Ahn'Qiraj"] = 531
-VGT.raids[531] = {"Temple of Ahn'Qiraj", 1993.3, -8239, 1}
-VGT.bosses["The Prophet Skeram"] = {15263, 531}
-VGT.bosses[15263] = "The Prophet Skeram"
-VGT.bosses["Battleguard Sartura"] = {15516, 531}
-VGT.bosses[15516] = "Battleguard Sartura"
-VGT.bosses["Fankriss the Unyielding"] = {15510, 531}
-VGT.bosses[15510] = "Fankriss the Unyielding"
-VGT.bosses["Princess Huhuran"] = {15509, 531}
-VGT.bosses[15509] = "Princess Huhuran"
-VGT.bosses["Emperor Vek'lor"] = {15276, 531}
-VGT.bosses[15276] = "Emperor Vek'lor"
-VGT.bosses["Emperor Vek'nilash"] = {15275, 531}
-VGT.bosses[15275] = "Emperor Vek'nilash"
-VGT.bosses["C'Thun"] = {15727, 531}
-VGT.bosses[15727] = "C'Thun"
-VGT.bosses["Princess Yauj"] = {15543, 531}
-VGT.bosses[15543] = "Princess Yauj"
-VGT.bosses["Vem"] = {15544, 531}
-VGT.bosses[15544] = "Vem"
-VGT.bosses["Lord Kri"] = {15511, 531}
-VGT.bosses[15511] = "Lord Kri"
-VGT.bosses["Viscidus"] = {15299, 531}
-VGT.bosses[15299] = "Viscidus"
-VGT.bosses["Ouro"] = {15517, 531}
-VGT.bosses[15517] = "Ouro"
-VGT.trackedRaids["Temple of Ahn'Qiraj"] = true
-VGT.trackedRaids[531] = true
+function VGT:GetInstance(nameOrId)
+    return self._instances[nameOrId];
+end
 
-VGT.raids["Naxxramas"] = 533
-VGT.raids[533] = {"Naxxramas", 3132.7, -3731.2, 0}
+do
+    local instance
 
-VGT.raids["Zul'Gurub"] = 309
-VGT.raids[309] = {"Zul'Gurub", -1206.9, -11916.2, 0}
-VGT.bosses["High Priest Venoxis"] = {14507, 309}
-VGT.bosses[14507] = "High Priest Venoxis"
-VGT.bosses["High Priestess Jeklik"] = {14517, 309}
-VGT.bosses[14517] = "High Priestess Jeklik"
-VGT.bosses["High Priestess Mar'li"] = {14510, 309}
-VGT.bosses[14510] = "High Priestess Mar'li"
-VGT.bosses["High Priest Thekal"] = {14509, 309}
-VGT.bosses[14509] = "High Priest Thekal"
-VGT.bosses["High Priestess Arlokk"] = {14515, 309}
-VGT.bosses[14515] = "High Priestess Arlokk"
-VGT.bosses["Hakkar"] = {14834, 309}
-VGT.bosses[14834] = "Hakkar"
-VGT.bosses["Bloodlord Mandokir"] = {11382, 309}
-VGT.bosses[11382] = "Bloodlord Mandokir"
-VGT.bosses["Hazza'rah"] = {15083, 309}
-VGT.bosses[15083] = "Hazza'rah"
-VGT.bosses["Gahz'ranka"] = {15114, 309}
-VGT.bosses[15114] = "Gahz'ranka"
-VGT.bosses["Jin'do the Hexxer"] = {11380, 309}
-VGT.bosses[11380] = "Jin'do the Hexxer"
-VGT.trackedRaids["Zul'Gurub"] = true
-VGT.trackedRaids[309] = true
+    instance = VGT:RegisterInstance(533, "Naxxramas", true, 3132.7, -3731.2, 0)
 
-VGT.raids["Ruins of Ahn'Qiraj"] = 509
-VGT.raids[509] = {"Ruins of Ahn'Qiraj", 1502.4, -8415.7, 1}
-VGT.bosses["Kurinnaxx"] = {15348, 509}
-VGT.bosses[15348] = "Kurinnaxx"
-VGT.bosses["General Rajaxx"] = {15341, 509}
-VGT.bosses[15341] = "General Rajaxx"
-VGT.bosses["Moam"] = {15340, 509}
-VGT.bosses[15340] = "Moam"
-VGT.bosses["Buru the Gorger"] = {15370, 509}
-VGT.bosses[15370] = "Buru the Gorger"
-VGT.bosses["Ayamiss the Hunter"] = {15369, 509}
-VGT.bosses[15369] = "Ayamiss the Hunter"
-VGT.bosses["Ossirian the Unscarred"] = {15339, 509}
-VGT.bosses[15339] = "Ossirian the Unscarred"
-VGT.trackedRaids["Ruins of Ahn'Qiraj"] = true
-VGT.trackedRaids[509] = true
+    instance = VGT:RegisterInstance(309, "Zul'Gurub", true, -1206.9, -11916.2, 0)
+    instance:AddEncounter(14834, "Hakkar")
+    instance:AddEncounter(14510, "High Priestess Mar'li")
+    instance:AddEncounter(11380, "Jin'do the Hexxer")
+    instance:AddEncounter(14517, "High Priestess Jeklik")
+    instance:AddEncounter(15114, "Gahz'ranka")
+    instance:AddEncounter(14507, "High Priest Venoxis")
+    instance:AddEncounter(15083, "Hazza'rah")
+    instance:AddEncounter(11382, "Bloodlord Mandokir")
+    instance:AddEncounter(14515, "High Priestess Arlokk")
+    instance:AddEncounter(14509, "High Priest Thekal")
 
-VGT.dungeons["Ragefire Chasm"] = 389
-VGT.dungeons[389] = {"Ragefire Chasm", -4419.2, 1815, 1}
-VGT.bosses["Taragaman the Hungerer"] = {11520, 389}
-VGT.bosses[11520] = "Taragaman the Hungerer"
-VGT.bosses["Oggleflint"] = {11517, 389}
-VGT.bosses[11517] = "Oggleflint"
-VGT.bosses["Jergosh the Invoker"] = {11518, 389}
-VGT.bosses[11518] = "Jergosh the Invoker"
-VGT.bosses["Bazzalan"] = {11519, 389}
-VGT.bosses[11519] = "Bazzalan"
+    instance = VGT:RegisterInstance(509, "Ruins of Ahn'Qiraj", true, 1502.4, -8415.7, 1)
+    instance:AddEncounter(15348, "Kurinnaxx")
+    instance:AddEncounter(15339, "Ossirian the Unscarred")
+    instance:AddEncounter(15369, "Ayamiss the Hunter")
+    instance:AddEncounter(15370, "Buru the Gorger")
+    instance:AddEncounter(15341, "General Rajaxx")
+    instance:AddEncounter(15340, "Moam")
 
-VGT.dungeons["Wailing Caverns"] = 43
-VGT.dungeons[43] = {"Wailing Caverns", -2217.8, -738.5, 1}
-VGT.bosses["Kresh"] = {3653, 43}
-VGT.bosses[3653] = "Kresh"
-VGT.bosses["Lady Anacondra"] = {3671, 43}
-VGT.bosses[3671] = "Lady Anacondra"
-VGT.bosses["Lord Cobrahn"] = {3669, 43}
-VGT.bosses[3669] = "Lord Cobrahn"
-VGT.bosses["Deviate Faerie Dragon"] = {5912, 43}
-VGT.bosses[5912] = "Deviate Faerie Dragon"
-VGT.bosses["Lord Pythas"] = {3670, 43}
-VGT.bosses[3670] = "Lord Pythas"
-VGT.bosses["Skum"] = {3674, 43}
-VGT.bosses[3674] = "Skum"
-VGT.bosses["Lord Serpentis"] = {3673, 43}
-VGT.bosses[3673] = "Lord Serpentis"
-VGT.bosses["Verdan the Everliving"] = {5775, 43}
-VGT.bosses[5775] = "Verdan the Everliving"
-VGT.bosses["Mutanus the Devourer"] = {3654, 43}
-VGT.bosses[3654] = "Mutanus the Devourer"
+    instance = VGT:RegisterInstance(409, "Molten Core", true, -1039.7, -7508.3, 0)
+    instance:AddEncounter(12264, "Shazzrah")
+    instance:AddEncounter(12118, "Lucifron")
+    instance:AddEncounter(11988, "Golemagg the Incinerator")
+    instance:AddEncounter(12098, "Sulfuron Harbinger")
+    instance:AddEncounter(1198200, "Magmadar")
+    instance:AddEncounter(12018, "Majordomo Executus")
+    instance:AddEncounter(12259, "Gehennas")
+    instance:AddEncounter(12057, "Garr")
+    instance:AddEncounter(12056, "Baron Geddon")
+    instance:AddEncounter(11502, "Ragnaros")
 
-VGT.dungeons["The Deadmines"] = 36
-VGT.dungeons[36] = {"The Deadmines", 1675.9, -11208.7, 0}
-VGT.bosses["Rhahk'Zor"] = {644, 36}
-VGT.bosses[644] = "Rhahk'Zor"
-VGT.bosses["Miner Johnson"] = {3586, 36}
-VGT.bosses[3586] = "Miner Johnson"
-VGT.bosses["Sneed's Shredder"] = {642, 36}
-VGT.bosses[642] = "Sneed's Shredder"
-VGT.bosses["Gilnid"] = {1763, 36}
-VGT.bosses[1763] = "Gilnid"
-VGT.bosses["Mr. Smite"] = {646, 36}
-VGT.bosses[646] = "Mr. Smite"
-VGT.bosses["Captain Greenskin"] = {647, 36}
-VGT.bosses[647] = "Captain Greenskin"
-VGT.bosses["Edwin VanCleef"] = {639, 36}
-VGT.bosses[639] = "Edwin VanCleef"
-VGT.bosses["Cookie"] = {645, 36}
-VGT.bosses[645] = "Cookie"
+    instance = VGT:RegisterInstance(531, "Temple of Ahn'Qiraj", true, 1993.3, -8239, 1)
+    instance:AddEncounter(15276, "Emperor Vek'lor")
+    instance:AddEncounter(15727, "C'Thun")
+    instance:AddEncounter(15275, "Emperor Vek'nilash")
+    instance:AddEncounter(15517, "Ouro")
+    instance:AddEncounter(15509, "Princess Huhuran")
+    instance:AddEncounter(15544, "Vem")
+    instance:AddEncounter(15299, "Viscidus")
+    instance:AddEncounter(15511, "Lord Kri")
+    instance:AddEncounter(15510, "Fankriss the Unyielding")
+    instance:AddEncounter(15263, "The Prophet Skeram")
+    instance:AddEncounter(15543, "Princess Yauj")
+    instance:AddEncounter(15516, "Battleguard Sartura")
 
-VGT.dungeons["Shadowfang Keep"] = 33
-VGT.dungeons[33] = {"Shadowfang Keep", 1567.5, -233, 0}
-VGT.bosses["Rethilgore"] = {3914, 33}
-VGT.bosses[3914] = "Rethilgore"
-VGT.bosses["Fel Steed"] = {3864, 33}
-VGT.bosses[3864] = "Fel Steed"
-VGT.bosses["Shadow Charger"] = {3865, 33}
-VGT.bosses[3865] = "Shadow Charger"
-VGT.bosses["Razorclaw the Butcher"] = {3886, 33}
-VGT.bosses[3886] = "Razorclaw the Butcher"
-VGT.bosses["Baron Silverlaine"] = {3887, 33}
-VGT.bosses[3887] = "Baron Silverlaine"
-VGT.bosses["Commander Springvale"] = {4278, 33}
-VGT.bosses[4278] = "Commander Springvale"
-VGT.bosses["Odo the Blindwatcher"] = {4279, 33}
-VGT.bosses[4279] = "Odo the Blindwatcher"
-VGT.bosses["Deathsworn Captain"] = {3872, 33}
-VGT.bosses[3872] = "Deathsworn Captain"
-VGT.bosses["Fenrus the Devourer"] = {4274, 33}
-VGT.bosses[4274] = "Fenrus the Devourer"
-VGT.bosses["Wolf Master Nandos"] = {3927, 33}
-VGT.bosses[3927] = "Wolf Master Nandos"
-VGT.bosses["Archmage Arugal"] = {4275, 33}
-VGT.bosses[4275] = "Archmage Arugal"
+    instance = VGT:RegisterInstance(469, "Blackwing Lair", true, -1228.4, -7524.7, 0)
+    instance:AddEncounter(12435, "Razorgore the Untamed")
+    instance:AddEncounter(14020, "Chromaggus")
+    instance:AddEncounter(11583, "Nefarian")
+    instance:AddEncounter(11983, "Firemaw")
+    instance:AddEncounter(13020, "Vaelastrasz the Corrupt")
+    instance:AddEncounter(14601, "Ebonroc")
+    instance:AddEncounter(11981, "Flamegor")
+    instance:AddEncounter(12017, "Broodlord Lashlayer")
 
-VGT.dungeons["The Stockade"] = 34
-VGT.dungeons[34] = {"The Stockade", 845.5, -8766.1, 0}
-VGT.bosses["Targorr the Dread"] = {1696, 34}
-VGT.bosses[1696] = "Targorr the Dread"
-VGT.bosses["Kam Deepfury"] = {1666, 34}
-VGT.bosses[1666] = "Kam Deepfury"
-VGT.bosses["Hamhock"] = {1717, 34}
-VGT.bosses[1717] = "Hamhock"
-VGT.bosses["Dextren Ward"] = {1663, 34}
-VGT.bosses[1663] = "Dextren Ward"
-VGT.bosses["Bazil Thredd"] = {1716, 34}
-VGT.bosses[1716] = "Bazil Thredd"
-VGT.bosses["Bruegal Ironknuckle"] = {1720, 34}
-VGT.bosses[1720] = "Bruegal Ironknuckle"
+    instance = VGT:RegisterInstance(47, "Razorfen Kraul", false, -1664.3, -4463.3, 1)
+    instance:AddEncounter(6168, "Roogug")
+    instance:AddEncounter(4422, "Agathelos the Raging")
+    instance:AddEncounter(4421, "Charlga Razorflank")
+    instance:AddEncounter(4428, "Death Speaker Jargba")
+    instance:AddEncounter(4424, "Aggem Thorncurse")
+    instance:AddEncounter(4420, "Overlord Ramtusk")
 
-VGT.dungeons["Blackfathom Deeps"] = 48
-VGT.dungeons[48] = {"Blackfathom Deeps", 743.4, 4246.7, 1}
-VGT.bosses["Ghamoo-ra"] = {4887, 48}
-VGT.bosses[4887] = "Ghamoo-ra"
-VGT.bosses["Lady Sarevess"] = {4831, 48}
-VGT.bosses[4831] = "Lady Sarevess"
-VGT.bosses["Gelihast"] = {6243, 48}
-VGT.bosses[6243] = "Gelihast"
-VGT.bosses["Lorgus Jett"] = {12902, 48}
-VGT.bosses[12902] = "Lorgus Jett"
-VGT.bosses["Baron Aquanis"] = {12876, 48}
-VGT.bosses[12876] = "Baron Aquanis"
-VGT.bosses["Twilight Lord Kelris"] = {4832, 48}
-VGT.bosses[4832] = "Twilight Lord Kelris"
-VGT.bosses["Old Serra'kis"] = {4830, 48}
-VGT.bosses[4830] = "Old Serra'kis"
-VGT.bosses["Aku'mai"] = {4829, 48}
-VGT.bosses[4829] = "Aku'mai"
+    instance = VGT:RegisterInstance(109, "The Temple of Atal'Hakkar", false, -3995.4, -10176.6, 0)
+    instance:AddEncounter(5710, "Jammal'an the Prophet")
+    instance:AddEncounter(8443, "Avatar of Hakkar")
+    instance:AddEncounter(5720, "Weaver")
+    instance:AddEncounter(5713, "Gasher")
+    instance:AddEncounter(5722, "Hazzas")
+    instance:AddEncounter(5712, "Zolo")
+    instance:AddEncounter(5716, "Zul'Lor")
+    instance:AddEncounter(8580, "Atal'alarion")
+    instance:AddEncounter(5715, "Hukku")
+    instance:AddEncounter(5714, "Loro")
+    instance:AddEncounter(5719, "Morphaz")
+    instance:AddEncounter(5711, "Ogom the Wretched")
+    instance:AddEncounter(5709, "Shade of Eranikus")
+    instance:AddEncounter(5721, "Dreamscythe")
+    instance:AddEncounter(5717, "Mijan")
 
-VGT.dungeons["Gnomeregan"] = 90
-VGT.dungeons[90] = {"Gnomeregan", 927.7, -5162.6, 0}
-VGT.bosses["Grubbis"] = {7361, 90}
-VGT.bosses[7361] = "Grubbis"
-VGT.bosses["Viscous Fallout"] = {7079, 90}
-VGT.bosses[7079] = "Viscous Fallout"
-VGT.bosses["Electrocutioner 6000"] = {6235, 90}
-VGT.bosses[6235] = "Electrocutioner 6000"
-VGT.bosses["Crowd Pummeler 9-60"] = {6229, 90}
-VGT.bosses[6229] = "Crowd Pummeler 9-60"
-VGT.bosses["Dark Iron Ambassador"] = {6228, 90}
-VGT.bosses[6228] = "Dark Iron Ambassador"
-VGT.bosses["Mekgineer Thermaplugg"] = {7800, 90}
-VGT.bosses[7800] = "Mekgineer Thermaplugg"
+    instance = VGT:RegisterInstance(429, "Dire Maul", false, 1078.4, -3520.2, 1)
+    instance:AddEncounter(11487, "Magister Kalendris")
+    instance:AddEncounter(13280, "Hydrospawn")
+    instance:AddEncounter(14506, "Lord Hel'nurath")
+    instance:AddEncounter(14323, "Guard Slip'kik")
+    instance:AddEncounter(14327, "Lehtendris")
+    instance:AddEncounter(14322, "Stomper Kreeg")
+    instance:AddEncounter(11490, "Zevrim Thornhoof")
+    instance:AddEncounter(11467, "Tsu'zee")
+    instance:AddEncounter(11486, "Prince Tortheldrin")
+    instance:AddEncounter(14324, "Cho'Rush the Observer")
+    instance:AddEncounter(14354, "Pusillin")
+    instance:AddEncounter(11496, "Immol'thar")
+    instance:AddEncounter(11488, "Illyanna Ravenoak")
+    instance:AddEncounter(11489, "Tendris Warpwood")
+    instance:AddEncounter(11501, "King Gordok")
+    instance:AddEncounter(14325, "Captain Kromcrush")
+    instance:AddEncounter(14321, "Guard Fengus")
+    instance:AddEncounter(11492, "Alzzin the Wildshaper")
+    instance:AddEncounter(14326, "Guard Mol'dar")
 
-VGT.dungeons["Razorfen Kraul"] = 47
-VGT.dungeons[47] = {"Razorfen Kraul", -1664.3, -4463.3, 1}
-VGT.bosses["Roogug"] = {6168, 47}
-VGT.bosses[6168] = "Roogug"
-VGT.bosses["Aggem Thorncurse"] = {4424, 47}
-VGT.bosses[4424] = "Aggem Thorncurse"
-VGT.bosses["Death Speaker Jargba"] = {4428, 47}
-VGT.bosses[4428] = "Death Speaker Jargba"
-VGT.bosses["Overlord Ramtusk"] = {4420, 47}
-VGT.bosses[4420] = "Overlord Ramtusk"
-VGT.bosses["Agathelos the Raging"] = {4422, 47}
-VGT.bosses[4422] = "Agathelos the Raging"
-VGT.bosses["Charlga Razorflank"] = {4421, 47}
-VGT.bosses[4421] = "Charlga Razorflank"
+    instance = VGT:RegisterInstance(249, "Onyxia's Lair", false, -3754.4, -4750.4, 1)
+    instance:AddEncounter(10184, "Onyxia")
 
-VGT.dungeons["Scarlet Monastery"] = 189
-VGT.dungeons[189] = {"Scarlet Monastery", -823.6, 2915.1, 0}
-VGT.bosses["Interrogator Vishas"] = {3983, 189}
-VGT.bosses[3983] = "Interrogator Vishas"
-VGT.bosses["Bloodmage Thalnos"] = {4543, 189}
-VGT.bosses[4543] = "Bloodmage Thalnos"
-VGT.bosses["Azshir the Sleepless"] = {6490, 189}
-VGT.bosses[6490] = "Azshir the Sleepless"
-VGT.bosses["Fallen Champion"] = {6488, 189}
-VGT.bosses[6488] = "Fallen Champion"
-VGT.bosses["Ironspine"] = {6489, 189}
-VGT.bosses[6489] = "Ironspine"
-VGT.bosses["Houndmaster Loksey"] = {3974, 189}
-VGT.bosses[3974] = "Houndmaster Loksey"
-VGT.bosses["Arcanist Doan"] = {6487, 189}
-VGT.bosses[6487] = "Arcanist Doan"
-VGT.bosses["Herod"] = {3975, 189}
-VGT.bosses[3975] = "Herod"
-VGT.bosses["Scarlet Commander Mograine"] = {3976, 189}
-VGT.bosses[3976] = "Scarlet Commander Mograine"
-VGT.bosses["High Inquisitor Whitemane"] = {3977, 189}
-VGT.bosses[3977] = "High Inquisitor Whitemane"
-VGT.bosses["High Inquisitor Fairbanks"] = {4542, 189}
-VGT.bosses[4542] = "High Inquisitor Fairbanks"
+    instance = VGT:RegisterInstance(48, "Blackfathom Deeps", false, 743.4, 4246.7, 1)
+    instance:AddEncounter(4832, "Twilight Lord Kelris")
+    instance:AddEncounter(12902, "Lorgus Jett")
+    instance:AddEncounter(4830, "Old Serra'kis")
+    instance:AddEncounter(4829, "Aku'mai")
+    instance:AddEncounter(4831, "Lady Sarevess")
+    instance:AddEncounter(6243, "Gelihast")
+    instance:AddEncounter(12876, "Baron Aquanis")
+    instance:AddEncounter(4887, "Ghamoo-ra")
 
-VGT.dungeons["Razorfen Downs"] = 129
-VGT.dungeons[129] = {"Razorfen Downs", -2524.2, -4659.6, 1}
-VGT.bosses["Tuten'kash"] = {7355, 129}
-VGT.bosses[7355] = "Tuten'kash"
-VGT.bosses["Plaguemaw the Rotting"] = {7356, 129}
-VGT.bosses[7356] = "Plaguemaw the Rotting"
-VGT.bosses["Mordresh Fire Eye"] = {7357, 129}
-VGT.bosses[7357] = "Mordresh Fire Eye"
-VGT.bosses["Ragglesnout"] = {7354, 129}
-VGT.bosses[7354] = "Ragglesnout"
-VGT.bosses["Glutton"] = {8567, 129}
-VGT.bosses[8567] = "Glutton"
-VGT.bosses["Amnennar the Coldbringer"] = {7358, 129}
-VGT.bosses[7358] = "Amnennar the Coldbringer"
+    instance = VGT:RegisterInstance(189, "Scarlet Monastery", false, -823.6, 2915.1, 0)
+    instance:AddEncounter(3974, "Houndmaster Loksey")
+    instance:AddEncounter(3975, "Herod")
+    instance:AddEncounter(4542, "High Inquisitor Fairbanks")
+    instance:AddEncounter(6489, "Ironspine")
+    instance:AddEncounter(6487, "Arcanist Doan")
+    instance:AddEncounter(4543, "Bloodmage Thalnos")
+    instance:AddEncounter(6490, "Azshir the Sleepless")
+    instance:AddEncounter(3983, "Interrogator Vishas")
+    instance:AddEncounter(3977, "High Inquisitor Whitemane")
+    instance:AddEncounter(6488, "Fallen Champion")
+    instance:AddEncounter(3976, "Scarlet Commander Mograine")
 
-VGT.dungeons["Uldaman"] = 70
-VGT.dungeons[70] = {"Uldaman", -2954.6, -6066.3, 0}
-VGT.bosses["Revelosh"] = {6910, 70}
-VGT.bosses[6910] = "Revelosh"
-VGT.bosses["Baelog"] = {6906, 70}
-VGT.bosses[6906] = "Baelog"
-VGT.bosses["Ironaya"] = {7228, 70}
-VGT.bosses[7228] = "Ironaya"
-VGT.bosses["Obsidian Sentinel"] = {7023, 70}
-VGT.bosses[7023] = "Obsidian Sentinel"
-VGT.bosses["Ancient Stone Keeper"] = {7206, 70}
-VGT.bosses[7206] = "Ancient Stone Keeper"
-VGT.bosses["Galgann Firehammer"] = {7291, 70}
-VGT.bosses[7291] = "Galgann Firehammer"
-VGT.bosses["Grimlok"] = {4854, 70}
-VGT.bosses[4854] = "Grimlok"
-VGT.bosses["Archaedas"] = {2748, 70}
-VGT.bosses[2748] = "Archaedas"
+    instance = VGT:RegisterInstance(33, "Shadowfang Keep", false, 1567.5, -233, 0)
+    instance:AddEncounter(3865, "Shadow Charger")
+    instance:AddEncounter(4279, "Odo the Blindwatcher")
+    instance:AddEncounter(3864, "Fel Steed")
+    instance:AddEncounter(4275, "Archmage Arugal")
+    instance:AddEncounter(3914, "Rethilgore")
+    instance:AddEncounter(3887, "Baron Silverlaine")
+    instance:AddEncounter(3872, "Deathsworn Captain")
+    instance:AddEncounter(4278, "Commander Springvale")
+    instance:AddEncounter(3886, "Razorclaw the Butcher")
+    instance:AddEncounter(3927, "Wolf Master Nandos")
+    instance:AddEncounter(4274, "Fenrus the Devourer")
 
-VGT.dungeons["Zul'Farrak"] = 209
-VGT.dungeons[209] = {"Zul'Farrak", -2890.6, -6795.6, 1}
-VGT.bosses["Antu'sul"] = {8127, 209}
-VGT.bosses[8127] = "Antu'sul"
-VGT.bosses["Theka the Martyr"] = {7272, 209}
-VGT.bosses[7272] = "Theka the Martyr"
-VGT.bosses["Witch Doctor Zum'rah"] = {7271, 209}
-VGT.bosses[7271] = "Witch Doctor Zum'rah"
-VGT.bosses["Nekrum Gutchewer"] = {7796, 209}
-VGT.bosses[7796] = "Nekrum Gutchewer"
-VGT.bosses["Shadowpriest Sezz'ziz"] = {7275, 209}
-VGT.bosses[7275] = "Shadowpriest Sezz'ziz"
-VGT.bosses["Sergeant Bly"] = {7604, 209}
-VGT.bosses[7604] = "Sergeant Bly"
-VGT.bosses["Hydromancer Velratha"] = {7795, 209}
-VGT.bosses[7795] = "Hydromancer Velratha"
-VGT.bosses["Dustwraith"] = {10081, 209}
-VGT.bosses[10081] = "Dustwraith"
-VGT.bosses["Chief Ukorz Sandscalp"] = {7267, 209}
-VGT.bosses[7267] = "Chief Ukorz Sandscalp"
-VGT.bosses["Ruuzlu"] = {7797, 209}
-VGT.bosses[7797] = "Ruuzlu"
-VGT.bosses["Zerills"] = {10082, 209}
-VGT.bosses[10082] = "Zerills"
-VGT.bosses["Sandarr Dunereaver"] = {10080, 209}
-VGT.bosses[10080] = "Sandarr Dunereaver"
+    instance = VGT:RegisterInstance(34, "The Stockade", false, 845.5, -8766.1, 0)
+    instance:AddEncounter(1666, "Kam Deepfury")
+    instance:AddEncounter(1717, "Hamhock")
+    instance:AddEncounter(1663, "Dextren Ward")
+    instance:AddEncounter(1716, "Bazil Thredd")
+    instance:AddEncounter(1696, "Targorr the Dread")
+    instance:AddEncounter(1720, "Bruegal Ironknuckle")
 
-VGT.dungeons["Maraudon"] = 349
-VGT.dungeons[349] = {"Maraudon", 2614.2, -1468.2, 1}
-VGT.bosses["Noxxion"] = {13282, 349}
-VGT.bosses[13282] = "Noxxion"
-VGT.bosses["Razorlash"] = {12258, 349}
-VGT.bosses[12258] = "Razorlash"
-VGT.bosses["Lord Vyletongue"] = {12236, 349}
-VGT.bosses[12236] = "Lord Vyletongue"
-VGT.bosses["Celebras the Cursed"] = {12225, 349}
-VGT.bosses[12225] = "Celebras the Cursed"
-VGT.bosses["Landslide"] = {12203, 349}
-VGT.bosses[12203] = "Landslide"
-VGT.bosses["Tinkerer Gizlock"] = {13601, 349}
-VGT.bosses[13601] = "Tinkerer Gizlock"
-VGT.bosses["Rotgrip"] = {13596, 349}
-VGT.bosses[13596] = "Rotgrip"
-VGT.bosses["Princess Theradas"] = {12201, 349}
-VGT.bosses[12201] = "Princess Theradas"
+    instance = VGT:RegisterInstance(389, "Ragefire Chasm", false, -4419.2, 1815, 1)
+    instance:AddEncounter(11517, "Oggleflint")
+    instance:AddEncounter(11518, "Jergosh the Invoker")
+    instance:AddEncounter(11519, "Bazzalan")
+    instance:AddEncounter(11520, "Taragaman the Hungerer")
 
-VGT.dungeons["The Temple of Atal'Hakkar"] = 109
-VGT.dungeons[109] = {"The Temple of Atal'Hakkar", -3995.4, -10176.6, 0}
-VGT.bosses["Gasher"] = {5713, 109}
-VGT.bosses[5713] = "Gasher"
-VGT.bosses["Hukku"] = {5715, 109}
-VGT.bosses[5715] = "Hukku"
-VGT.bosses["Loro"] = {5714, 109}
-VGT.bosses[5714] = "Loro"
-VGT.bosses["Mijan"] = {5717, 109}
-VGT.bosses[5717] = "Mijan"
-VGT.bosses["Zolo"] = {5712, 109}
-VGT.bosses[5712] = "Zolo"
-VGT.bosses["Zul'Lor"] = {5716, 109}
-VGT.bosses[5716] = "Zul'Lor"
-VGT.bosses["Atal'alarion"] = {8580, 109}
-VGT.bosses[8580] = "Atal'alarion"
-VGT.bosses["Dreamscythe"] = {5721, 109}
-VGT.bosses[5721] = "Dreamscythe"
-VGT.bosses["Weaver"] = {5720, 109}
-VGT.bosses[5720] = "Weaver"
-VGT.bosses["Jammal'an the Prophet"] = {5710, 109}
-VGT.bosses[5710] = "Jammal'an the Prophet"
-VGT.bosses["Ogom the Wretched"] = {5711, 109}
-VGT.bosses[5711] = "Ogom the Wretched"
-VGT.bosses["Morphaz"] = {5719, 109}
-VGT.bosses[5719] = "Morphaz"
-VGT.bosses["Hazzas"] = {5722, 109}
-VGT.bosses[5722] = "Hazzas"
-VGT.bosses["Avatar of Hakkar"] = {8443, 109}
-VGT.bosses[8443] = "Avatar of Hakkar"
-VGT.bosses["Shade of Eranikus"] = {5709, 109}
-VGT.bosses[5709] = "Shade of Eranikus"
+    instance = VGT:RegisterInstance(229, "Blackrock Spire", false, -1228.4, -7524.7, 0)
+    instance:AddEncounter(10363, "General Drakkisath")
+    instance:AddEncounter(10584, "Urok Doomhowl")
+    instance:AddEncounter(9736, "Quartermaster Zigris")
+    instance:AddEncounter(10596, "Mother Smolderweb")
+    instance:AddEncounter(10899, "Goraluk Anvilcrack")
+    instance:AddEncounter(10509, "Jed Runewatcher")
+    instance:AddEncounter(10429, "Warchief Rend Blackhand")
+    instance:AddEncounter(9237, "War Master Voone")
+    instance:AddEncounter(10430, "The Beast")
+    instance:AddEncounter(10268, "Gizrul the Slavener")
+    instance:AddEncounter(9568, "Overlord Wyrmthalak")
+    instance:AddEncounter(9816, "Pyroguard Emberseer")
+    instance:AddEncounter(9236, "Shadow Hunter Vosh'gajin")
+    instance:AddEncounter(9196, "Highlord Omokk")
+    instance:AddEncounter(10339, "Gyth")
+    instance:AddEncounter(10220, "Halycon")
 
-VGT.dungeons["Blackrock Depths"] = 230
-VGT.dungeons[230] = {"Blackrock Depths", -922.2, -7178.3, 0}
-VGT.bosses["Lord Roccor"] = {9025, 230}
-VGT.bosses[9025] = "Lord Roccor"
-VGT.bosses["Bael'Gar"] = {9016, 230}
-VGT.bosses[9016] = "Bael'Gar"
-VGT.bosses["Houndmaster Grebmar"] = {9319, 230}
-VGT.bosses[9319] = "Houndmaster Grebmar"
-VGT.bosses["High Interrogator Gerstahn"] = {9018, 230}
-VGT.bosses[9018] = "High Interrogator Gerstahn"
-VGT.bosses["High Justice Grimstone"] = {10096, 230}
-VGT.bosses[10096] = "High Justice Grimstone"
-VGT.bosses["Pyromancer Loregrain"] = {9024, 230}
-VGT.bosses[9024] = "Pyromancer Loregrain"
-VGT.bosses["General Angerforge"] = {9033, 230}
-VGT.bosses[9033] = "General Angerforge"
-VGT.bosses["Golem Lord Argelmach"] = {8983, 230}
-VGT.bosses[8983] = "Golem Lord Argelmach"
-VGT.bosses["Ribbly Screwspigot"] = {9543, 230}
-VGT.bosses[9543] = "Ribbly Screwspigot"
-VGT.bosses["Hurley Blackbreath"] = {9537, 230}
-VGT.bosses[9537] = "Hurley Blackbreath"
-VGT.bosses["Plugger Spazzring"] = {9499, 230}
-VGT.bosses[9499] = "Plugger Spazzring"
-VGT.bosses["Phalanx"] = {9502, 230}
-VGT.bosses[9502] = "Phalanx"
-VGT.bosses["Lord Incendius"] = {9017, 230}
-VGT.bosses[9017] = "Lord Incendius"
-VGT.bosses["Fineous Darkvire"] = {9056, 230}
-VGT.bosses[9056] = "Fineous Darkvire"
-VGT.bosses["Warder Stilgiss"] = {9041, 230}
-VGT.bosses[9041] = "Warder Stilgiss"
-VGT.bosses["Verek"] = {9042, 230}
-VGT.bosses[9042] = "Verek"
-VGT.bosses["Dark Kepper Bethek"] = {9438, 230}
-VGT.bosses[9438] = "Dark Kepper Bethek"
-VGT.bosses["Dark Keeper Ofgut"] = {9442, 230}
-VGT.bosses[9442] = "Dark Keeper Ofgut"
-VGT.bosses["Dark Keeper Pelver"] = {9443, 230}
-VGT.bosses[9443] = "Dark Keeper Pelver"
-VGT.bosses["Dark Keeper Uggel"] = {9439, 230}
-VGT.bosses[9439] = "Dark Keeper Uggel"
-VGT.bosses["Dark Keeper Vorfalk"] = {9437, 230}
-VGT.bosses[9437] = "Dark Keeper Vorfalk"
-VGT.bosses["Dark Keeper Zimrel"] = {9441, 230}
-VGT.bosses[9441] = "Dark Keeper Zimrel"
-VGT.bosses["Ambassador Flamelash"] = {9156, 230}
-VGT.bosses[9156] = "Ambassador Flamelash"
-VGT.bosses["Hate'rel"] = {9034, 230}
-VGT.bosses[9034] = "Hate'rel"
-VGT.bosses["Anger'rel"] = {9035, 230}
-VGT.bosses[9035] = "Anger'rel"
-VGT.bosses["Vile'rel"] = {9036, 230}
-VGT.bosses[9036] = "Vile'rel"
-VGT.bosses["Gloom'rel"] = {9037, 230}
-VGT.bosses[9037] = "Gloom'rel"
-VGT.bosses["Seeth'rel"] = {9038, 230}
-VGT.bosses[9038] = "Seeth'rel"
-VGT.bosses["Doom'rel"] = {9039, 230}
-VGT.bosses[9039] = "Doom'rel"
-VGT.bosses["Dope'rel"] = {9040, 230}
-VGT.bosses[9040] = "Dope'rel"
-VGT.bosses["Magmus"] = {9938, 230}
-VGT.bosses[9938] = "Magmus"
-VGT.bosses["Princess Moira Bronzebear"] = {8929, 230}
-VGT.bosses[8929] = "Princess Moira Bronzebear"
-VGT.bosses["Emperor Dagran Thaurissan"] = {9019, 230}
-VGT.bosses[9019] = "Emperor Dagran Thaurissan"
+    instance = VGT:RegisterInstance(230, "Blackrock Depths", false, -922.2, -7178.3, 0)
+    instance:AddEncounter(9018, "High Interrogator Gerstahn")
+    instance:AddEncounter(9034, "Hate'rel")
+    instance:AddEncounter(9025, "Lord Roccor")
+    instance:AddEncounter(10096, "High Justice Grimstone")
+    instance:AddEncounter(9035, "Anger'rel")
+    instance:AddEncounter(9443, "Dark Keeper Pelver")
+    instance:AddEncounter(9499, "Plugger Spazzring")
+    instance:AddEncounter(9041, "Warder Stilgiss")
+    instance:AddEncounter(9502, "Phalanx")
+    instance:AddEncounter(9019, "Emperor Dagran Thaurissan")
+    instance:AddEncounter(9017, "Lord Incendius")
+    instance:AddEncounter(8983, "Golem Lord Argelmach")
+    instance:AddEncounter(9016, "Bael'Gar")
+    instance:AddEncounter(9438, "Dark Kepper Bethek")
+    instance:AddEncounter(9441, "Dark Keeper Zimrel")
+    instance:AddEncounter(9938, "Magmus")
+    instance:AddEncounter(9024, "Pyromancer Loregrain")
+    instance:AddEncounter(9439, "Dark Keeper Uggel")
+    instance:AddEncounter(9037, "Gloom'rel")
+    instance:AddEncounter(9156, "Ambassador Flamelash")
+    instance:AddEncounter(9033, "General Angerforge")
+    instance:AddEncounter(9056, "Fineous Darkvire")
+    instance:AddEncounter(9537, "Hurley Blackbreath")
+    instance:AddEncounter(9038, "Seeth'rel")
+    instance:AddEncounter(8929, "Princess Moira Bronzebear")
+    instance:AddEncounter(9319, "Houndmaster Grebmar")
+    instance:AddEncounter(9039, "Doom'rel")
+    instance:AddEncounter(9543, "Ribbly Screwspigot")
+    instance:AddEncounter(9040, "Dope'rel")
+    instance:AddEncounter(9042, "Verek")
+    instance:AddEncounter(9036, "Vile'rel")
+    instance:AddEncounter(9437, "Dark Keeper Vorfalk")
+    instance:AddEncounter(9442, "Dark Keeper Ofgut")
 
-VGT.dungeons["Blackrock Spire"] = 229
-VGT.dungeons[229] = {"Blackrock Spire", -1228.4, -7524.7, 0}
-VGT.bosses["Highlord Omokk"] = {9196, 229}
-VGT.bosses[9196] = "Highlord Omokk"
-VGT.bosses["Shadow Hunter Vosh'gajin"] = {9236, 229}
-VGT.bosses[9236] = "Shadow Hunter Vosh'gajin"
-VGT.bosses["War Master Voone"] = {9237, 229}
-VGT.bosses[9237] = "War Master Voone"
-VGT.bosses["Mother Smolderweb"] = {10596, 229}
-VGT.bosses[10596] = "Mother Smolderweb"
-VGT.bosses["Urok Doomhowl"] = {10584, 229}
-VGT.bosses[10584] = "Urok Doomhowl"
-VGT.bosses["Quartermaster Zigris"] = {9736, 229}
-VGT.bosses[9736] = "Quartermaster Zigris"
-VGT.bosses["Gizrul the Slavener"] = {10268, 229}
-VGT.bosses[10268] = "Gizrul the Slavener"
-VGT.bosses["Halycon"] = {10220, 229}
-VGT.bosses[10220] = "Halycon"
-VGT.bosses["Overlord Wyrmthalak"] = {9568, 229}
-VGT.bosses[9568] = "Overlord Wyrmthalak"
-VGT.bosses["Pyroguard Emberseer"] = {9816, 229}
-VGT.bosses[9816] = "Pyroguard Emberseer"
-VGT.bosses["Goraluk Anvilcrack"] = {10899, 229}
-VGT.bosses[10899] = "Goraluk Anvilcrack"
-VGT.bosses["Jed Runewatcher"] = {10509, 229}
-VGT.bosses[10509] = "Jed Runewatcher"
-VGT.bosses["Warchief Rend Blackhand"] = {10429, 229}
-VGT.bosses[10429] = "Warchief Rend Blackhand"
-VGT.bosses["Gyth"] = {10339, 229}
-VGT.bosses[10339] = "Gyth"
-VGT.bosses["The Beast"] = {10430, 229}
-VGT.bosses[10430] = "The Beast"
-VGT.bosses["General Drakkisath"] = {10363, 229}
-VGT.bosses[10363] = "General Drakkisath"
+    instance = VGT:RegisterInstance(43, "Wailing Caverns", false, -2217.8, -738.5, 1)
+    instance:AddEncounter(3653, "Kresh")
+    instance:AddEncounter(5775, "Verdan the Everliving")
+    instance:AddEncounter(3671, "Lady Anacondra")
+    instance:AddEncounter(3673, "Lord Serpentis")
+    instance:AddEncounter(5912, "Deviate Faerie Dragon")
+    instance:AddEncounter(3670, "Lord Pythas")
+    instance:AddEncounter(3654, "Mutanus the Devourer")
+    instance:AddEncounter(3674, "Skum")
+    instance:AddEncounter(3669, "Lord Cobrahn")
 
-VGT.dungeons["Scholomance"] = 289
-VGT.dungeons[289] = {"Scholomance", -2553.1, 1273.9, 0}
-VGT.bosses["Kirtonos the Herald"] = {10506, 289}
-VGT.bosses[10506] = "Kirtonos the Herald"
-VGT.bosses["Jandice Barov"] = {10503, 289}
-VGT.bosses[10503] = "Jandice Barov"
-VGT.bosses["Rattlegore"] = {11622, 289}
-VGT.bosses[11622] = "Rattlegore"
-VGT.bosses["Marduk Blackpool"] = {10433, 289}
-VGT.bosses[10433] = "Marduk Blackpool"
-VGT.bosses["Vectus"] = {10432, 289}
-VGT.bosses[10432] = "Vectus"
-VGT.bosses["Ras Frostwhisper"] = {10508, 289}
-VGT.bosses[10508] = "Ras Frostwhisper"
-VGT.bosses["Instructor Malicia"] = {10505, 289}
-VGT.bosses[10505] = "Instructor Malicia"
-VGT.bosses["Doctor Theolen Krastinov"] = {11261, 289}
-VGT.bosses[11261] = "Doctor Theolen Krastinov"
-VGT.bosses["Lorekeeper Polkelt"] = {10901, 289}
-VGT.bosses[10901] = "Lorekeeper Polkelt"
-VGT.bosses["The Ravenian"] = {10507, 289}
-VGT.bosses[10507] = "The Ravenian"
-VGT.bosses["Lord Alexei Barov"] = {10504, 289}
-VGT.bosses[10504] = "Lord Alexei Barov"
-VGT.bosses["Lady Illucia Barov"] = {10502, 289}
-VGT.bosses[10502] = "Lady Illucia Barov"
-VGT.bosses["Darkmaster Gandling"] = {1853, 289}
-VGT.bosses[1853] = "Darkmaster Gandling"
+    instance = VGT:RegisterInstance(70, "Uldaman", false, -2954.6, -6066.3, 0)
+    instance:AddEncounter(7228, "Ironaya")
+    instance:AddEncounter(7023, "Obsidian Sentinel")
+    instance:AddEncounter(6910, "Revelosh")
+    instance:AddEncounter(7291, "Galgann Firehammer")
+    instance:AddEncounter(7206, "Ancient Stone Keeper")
+    instance:AddEncounter(6906, "Baelog")
+    instance:AddEncounter(4854, "Grimlok")
+    instance:AddEncounter(2748, "Archaedas")
 
-VGT.dungeons["Stratholme"] = 329
-VGT.dungeons[329] = {"Stratholme", -4048.3, 3233.1, 0}
-VGT.bosses["Fras Siabi"] = {11058, 329}
-VGT.bosses[11058] = "Fras Siabi"
-VGT.bosses["Skul"] = {10393, 329}
-VGT.bosses[10393] = "Skul"
-VGT.bosses["Hearthsinger Forresten"] = {10558, 329}
-VGT.bosses[10558] = "Hearthsinger Forresten"
-VGT.bosses["The Unforgiven"] = {10516, 329}
-VGT.bosses[10516] = "The Unforgiven"
-VGT.bosses["Postmaster Malown"] = {11143, 329}
-VGT.bosses[11143] = "Postmaster Malown"
-VGT.bosses["Timmy the Cruel"] = {10808, 329}
-VGT.bosses[10808] = "Timmy the Cruel"
-VGT.bosses["Malor the Zealous"] = {11032, 329}
-VGT.bosses[11032] = "Malor the Zealous"
-VGT.bosses["Cannon Master Willey"] = {10997, 329}
-VGT.bosses[10997] = "Cannon Master Willey"
-VGT.bosses["Crimson Hammersmith"] = {11120, 329}
-VGT.bosses[11120] = "Crimson Hammersmith"
-VGT.bosses["Archivist Galford"] = {10811, 329}
-VGT.bosses[10811] = "Archivist Galford"
-VGT.bosses["Balnazzar"] = {10813, 329}
-VGT.bosses[10813] = "Balnazzar"
-VGT.bosses["Magistrate Barthilas"] = {10435, 329}
-VGT.bosses[10435] = "Magistrate Barthilas"
-VGT.bosses["Stonespine"] = {10809, 329}
-VGT.bosses[10809] = "Stonespine"
-VGT.bosses["Nerub'enkan"] = {10437, 329}
-VGT.bosses[10437] = "Nerub'enkan"
-VGT.bosses["Black Guard Swordsmith"] = {11121, 329}
-VGT.bosses[11121] = "Black Guard Swordsmith"
-VGT.bosses["Maleki the Pallid"] = {10438, 329}
-VGT.bosses[10438] = "Maleki the Pallid"
-VGT.bosses["Baroness Anastari"] = {10436, 329}
-VGT.bosses[10436] = "Baroness Anastari"
-VGT.bosses["Ramstein the Gorger"] = {10439, 329}
-VGT.bosses[10439] = "Ramstein the Gorger"
-VGT.bosses["Baron Rivendare"] = {10440, 329}
-VGT.bosses[10440] = "Baron Rivendare"
+    instance = VGT:RegisterInstance(36, "The Deadmines", false, 1675.9, -11208.7, 0)
+    instance:AddEncounter(645, "Cookie")
+    instance:AddEncounter(642, "Sneed's Shredder")
+    instance:AddEncounter(1763, "Gilnid")
+    instance:AddEncounter(639, "Edwin VanCleef")
+    instance:AddEncounter(3586, "Miner Johnson")
+    instance:AddEncounter(646, "Mr. Smite")
+    instance:AddEncounter(647, "Captain Greenskin")
+    instance:AddEncounter(644, "Rhahk'Zor")
 
-VGT.dungeons["Dire Maul"] = 429
-VGT.dungeons[429] = {"Dire Maul", 1078.4, -3520.2, 1}
-VGT.bosses["Pusillin"] = {14354, 429}
-VGT.bosses[14354] = "Pusillin"
-VGT.bosses["Lehtendris"] = {14327, 429}
-VGT.bosses[14327] = "Lehtendris"
-VGT.bosses["Hydrospawn"] = {13280, 429}
-VGT.bosses[13280] = "Hydrospawn"
-VGT.bosses["Zevrim Thornhoof"] = {11490, 429}
-VGT.bosses[11490] = "Zevrim Thornhoof"
-VGT.bosses["Alzzin the Wildshaper"] = {11492, 429}
-VGT.bosses[11492] = "Alzzin the Wildshaper"
-VGT.bosses["Guard Mol'dar"] = {14326, 429}
-VGT.bosses[14326] = "Guard Mol'dar"
-VGT.bosses["Stomper Kreeg"] = {14322, 429}
-VGT.bosses[14322] = "Stomper Kreeg"
-VGT.bosses["Guard Fengus"] = {14321, 429}
-VGT.bosses[14321] = "Guard Fengus"
-VGT.bosses["Guard Slip'kik"] = {14323, 429}
-VGT.bosses[14323] = "Guard Slip'kik"
-VGT.bosses["Captain Kromcrush"] = {14325, 429}
-VGT.bosses[14325] = "Captain Kromcrush"
-VGT.bosses["Cho'Rush the Observer"] = {14324, 429}
-VGT.bosses[14324] = "Cho'Rush the Observer"
-VGT.bosses["King Gordok"] = {11501, 429}
-VGT.bosses[11501] = "King Gordok"
-VGT.bosses["Tendris Warpwood"] = {11489, 429}
-VGT.bosses[11489] = "Tendris Warpwood"
-VGT.bosses["Magister Kalendris"] = {11487, 429}
-VGT.bosses[11487] = "Magister Kalendris"
-VGT.bosses["Tsu'zee"] = {11467, 429}
-VGT.bosses[11467] = "Tsu'zee"
-VGT.bosses["Illyanna Ravenoak"] = {11488, 429}
-VGT.bosses[11488] = "Illyanna Ravenoak"
-VGT.bosses["Immol'thar"] = {11496, 429}
-VGT.bosses[11496] = "Immol'thar"
-VGT.bosses["Prince Tortheldrin"] = {11486, 429}
-VGT.bosses[11486] = "Prince Tortheldrin"
-VGT.bosses["Lord Hel'nurath"] = {14506, 429}
-VGT.bosses[14506] = "Lord Hel'nurath"
+    instance = VGT:RegisterInstance(329, "Stratholme", false, -4048.3, 3233.1, 0)
+    instance:AddEncounter(10811, "Archivist Galford")
+    instance:AddEncounter(10440, "Baron Rivendare")
+    instance:AddEncounter(10809, "Stonespine")
+    instance:AddEncounter(10437, "Nerub'enkan")
+    instance:AddEncounter(10436, "Baroness Anastari")
+    instance:AddEncounter(11121, "Black Guard Swordsmith")
+    instance:AddEncounter(10516, "The Unforgiven")
+    instance:AddEncounter(10997, "Cannon Master Willey")
+    instance:AddEncounter(11143, "Postmaster Malown")
+    instance:AddEncounter(11058, "Fras Siabi")
+    instance:AddEncounter(10808, "Timmy the Cruel")
+    instance:AddEncounter(10813, "Balnazzar")
+    instance:AddEncounter(10558, "Hearthsinger Forresten")
+    instance:AddEncounter(11120, "Crimson Hammersmith")
+    instance:AddEncounter(10438, "Maleki the Pallid")
+    instance:AddEncounter(10439, "Ramstein the Gorger")
+    instance:AddEncounter(10435, "Magistrate Barthilas")
+    instance:AddEncounter(11032, "Malor the Zealous")
+    instance:AddEncounter(10393, "Skul")
+
+    instance = VGT:RegisterInstance(289, "Scholomance", false, -2553.1, 1273.9, 0)
+    instance:AddEncounter(10503, "Jandice Barov")
+    instance:AddEncounter(10507, "The Ravenian")
+    instance:AddEncounter(10502, "Lady Illucia Barov")
+    instance:AddEncounter(10506, "Kirtonos the Herald")
+    instance:AddEncounter(10504, "Lord Alexei Barov")
+    instance:AddEncounter(10433, "Marduk Blackpool")
+    instance:AddEncounter(10432, "Vectus")
+    instance:AddEncounter(11261, "Doctor Theolen Krastinov")
+    instance:AddEncounter(10508, "Ras Frostwhisper")
+    instance:AddEncounter(10901, "Lorekeeper Polkelt")
+    instance:AddEncounter(11622, "Rattlegore")
+    instance:AddEncounter(10505, "Instructor Malicia")
+    instance:AddEncounter(1853, "Darkmaster Gandling")
+
+    instance = VGT:RegisterInstance(209, "Zul'Farrak", false, -2890.6, -6795.6, 1)
+    instance:AddEncounter(10080, "Sandarr Dunereaver")
+    instance:AddEncounter(7795, "Hydromancer Velratha")
+    instance:AddEncounter(8127, "Antu'sul")
+    instance:AddEncounter(7604, "Sergeant Bly")
+    instance:AddEncounter(7797, "Ruuzlu")
+    instance:AddEncounter(7272, "Theka the Martyr")
+    instance:AddEncounter(10081, "Dustwraith")
+    instance:AddEncounter(7796, "Nekrum Gutchewer")
+    instance:AddEncounter(7271, "Witch Doctor Zum'rah")
+    instance:AddEncounter(7275, "Shadowpriest Sezz'ziz")
+    instance:AddEncounter(7267, "Chief Ukorz Sandscalp")
+    instance:AddEncounter(10082, "Zerills")
+
+    instance = VGT:RegisterInstance(349, "Maraudon", false, 2614.2, -1468.2, 1)
+    instance:AddEncounter(13282, "Noxxion")
+    instance:AddEncounter(12258, "Razorlash")
+    instance:AddEncounter(12225, "Celebras the Cursed")
+    instance:AddEncounter(13596, "Rotgrip")
+    instance:AddEncounter(12201, "Princess Theradas")
+    instance:AddEncounter(13601, "Tinkerer Gizlock")
+    instance:AddEncounter(12203, "Landslide")
+    instance:AddEncounter(12236, "Lord Vyletongue")
+
+    instance = VGT:RegisterInstance(90, "Gnomeregan", false, 927.7, -5162.6, 0)
+    instance:AddEncounter(6229, "Crowd Pummeler 9-60")
+    instance:AddEncounter(7800, "Mekgineer Thermaplugg")
+    instance:AddEncounter(6235, "Electrocutioner 6000")
+    instance:AddEncounter(6228, "Dark Iron Ambassador")
+    instance:AddEncounter(7361, "Grubbis")
+    instance:AddEncounter(7079, "Viscous Fallout")
+
+    instance = VGT:RegisterInstance(129, "Razorfen Downs", false, -2524.2, -4659.6, 1)
+    instance:AddEncounter(7357, "Mordresh Fire Eye")
+    instance:AddEncounter(7354, "Ragglesnout")
+    instance:AddEncounter(7358, "Amnennar the Coldbringer")
+    instance:AddEncounter(7355, "Tuten'kash")
+    instance:AddEncounter(8567, "Glutton")
+    instance:AddEncounter(7356, "Plaguemaw the Rotting")
+end
 
 --special thanks to:
 -- Grogazm, Puggly, Dirka, Celestine, Diebin, Lirah, Kählan, Deaddreamer, Hangingshoe
