@@ -47,7 +47,7 @@ function VGT.LootListTracker:Print()
 end
 
 local function CreateTrackingRow(parent, showBackdrop)
-  local root = CreateFrame("Frame", nil, parent)
+  local root = CreateFrame("Frame", nil, parent, BackdropTemplateMixin and "BackdropTemplate")
   root:SetHeight(48)
 
   if showBackdrop then
@@ -152,7 +152,8 @@ end
 
 function VGT.LootListTracker:Open()
   if not LootListTrackerFrame then
-    LootListTrackerFrame = CreateFrame("Frame", "LootListTrackerFrame", UIParent)
+    LootListTrackerFrame =
+      CreateFrame("Frame", "LootListTrackerFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     LootListTrackerFrame:SetFrameStrata("DIALOG")
     LootListTrackerFrame:SetSize(VGT.OPTIONS.LOOTLIST.Width, VGT.OPTIONS.LOOTLIST.Height)
     LootListTrackerFrame:SetPoint(
@@ -248,7 +249,8 @@ function VGT.LootListTracker:Open()
       end
     )
 
-    LootListTrackerFrame.Tracked = CreateFrame("Frame", nil, LootListTrackerFrame)
+    LootListTrackerFrame.Tracked =
+      CreateFrame("Frame", nil, LootListTrackerFrame, BackdropTemplateMixin and "BackdropTemplate")
     LootListTrackerFrame.Tracked:SetPoint("RIGHT", raidStartButton, "LEFT", -padding, -padding)
     LootListTrackerFrame.Tracked:SetPoint("LEFT", padding, padding)
     LootListTrackerFrame.Tracked:SetPoint("TOP", -padding, -padding)
