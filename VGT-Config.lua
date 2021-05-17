@@ -36,6 +36,7 @@ local function DefaultConfig(options)
   options.LOOTLIST.Width = default(options.LOOTLIST.Width, 300)
   options.LOOTLIST.Height = default(options.LOOTLIST.Height, 150)
   options.LOOTLIST.Point = default(options.LOOTLIST.Point, "CENTER")
+  options.MINIMAP = default(options.MINIMAP, {hide = false})
   return options
 end
 
@@ -60,56 +61,44 @@ end
 local options = {
   type = "group",
   args = {
-    enable = {
-      name = "Enable",
-      desc = "REQUIRES RELOAD",
-      type = "toggle",
-      set = function(_, val)
-        VGT.OPTIONS.enabled = val
-      end,
-      get = function(_)
-        return VGT.OPTIONS.enabled
-      end
-    },
-    vgt_logging = {
-      name = "VGT-Logging",
+    general = {
+      name = "General",
       type = "group",
+      order = 1,
       args = {
         enable = {
           name = "Enable",
+          desc = "REQUIRES RELOAD",
           type = "toggle",
+          order = 0,
           set = function(_, val)
-            VGT.OPTIONS.LOG.enabled = val
+            VGT.OPTIONS.enabled = val
           end,
           get = function(_)
-            return VGT.OPTIONS.LOG.enabled
+            return VGT.OPTIONS.enabled
           end
         },
-        log_level = {
-          name = "Log Level",
-          desc = "verbosity of the addon",
-          type = "select",
-          values = {
-            VGT.LOG_LEVEL.ALL,
-            VGT.LOG_LEVEL.TRACE,
-            VGT.LOG_LEVEL.DEBUG,
-            VGT.LOG_LEVEL.INFO,
-            VGT.LOG_LEVEL.WARN,
-            VGT.LOG_LEVEL.ERROR,
-            VGT.LOG_LEVEL.SYSTEM,
-            VGT.LOG_LEVEL.OFF
-          },
+        minimap = {
+          name = "Show Minimap Button",
+          type = "toggle",
+          order = 1,
           set = function(_, val)
-            VGT.OPTIONS.LOG.logLevel = val
+            if val then
+              VGT.MinimapIcon:Show(VGT.Name)
+              VGT.OPTIONS.MINIMAP.hide = false
+            else
+              VGT.MinimapIcon:Hide(VGT.Name)
+              VGT.OPTIONS.MINIMAP.hide = true
+            end
           end,
           get = function(_)
-            return VGT.OPTIONS.LOG.logLevel
+            return not VGT.OPTIONS.MINIMAP.hide
           end
         }
       }
     },
     vgt_map = {
-      name = "VGT-Map",
+      name = "Guild Map",
       type = "group",
       args = {
         enable = {
@@ -242,6 +231,43 @@ local options = {
           end,
           get = function(_)
             return VGT.OPTIONS.LOOTLIST.ignoredItems
+          end
+        }
+      }
+    },
+    vgt_logging = {
+      name = "Logging",
+      type = "group",
+      args = {
+        enable = {
+          name = "Enable",
+          type = "toggle",
+          set = function(_, val)
+            VGT.OPTIONS.LOG.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOG.enabled
+          end
+        },
+        log_level = {
+          name = "Log Level",
+          desc = "verbosity of the addon",
+          type = "select",
+          values = {
+            VGT.LOG_LEVEL.ALL,
+            VGT.LOG_LEVEL.TRACE,
+            VGT.LOG_LEVEL.DEBUG,
+            VGT.LOG_LEVEL.INFO,
+            VGT.LOG_LEVEL.WARN,
+            VGT.LOG_LEVEL.ERROR,
+            VGT.LOG_LEVEL.SYSTEM,
+            VGT.LOG_LEVEL.OFF
+          },
+          set = function(_, val)
+            VGT.OPTIONS.LOG.logLevel = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOG.logLevel
           end
         }
       }

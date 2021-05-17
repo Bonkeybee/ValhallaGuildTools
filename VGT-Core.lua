@@ -6,6 +6,7 @@ LibStub("AceAddon-3.0"):NewAddon(VGT, VGT_ADDON_NAME, "AceComm-3.0", "AceTimer-3
 VGT.VERSION = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
 VGT.HBD = LibStub("HereBeDragons-2.0")
 VGT.HBDP = LibStub("HereBeDragons-Pins-2.0")
+VGT.MinimapIcon = LibStub("LibDBIcon-1.0")
 VGT.Name = VGT_ADDON_NAME
 
 -- ############################################################
