@@ -26,6 +26,7 @@ Libs\AceTab-3.0\AceTab-3.0.xml
 Libs\AceSerializer-3.0\AceSerializer-3.0.xml
 Libs\HereBeDragons\HereBeDragons-2.0.lua
 Libs\HereBeDragons\HereBeDragons-Pins-2.0.lua
+Libs\json.lua
 
 VGT-Core.lua
 VGT-Utility.lua
@@ -36,3 +37,5 @@ VGT-UserFinder.lua
 VGT-DungeonData.lua
 VGT-Map.lua
 VGT-SlashCommand.lua
+VGT-LootList.lua
+VGT-LootListTracker.lua

@@ -29,6 +29,13 @@ local function DefaultConfig(options)
   end
   options.FUN = default(options.FUN, {})
   options.FUN.enabled = default(options.FUN.enabled, true)
+  options.LOOTLIST = default(options.LOOTLIST, {enabled = true, autoMasterLoot = true})
+  options.LOOTLIST.ignoredItems = default(options.LOOTLIST.ignoredItems, "")
+  options.LOOTLIST.X = default(options.LOOTLIST.X, 0)
+  options.LOOTLIST.Y = default(options.LOOTLIST.Y, 0)
+  options.LOOTLIST.Width = default(options.LOOTLIST.Width, 300)
+  options.LOOTLIST.Height = default(options.LOOTLIST.Height, 150)
+  options.LOOTLIST.Point = default(options.LOOTLIST.Point, "CENTER")
   return options
 end
 
@@ -169,6 +176,72 @@ local options = {
           end,
           set = function(_, val)
             VGT.OPTIONS.MAP.mode = val
+          end
+        }
+      }
+    },
+    vgt_lootlist = {
+      name = "Looting",
+      type = "group",
+      args = {
+        enable = {
+          order = 0,
+          name = "Enable",
+          type = "toggle",
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.enabled
+          end
+        },
+        autoMasterLoot = {
+          order = 1,
+          name = "Auto Master-Loot",
+          type = "toggle",
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.autoMasterLoot = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.autoMasterLoot
+          end
+        },
+        masterLootTarget = {
+          order = 2,
+          name = "Master-Loot Target",
+          desc = "Who to send items to when auto-looting. Leave blank to send to yourself.",
+          type = "input",
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.masterLootTarget = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.masterLootTarget
+          end
+        },
+        trackEverything = {
+          order = 3,
+          name = "Track Everything",
+          desc = "When checked, all loot will be tracked regardless of where it was looted or what its quality is.",
+          type = "toggle",
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.trackEverything = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.trackEverything
+          end
+        },
+        ignoredItems = {
+          order = 4,
+          name = "Ignored items",
+          desc = "A list of item links to ignore while auto-looting. Shift-click an item to add. Separate each entry with a semicolon (;)",
+          type = "input",
+          width = "full",
+          multiline = 5,
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.ignoredItems = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.ignoredItems
           end
         }
       }
