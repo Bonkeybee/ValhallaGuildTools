@@ -1,4 +1,3 @@
-local _, VGT = ...
 local UserFinder = {Results = {}, EnumeratingUsers = false}
 VGT.UserFinder = UserFinder
 
@@ -12,8 +11,6 @@ local function OnCoreMessageReceived(message, sender)
     UserFinder.Results[sender] = string.sub(message, RESPOND_VERSION_MESSAGE:len() + 1)
   end
 end
-
-VGT.CoreMessageReceived:Add(OnCoreMessageReceived)
 
 function UserFinder:EnumerateUsers(callback, wait)
   if (self.EnumeratingUsers) then
@@ -112,3 +109,5 @@ function UserFinder:PrintUserCount(by)
     end
   )
 end
+
+VGT:RegisterCoreMessageHandler(OnCoreMessageReceived);
