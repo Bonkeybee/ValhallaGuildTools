@@ -158,7 +158,11 @@ local createNewPin = function()
   pin:SetWidth(PIN_SIZE)
   pin:SetHeight(PIN_SIZE)
   local texture = pin:CreateTexture(nil, BACKGROUND)
-  texture:SetTexCoord(0.51, 0.76, 0.00, 0.26) -- Green
+  local width = 0.07
+  local height = 0.30
+  local x = 0.53
+  local y = 0.10
+  texture:SetTexCoord(x, x+width, y, y+height) -- Green
   texture:SetAllPoints()
   pin:EnableMouse(true)
   pin.Texture = texture
@@ -316,15 +320,23 @@ end
 --end
 
 local updatePinColors = function(name, player)
+  local width = 0.07
+  local height = 0.30
   if (player.Targeted) then
-    player.MinimapTexture:SetTexCoord(0.26, 0.51, 0.00, 0.26) -- Red
-    player.WorldmapTexture:SetTexCoord(0.26, 0.51, 0.00, 0.26) -- Red
+    local x = 0.28
+    local y = 0.10
+    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Red
+    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Red
   elseif (UnitInParty(name)) then
-    player.MinimapTexture:SetTexCoord(0.00, 0.26, 0.26, 0.51) -- Blue
-    player.WorldmapTexture:SetTexCoord(0.00, 0.26, 0.26, 0.51) -- Blue
+    local x = 0.03
+    local y = 0.10
+    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Blue
+    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Blue
   else
-    player.MinimapTexture:SetTexCoord(0.51, 0.76, 0.00, 0.26) -- Green
-    player.WorldmapTexture:SetTexCoord(0.51, 0.76, 0.00, 0.26) -- Green
+    local x = 0.53
+    local y = 0.10
+    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Green
+    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Green
   end
 end
 
