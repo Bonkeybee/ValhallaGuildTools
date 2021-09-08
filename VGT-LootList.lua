@@ -216,7 +216,7 @@ end
 
 local function AutoMasterLoot()
   local target = GetAutoMasterLootTargetName()
-  local ignores = {strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "")}
+  local ignores = {strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or ""), "|cffa335ee|Hitem:30183::::::::70:::::::::|h[Nether Vortex]|h|r", "|cffff8000|Hitem:22726::::::::70:::::::::|h[Splinter of Atiesh]|h|r"}
   for lootIndex = 1, GetNumLootItems() do
     local _, _, _, _, _, locked = GetLootSlotInfo(lootIndex)
     if (not locked) then
