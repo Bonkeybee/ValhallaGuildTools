@@ -10,7 +10,9 @@ function VGT.LootListTracker:Add(guid, name, link, count)
       local items = {}
 
       for _, item in pairs(self.Items) do
-        table.insert(items, item:GetItemID())
+        for _ = 1, item.Count do
+          table.insert(items, item:GetItemID())
+        end
       end
 
       VGT:ShowKillExport(items, self.Characters)
