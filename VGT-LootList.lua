@@ -197,11 +197,11 @@ local function ExportItems()
 end
 
 local function ShouldIgnore(ignores, link)
+  local itemName, _ = GetItemInfo(link)
   for _, value in pairs(ignores) do
-    if (value) then
-      if (value == link) then
-        return true
-      end
+    local ignoreName, _ = GetItemInfo(value)
+    if (ignoreName == itemName) then
+      return true
     end
   end
 end
@@ -216,7 +216,9 @@ end
 
 local function AutoMasterLoot()
   local target = GetAutoMasterLootTargetName()
-  local ignores = {strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or ""), "|cffa335ee|Hitem:30183::::::::70:::::::::|h[Nether Vortex]|h|r", "|cffff8000|Hitem:22726::::::::70:::::::::|h[Splinter of Atiesh]|h|r"}
+  local ignores = {strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "")}
+  tinsert(ignores, 30183) -- Nether Vortex
+  tinsert(ignores, 22726) -- Splinter of Atiesh
   for lootIndex = 1, GetNumLootItems() do
     local _, _, _, _, _, locked = GetLootSlotInfo(lootIndex)
     if (not locked) then
