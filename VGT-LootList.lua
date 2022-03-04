@@ -172,6 +172,26 @@ local function GetSameItemCount(link)
   return count
 end
 
+local function ShouldTrack(link)
+  if (not link) then
+    return false
+  end
+
+  if (VGT.OPTIONS.LOOTLIST.trackEverything) then
+    return true
+  end
+
+  local _, _, itemQuality, _, _, _, _, _, _, _, _, classID = GetItemInfo(link)
+
+  if (itemQuality == 4) then --epic only
+    return classID == 2 or --weapon
+      classID == 4 or --armor/jewelry
+      classID == 15 --misc (tokens)
+  end
+
+  return false
+end
+
 local function ExportItems()
   local guid, _ = GetLootSourceInfo(1)
   local instanceId = select(4, strsplit("-", guid or ""))
@@ -187,9 +207,8 @@ local function ExportItems()
     end
 
     for i = 1, GetNumLootItems() do
-      local _, _, _, _, quality = GetLootSlotInfo(i)
       local link = GetLootSlotLink(i)
-      if (link and (quality == 4 or VGT.OPTIONS.LOOTLIST.trackEverything)) then
+      if (ShouldTrack(link)) then
         VGT.LootListTracker:Add(guid, targetName, link, GetSameItemCount(link) or 1)
       end
     end
