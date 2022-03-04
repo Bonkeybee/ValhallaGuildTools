@@ -1,10 +1,19 @@
 VGT.LootListTracker = {_entries = {}}
 
+function VGT.LootListTracker:FindEntry(guid)
+  for i = 1, #self._entries do
+    local entry = self._entries[i]
+    if entry and entry.Id == guid then
+      return i, entry
+    end
+  end
+end
+
 function VGT.LootListTracker:Add(guid, name, link, count)
-  local entry = self._entries[guid]
+  local _, entry = self:FindEntry(guid) --self._entries[guid]
 
   if (not entry) then
-    entry = {Name = name, Items = {}, Characters = VGT:GetCharacters()}
+    entry = {Name = name, Id = guid, Items = {}, Characters = VGT:GetCharacters()}
 
     function entry:Export()
       local items = {}
@@ -18,7 +27,7 @@ function VGT.LootListTracker:Add(guid, name, link, count)
       VGT:ShowKillExport(items, self.Characters)
     end
 
-    self._entries[guid] = entry
+    table.insert(self._entries, entry)
   end
 
   local item = entry.Items[link]
@@ -69,8 +78,11 @@ local function CreateTrackingRow(parent, showBackdrop)
   root.RemoveButton:SetScript(
     "OnClick",
     function()
-      if root.Guid then
-        VGT.LootListTracker._entries[root.Guid] = nil
+      if root.Entry then
+        local index, _ = VGT.LootListTracker:FindEntry(root.Entry.Id)
+        if index > 0 then
+          table.remove(VGT.LootListTracker._entries, index)
+        end
         VGT.LootListTracker:UpdateTracked()
       end
     end
@@ -95,8 +107,7 @@ local function CreateTrackingRow(parent, showBackdrop)
   root.ItemText:SetPoint("TOPRIGHT", root.RemoveButton, "TOPLEFT")
   root.ItemText:SetText("Boss goes here")
 
-  function root:Track(guid, entry)
-    self.Guid = guid
+  function root:Track(entry)
     self.Entry = entry
     if entry then
       self.ItemText:SetText(entry.Name)
@@ -109,20 +120,12 @@ local function CreateTrackingRow(parent, showBackdrop)
   return root
 end
 
-local function TableCount(table)
-  local count = 0
-  for _, _ in pairs(table) do
-    count = count + 1
-  end
-  return count
-end
-
 function VGT.LootListTracker:UpdateTracked()
   if (not LootListTrackerFrame) then
     return
   end
 
-  local count = TableCount(VGT.LootListTracker._entries)
+  local count = #self._entries
   local existingRows = #LootListTrackerFrame.Tracked
 
   for i = count + 1, existingRows do
@@ -141,11 +144,10 @@ function VGT.LootListTracker:UpdateTracked()
     end
   end
 
-  local i = 1
-  for guid, entry in pairs(VGT.LootListTracker._entries) do
+  for i, entry in ipairs(VGT.LootListTracker._entries) do
     local row = LootListTrackerFrame.Tracked[i]
     row:Show()
-    row:Track(guid, entry)
+    row:Track(entry)
     i = i + 1
   end
 
