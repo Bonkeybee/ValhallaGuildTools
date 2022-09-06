@@ -1,10 +1,12 @@
 local StaticPopupDialogs, StaticPopup_Show = StaticPopupDialogs, StaticPopup_Show
+---@diagnostic disable-next-line: undefined-field
 local gfind = string.gfind
 
 do
   local function NOP()
     return
   end
+
   local PopupId = "VLL_EXPORT"
 
   function VGT:ExportPopup(title, export)
@@ -36,6 +38,7 @@ do
         button:SetWidth(200)
         button:SetPoint("CENTER", editBox, "CENTER", 0, -30)
       end
+
       StaticPopupDialogs[PopupId] = popup
     end
 
@@ -45,50 +48,13 @@ do
   end
 end
 
--- https://wowpedia.fandom.com/wiki/UiMapID
-VGT.ZoneSetup = {
-  magtheridonslair = {100, "Hellfire Peninsula", 331, "Magtheridon's Lair"},
-  gruulslair = {105, "Blade's Edge Mountains", 330, "Gruul's Lair"},
-  serpentshrinecavern = {102, "Zangarmarsh", 332, "Serpentshrine Cavern"},
-  tempestkeep = {109, "Netherstorm", 334, "Tempest Keep", 1555},
-  blacktemple = {104, "Shadowmoon Valley", 759, "Black Temple"},
-  hyjalsummit = {
-    329,
-    "Hyjal Summit",
-    1556,
-    74,
-    "Caverns of Time - Timeless Tunnel",
-    75,
-    "Caverns of Time - Caverns of Time",
-    71,
-    "Tanaris"
-  },
-  sunwellplateau = {
-    122,
-    "Isle of Quel'Danas",
-    335,
-    "Sunwell Plateau - Sunwell Plateau",
-    336,
-    "Sunwell Plateau - Shrine of the Eclipse",
-    973,
-    "The Sunwell"
-  }
-}
-
-VGT.ZoneLookup = {}
-
-for instanceId, zoneNames in pairs(VGT.ZoneSetup) do
-  for _, zone in pairs(zoneNames) do
-    VGT.ZoneLookup[zone] = instanceId
-  end
-end
-
 VGT.ClassLookup = {
   [1] = 1, -- Warrior
   [2] = 2, -- Paladin
   [3] = 4, -- Hunter
   [4] = 8, -- Rogue
   [5] = 16, -- Priest
+  [6] = 32, -- Death Knight
   [7] = 64, -- Shaman
   [8] = 128, -- Mage
   [9] = 256, -- Warlock
@@ -103,19 +69,23 @@ VGT.RaceLookup = {
   [11] = 4 -- Draenei
 }
 
+-- https://wowpedia.fandom.com/wiki/InstanceID
 VGT.TrackedInstances = {
-  [534] = true, -- Hyjal Summit
-  [544] = true, -- Magtheridon's Lair
-  [548] = true, -- Serpentshrine Cavern
-  [550] = true, -- Tempest Keep
-  [564] = true, -- Black Temple
-  [565] = true, -- Gruul's Lair
-  [580] = true -- Sunwell Plateau
-}
+  [624] = true, -- Vault of Archavon
 
-function VGT:GetRaidId()
-  return self.ZoneLookup[C_Map.GetBestMapForUnit("player")] or self.ZoneLookup[GetRealZoneText()] or ""
-end
+  [533] = true, -- Naxxramas
+  [615] = true, -- Obsidian Sanctum
+  [616] = true, -- Eye of Eternity
+
+  [603] = true, -- Ulduar
+
+  [649] = true, -- Trial of the Crusader
+  [249] = true, -- Onyxia's Lair
+
+  [631] = true, -- Icecrown Citadel
+
+  [724] = true -- Ruby Sanctum
+}
 
 function VGT:GetCharacters()
   local characters = {}
@@ -145,7 +115,7 @@ function VGT:GetCharacters()
 end
 
 function VGT:ExportRaidStart()
-  return json.encode({EncounterId = self:GetRaidId(), Characters = self:GetCharacters()})
+  return json.encode({ Characters = self:GetCharacters() })
 end
 
 function VGT:ShowRaidStartExport()
@@ -153,7 +123,7 @@ function VGT:ShowRaidStartExport()
 end
 
 function VGT:ExportKill(items, characters)
-  return json.encode({Items = items, Characters = characters or self:GetCharacters()})
+  return json.encode({ Items = items, Characters = characters or self:GetCharacters() })
 end
 
 function VGT:ShowKillExport(items, characters)
@@ -181,12 +151,15 @@ local function ShouldTrack(link)
     return true
   end
 
-  local _, _, itemQuality, _, _, _, _, _, _, _, _, classID = GetItemInfo(link)
+  local _, _, itemQuality, _, _, itemType, _, _, _, _, _, classID = GetItemInfo(link)
 
   if (itemQuality == 4) then --epic only
+    if (itemType == "Money") then
+      return false
+    end
     return classID == 2 or --weapon
-      classID == 4 or --armor/jewelry
-      classID == 15 --misc (tokens)
+        classID == 4 or --armor/jewelry
+        classID == 15 --misc (tokens)
   end
 
   return false
@@ -235,8 +208,7 @@ end
 
 local function AutoMasterLoot()
   local target = GetAutoMasterLootTargetName()
-  local ignores = {strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "")}
-  tinsert(ignores, 30183) -- Nether Vortex
+  local ignores = { strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "") }
   tinsert(ignores, 22726) -- Splinter of Atiesh
   for lootIndex = 1, GetNumLootItems() do
     local _, _, _, _, _, locked = GetLootSlotInfo(lootIndex)
