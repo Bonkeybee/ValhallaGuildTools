@@ -11,6 +11,8 @@ VGT:RegisterCoreMessageHandler(function(message, sender)
     
     if cmd == "SR" and id then
         VGT:ShowRollWindow(id, true)
+    elseif cmd == "CR" and VGT.RollWindow then
+        VGT.RollWindow:Hide()
     end
 end)
 
@@ -138,6 +140,15 @@ function VGT:BuildRollWindow()
         if channel then
             SendChatMessage("pass", channel)
         end
+        VGT.RollWindow:Hide()
+    end)
+
+    local closeButton = CreateFrame("Button", nil, self.RollWindow, "UIPanelButtonTemplate")
+    closeButton:SetHeight(24)
+    closeButton:SetText("X")
+    closeButton:SetPoint("LEFT", passButton, "RIGHT")
+    closeButton:Show()
+    closeButton:SetScript("OnClick", function()
         VGT.RollWindow:Hide()
     end)
 end

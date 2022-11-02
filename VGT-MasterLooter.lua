@@ -257,6 +257,14 @@ local function configureItem(creatureId, itemId, itemIndex)
                 end
             end
 
+            local rollButton = AceGUI:Create("Button")
+            rollButton:SetText("Open Roll")
+            rollButton:SetFullWidth(true)
+            rollButton:SetCallback("OnClick", function()
+                VGT.MasterLooter:OpenRoll(creatureId, itemId, itemIndex)
+            end)
+            root.tree:AddChild(rollButton)
+
             local manualAssign = AceGUI:Create("Dropdown")
             manualAssign:SetLabel("Manual Assign")
             root.tree:AddChild(manualAssign)
@@ -271,13 +279,6 @@ local function configureItem(creatureId, itemId, itemIndex)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.MasterLooter.Refresh()
             end)
-
-            local rollButton = AceGUI:Create("Button")
-            rollButton:SetText("Open Roll")
-            rollButton:SetCallback("OnClick", function()
-                VGT.MasterLooter:OpenRoll(creatureId, itemId, itemIndex)
-            end)
-            root.tree:AddChild(rollButton)
         end
     end
 end
@@ -712,6 +713,7 @@ function VGT.MasterLooter:CancelRoll()
         self.Passes = {}
         self.RollWhitelist = nil
         self.Refresh()
+        VGT:SendCoreMessage("CR", "RAID")
         sendMLMessage("Roll for " .. itemData.link .. " cancelled.")
     end
 end
