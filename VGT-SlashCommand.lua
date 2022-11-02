@@ -32,7 +32,7 @@ SlashCmdList["VGT"] = function(message)
   elseif (command == "raidstart") then
     VGT:ShowRaidStartExport()
   elseif (command == "loot") then
-    VGT.LootListTracker:Open()
+    VGT.MasterLooter:Toggle()
   else
     VGT.Log(VGT.LOG_LEVEL.ERROR, "invalid command - type `/vgt help` for a list of commands")
   end

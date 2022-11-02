@@ -1,7 +1,7 @@
 do
   local ldb = LibStub("LibDataBroker-1.1")
   VGT.MinimapButton =
-    ldb:NewDataObject(
+  ldb:NewDataObject(
     VGT.Name,
     {
       type = "data source",
@@ -12,7 +12,11 @@ do
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
         elseif button == "LeftButton" then
-          VGT.LootListTracker:Toggle()
+          if IsControlKeyDown() then
+            VGT.MasterLooter:Toggle()
+          else
+            VGT.MasterLooter:Toggle()
+          end
         end
       end,
       OnTooltipShow = function(tooltip)
@@ -23,6 +27,7 @@ do
         tooltip:AddLine(" ")
         tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Left Click:|r Toggle Loot Master Window")
         tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Right Click:|r Show Options")
+        --tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Ctrl + Left Click:|r Toggle Loot Master Window")
       end
     }
   )

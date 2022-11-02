@@ -88,11 +88,9 @@ VGT.TrackedInstances = {
 }
 
 function VGT:GetCharacters()
-  local characters = {}
-  for i = 1, 40 do
-    local id = "raid" .. i
-    local name, _ = UnitName(id)
 
+  local function insertCharacter(characters, id)
+    local name, _ = UnitName(id)
     if (name) then
       local _, _, raceId = UnitRace(id)
       local gender = UnitSex(id)
@@ -111,6 +109,20 @@ function VGT:GetCharacters()
       end
     end
   end
+
+  local characters = {}
+  if UnitInRaid("player") then
+    for i = 1, 40 do
+      insertCharacter(characters, "raid" .. i)
+    end
+  else
+    insertCharacter(characters, "player")
+    if UnitInParty("player") then
+      for i = 1, 4 do
+        insertCharacter(characters, "party" .. i)
+      end
+    end
+  end
   return characters
 end
 
@@ -119,7 +131,7 @@ function VGT:ExportRaidStart()
 end
 
 function VGT:ShowRaidStartExport()
-  self:ExportPopup("Export Raid Start", self:ExportRaidStart())
+  VGT:ExportPopup("Export Raid Start", VGT:ExportRaidStart())
 end
 
 function VGT:ExportKill(items, characters)
@@ -182,7 +194,10 @@ local function ExportItems()
     for i = 1, GetNumLootItems() do
       local link = GetLootSlotLink(i)
       if (ShouldTrack(link)) then
-        VGT.LootListTracker:Add(guid, targetName, link, GetSameItemCount(link) or 1)
+        local item = Item:CreateFromItemLink(link)
+        item:ContinueOnItemLoad(function()
+          VGT.MasterLooter.Track(guid, item:GetItemID(), item:GetItemName(), link, item:GetItemIcon())
+        end)
       end
     end
   end
@@ -226,7 +241,7 @@ local function AutoMasterLoot()
 end
 
 local function OnLootOpened(_, autoLoot, isFromItem)
-  if (not isFromItem and VGT.OPTIONS.LOOTLIST.enabled) then
+  if not isFromItem then
     local lootmethod, masterlooterPartyID, _ = GetLootMethod()
     if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
       ExportItems()

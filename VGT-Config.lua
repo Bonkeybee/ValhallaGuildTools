@@ -1,4 +1,5 @@
 local loaded = false
+local LSM = LibStub("LibSharedMedia-3.0")
 
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
@@ -33,10 +34,12 @@ local function DefaultConfig(options)
   options.LOOTLIST.ignoredItems = default(options.LOOTLIST.ignoredItems, "")
   options.LOOTLIST.X = default(options.LOOTLIST.X, 0)
   options.LOOTLIST.Y = default(options.LOOTLIST.Y, 0)
-  options.LOOTLIST.Width = default(options.LOOTLIST.Width, 300)
-  options.LOOTLIST.Height = default(options.LOOTLIST.Height, 150)
+  options.LOOTLIST.Width = default(options.LOOTLIST.Width, 400)
+  options.LOOTLIST.Height = default(options.LOOTLIST.Height, 240)
   options.LOOTLIST.Point = default(options.LOOTLIST.Point, "CENTER")
   options.MINIMAP = default(options.MINIMAP, {hide = false})
+  options.AUTOTRADE = default(options.AUTOTRADE, {enabled=true})
+  options.ROLL = default(options.ROLL, {enabled = true, X = 0, Y = 0, Point = "CENTER", Width = 400, Height = 240, sound = "Info" })
   return options
 end
 
@@ -170,23 +173,13 @@ local options = {
       }
     },
     vgt_lootlist = {
-      name = "Looting",
+      name = "Auto Master Looting",
       type = "group",
       args = {
         enable = {
           order = 0,
           name = "Enable",
-          type = "toggle",
-          set = function(_, val)
-            VGT.OPTIONS.LOOTLIST.enabled = val
-          end,
-          get = function(_)
-            return VGT.OPTIONS.LOOTLIST.enabled
-          end
-        },
-        autoMasterLoot = {
-          order = 1,
-          name = "Auto Master-Loot",
+          desc = "When enabled, using auto-loot will work for the Master Looter loot method.",
           type = "toggle",
           set = function(_, val)
             VGT.OPTIONS.LOOTLIST.autoMasterLoot = val
@@ -242,6 +235,7 @@ local options = {
         enable = {
           name = "Enable",
           type = "toggle",
+          desc = "When enabled, addon logs will be sent to the chat window.",
           set = function(_, val)
             VGT.OPTIONS.LOG.enabled = val
           end,
@@ -268,6 +262,43 @@ local options = {
           end,
           get = function(_)
             return VGT.OPTIONS.LOG.logLevel
+          end
+        }
+      }
+    },
+    vgt_roll = {
+      name = "Roll Window",
+      type = "group",
+      args = {
+        enable = {
+          name = "Enable",
+          type = "toggle",
+          desc = "When enabled, master looters opening rolls using VGT will show a roll window for easier rolling and passing.",
+          set = function(_, val)
+            VGT.OPTIONS.ROLL.enabled = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.ROLL.enabled
+          end
+        },
+        log_level = {
+          name = "Sound",
+          desc = "Sound to play when the loot window shows.",
+          type = "select",
+          values = LSM:List("sound"),
+          set = function(_, val)
+            VGT.OPTIONS.ROLL.sound = LSM:List("sound")[val]
+            local sound = LSM:Fetch("sound", VGT.OPTIONS.ROLL.sound, true)
+            if sound then
+              PlaySoundFile(sound, "Master")
+            end
+          end,
+          get = function(_)
+            for key, value in pairs(LSM:List("sound")) do
+              if value == VGT.OPTIONS.ROLL.sound then
+                return key
+              end
+            end
           end
         }
       }

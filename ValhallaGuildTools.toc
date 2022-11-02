@@ -2,10 +2,11 @@
 ## Title: ValhallaGuildTools
 ## Notes: Valhalla Guild Tools
 ## SavedVariables: VGT_OPTIONS
+## SavedVariablesPerCharacter: VGT_MasterLootData
 ## LoadOnDemand: 0
 ## DefaultState: enabled
 ## Author: Bonkeybee
-## Version: 30500.83
+## Version: 30500.84
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -28,6 +29,7 @@ Libs\HereBeDragons\HereBeDragons-Pins-2.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\lib.xml
 Libs\json.lua
+Libs\LibSharedMedia-3.0.lua
 
 VGT-Core.lua
 VGT-Utility.lua
@@ -35,9 +37,12 @@ VGT-Logging.lua
 VGT-Config.lua
 VGT-VersionChecker.lua
 VGT-UserFinder.lua
+VGT-CreatureData.lua
 VGT-DungeonData.lua
 VGT-Map.lua
 VGT-SlashCommand.lua
 VGT-LootList.lua
-VGT-LootListTracker.lua
 VGT-MinimapButton.lua
+VGT-MasterLooter.lua
+VGT-AutoTrade.lua
+VGT-RollWindow.lua
