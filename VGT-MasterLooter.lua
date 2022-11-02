@@ -139,12 +139,12 @@ local function configureEncounter(creatureGuid)
     label:SetText(unitNameFromGuid(creatureGuid))
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
-    root.tree:AddChild(label)
+    root.scroll:AddChild(label)
 
     local spacer = AceGUI:Create("InteractiveLabel")
     spacer:SetFullWidth(true)
     spacer:SetText(" ")
-    root.tree:AddChild(spacer)
+    root.scroll:AddChild(spacer)
 
     local exportButton = AceGUI:Create("Button")
     exportButton:SetText("Export Items")
@@ -165,7 +165,7 @@ local function configureEncounter(creatureGuid)
             end
         end
     )
-    root.tree:AddChild(exportButton)
+    root.scroll:AddChild(exportButton)
 end
 
 local function configureItem(creatureId, itemId, itemIndex)
@@ -192,7 +192,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             GameTooltip:Hide()
         end
     )
-    root.tree:AddChild(label)
+    root.scroll:AddChild(label)
 
     label = AceGUI:Create("InteractiveLabel")
     label:SetFullWidth(true)
@@ -200,12 +200,12 @@ local function configureItem(creatureId, itemId, itemIndex)
     label:SetText(
         itemData.winner and ("|cff00ff00Assigned to " .. itemData.winner .. "|r") or "|cffff0000Unassigned|r"
     )
-    root.tree:AddChild(label)
+    root.scroll:AddChild(label)
 
     local spacer = AceGUI:Create("InteractiveLabel")
     spacer:SetFullWidth(true)
     spacer:SetText(" ")
-    root.tree:AddChild(spacer)
+    root.scroll:AddChild(spacer)
 
     if itemData.winner then
         local unassignButton = AceGUI:Create("Button")
@@ -226,7 +226,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             VGT:SendCoreMessage("UA\001" .. itemData.id, "WHISPER", oldWinner)
             VGT.MasterLooter.Refresh()
         end)
-        root.tree:AddChild(unassignButton)
+        root.scroll:AddChild(unassignButton)
     else
         local rollCreature, rollItem = getRollData()
         
@@ -237,51 +237,51 @@ local function configureItem(creatureId, itemId, itemIndex)
                 stopButton:SetCallback("OnClick", function()
                     VGT.MasterLooter:EndRoll()
                 end)
-                root.tree:AddChild(stopButton)
+                root.scroll:AddChild(stopButton)
 
                 local countdownButton = AceGUI:Create("Button")
                 countdownButton:SetText("5-Second Countdown")
                 countdownButton:SetCallback("OnClick", function()
                     VGT.MasterLooter:CountdownRoll()
                 end)
-                root.tree:AddChild(countdownButton)
+                root.scroll:AddChild(countdownButton)
 
                 local remindButton = AceGUI:Create("Button")
                 remindButton:SetText("Remind Rollers")
                 remindButton:SetCallback("OnClick", function()
                     VGT.MasterLooter:RemindRoll()
                 end)
-                root.tree:AddChild(remindButton)
+                root.scroll:AddChild(remindButton)
 
                 local cancelButton = AceGUI:Create("Button")
                 cancelButton:SetText("Cancel Rolling")
                 cancelButton:SetCallback("OnClick", function()
                     VGT.MasterLooter:CancelRoll()
                 end)
-                root.tree:AddChild(cancelButton)
+                root.scroll:AddChild(cancelButton)
 
                 for i,v in ipairs(VGT.MasterLooter.Rolls) do
                     local label = AceGUI:Create("Label")
                     label:SetText(v.name .. ": " .. v.roll .. "\n")
-                    root.tree:AddChild(label)
+                    root.scroll:AddChild(label)
                 end
         
                 for name,_ in pairs(VGT.MasterLooter.Passes) do
                     local label = AceGUI:Create("Label")
                     label:SetText(name .. ": Pass\n")
-                    root.tree:AddChild(label)
+                    root.scroll:AddChild(label)
                 end
             else
                 local label = AceGUI:Create("Label")
                 label:SetFullWidth(true)
                 label:SetFont(GameFontHighlight:GetFont(), 16)
                 label:SetText("|cffff0000Currently rolling on "..rollItem.name.."|r")
-                root.tree:AddChild(label)
+                root.scroll:AddChild(label)
             
                 local spacer = AceGUI:Create("Label")
                 spacer:SetFullWidth(true)
                 spacer:SetText(" ")
-                root.tree:AddChild(spacer)
+                root.scroll:AddChild(spacer)
             end
         else
             if itemData.standings and #itemData.standings > 0 then
@@ -316,7 +316,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                             VGT.MasterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, standing.Names)
                         end)
                     end
-                    root.tree:AddChild(standingButton)
+                    root.scroll:AddChild(standingButton)
                 end
             end
 
@@ -326,11 +326,11 @@ local function configureItem(creatureId, itemId, itemIndex)
             rollButton:SetCallback("OnClick", function()
                 VGT.MasterLooter:OpenRoll(creatureId, itemId, itemIndex)
             end)
-            root.tree:AddChild(rollButton)
+            root.scroll:AddChild(rollButton)
 
             local manualAssign = AceGUI:Create("Dropdown")
             manualAssign:SetLabel("Manual Assign")
-            root.tree:AddChild(manualAssign)
+            root.scroll:AddChild(manualAssign)
     
             for i, character in ipairs(creatureData.characters) do
                 manualAssign:AddItem(character.Name, character.Name)
@@ -351,7 +351,7 @@ local function configureHome()
     local rsbutton = AceGUI:Create("Button")
     rsbutton:SetText("Raid Start")
     rsbutton:SetCallback("OnClick", VGT.ShowRaidStartExport)
-    root.tree:AddChild(rsbutton)
+    root.scroll:AddChild(rsbutton)
 
     local failText = AceGUI:Create("Label")
     failText:SetText(" ")
@@ -380,17 +380,17 @@ local function configureHome()
         end
     end)
 
-    root.tree:AddChild(importText)
-    root.tree:AddChild(failText)
+    root.scroll:AddChild(importText)
+    root.scroll:AddChild(failText)
 
     local clearButton = AceGUI:Create("Button")
     clearButton:SetText("Clear All")
     clearButton:SetCallback("OnClick", VGT.MasterLooter.ClearAll)
-    root.tree:AddChild(clearButton)
+    root.scroll:AddChild(clearButton)
 end
 
 local function configureSelection(groupId)
-    root.tree:ReleaseChildren()
+    root.scroll:ReleaseChildren()
     VGT.MasterLooter.groupId = groupId
 
     if groupId then
@@ -433,7 +433,7 @@ local function createRoot()
     tree:EnableButtonTooltips(false)
     tree:SetFullWidth(true)
     tree:SetFullHeight(true)
-    tree:SetLayout("Flow")
+    tree:SetLayout("Fill")
     tree:SetAutoAdjustHeight(false)
     tree:SetCallback(
         "OnGroupSelected",
@@ -443,6 +443,11 @@ local function createRoot()
     )
     root:AddChild(tree)
     root.tree = tree
+
+    local scroll = AceGUI:Create("ScrollFrame")
+    scroll:SetLayout("Flow")
+    root.tree:AddChild(scroll)
+    root.scroll = scroll
 
     VGT.MasterLooter.Refresh()
 end
