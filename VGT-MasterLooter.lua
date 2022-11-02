@@ -27,7 +27,7 @@ local function sendMLMessage(message, nowarn)
     if channel then
         SendChatMessage(message, channel)
     else
-        print(msg)
+        print(message)
     end
 end
 
