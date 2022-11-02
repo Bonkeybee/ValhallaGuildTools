@@ -6,7 +6,7 @@ do
     {
       type = "data source",
       text = "Valhalla Guild Tools",
-      icon = "Interface\\Addons\\ValhallaGuildTools\\Valhalla.tga",
+      icon = "Interface\\Addons\\ValhallaGuildTools\\Valhalla.wotlk.tga",
       OnClick = function(_, button)
         if button == "RightButton" then
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
@@ -32,10 +32,17 @@ do
     }
   )
 
+  function VGT.MinimapButton:UpdateIcon()
+    self.icon = VGT.OPTIONS.oldIcon and
+      "Interface\\Addons\\ValhallaGuildTools\\Valhalla.classic.tga" or
+      "Interface\\Addons\\ValhallaGuildTools\\Valhalla.wotlk.tga"
+  end
+
   VGT:RegisterEvent(
     "PLAYER_ENTERING_WORLD",
     function(_, isInitialLogin, isReloadingUI)
       if (isInitialLogin or isReloadingUI) then
+        VGT.MinimapButton:UpdateIcon()
         VGT.MinimapIcon:Register(VGT.Name, VGT.MinimapButton, VGT.OPTIONS.MINIMAP)
       end
     end

@@ -97,6 +97,19 @@ local options = {
           get = function(_)
             return not VGT.OPTIONS.MINIMAP.hide
           end
+        },
+        mmi = {
+          name = "Use Old Button Icon",
+          type = "toggle",
+          desc = "Use the old green logo for the minimap button.",
+          order = 2,
+          set = function(_, val)
+            VGT.OPTIONS.oldIcon = val
+            VGT.MinimapButton:UpdateIcon()
+          end,
+          get = function()
+            return VGT.OPTIONS.oldIcon
+          end
         }
       }
     },
