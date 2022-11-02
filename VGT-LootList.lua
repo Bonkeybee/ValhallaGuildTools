@@ -186,20 +186,16 @@ local function ExportItems()
   end
 
   if (instanceId and (VGT.TrackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
-    local targetName, targetGuid = UnitName("target"), UnitGUID("target")
-    if (guid ~= targetGuid) then
-      targetName = "<Unknown>"
-    end
+    local itemLinks = {}
 
     for i = 1, GetNumLootItems() do
       local link = GetLootSlotLink(i)
       if (ShouldTrack(link)) then
-        local item = Item:CreateFromItemLink(link)
-        item:ContinueOnItemLoad(function()
-          VGT.MasterLooter.Track(guid, item:GetItemID(), item:GetItemName(), link, item:GetItemIcon())
-        end)
+        tinsert(itemLinks, link)
       end
     end
+
+    VGT.MasterLooter.TrackAllForCreature(guid, itemLinks)
   end
 end
 

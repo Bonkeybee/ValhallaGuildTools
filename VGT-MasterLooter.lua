@@ -478,6 +478,26 @@ function VGT.MasterLooter.TrackUnknown(creatureId, itemId)
     return creatureData, itemData
 end
 
+function VGT.MasterLooter.TrackAllForCreature(creatureId, itemLinks)
+    local creatureData
+
+    for i, v in ipairs(VGT_MasterLootData) do
+        if v.id == creatureId then
+            creatureData = v
+            break
+        end
+    end
+
+    if not creatureData then
+        for _,link in ipairs(itemLinks) do
+            local item = Item:CreateFromItemLink(link)
+            item:ContinueOnItemLoad(function()
+              VGT.MasterLooter.Track(creatureId, item:GetItemID(), item:GetItemName(), link, item:GetItemIcon())
+            end)
+        end
+    end
+end
+
 function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon)
     local creatureData
 
