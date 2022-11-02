@@ -80,6 +80,60 @@ local function unitNameFromGuid(creatureGuid)
     return VGT._creatures[unitId] or ("Unknown " .. unitType .. " " .. unitId)
 end
 
+local function getPrio(standings, name)
+    for _,standing in ipairs(standings) do
+        for _,n in ipairs(standing.Names) do
+            if n == name then
+                return standing.Prio
+            end
+        end
+    end
+end
+
+local function incrementStandings(itemId, name, prio)
+    for _,creatureData in ipairs(VGT_MasterLootData) do
+        for _,itemData in ipairs(creatureData.items) do
+            if itemData.standings and itemData.id == itemId then
+                for _,standing in ipairs(itemData.standings) do
+                    if standing.Prio == prio then
+                        for i,n in ipairs(standing.Names) do
+                            if n == name then
+                                tremove(standing.Names, i)
+                                break
+                            end
+                        end
+                    end
+                    standing.Prio = standing.Prio + 1
+                end
+            end
+        end
+    end
+end
+
+local function incrementStandingsInferred(itemData)
+    if itemData.standings then
+        itemData.winningPrio = getPrio(itemData.standings, itemData.winner)
+        if itemData.winningPrio ~= nil then
+            incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
+        end
+    end
+end
+
+local function decrementStandings(itemId, name, prio)
+    for _,creatureData in ipairs(VGT_MasterLootData) do
+        for _,itemData in ipairs(creatureData.items) do
+            if itemData.standings and itemData.id == itemId then
+                for _,standing in ipairs(itemData.standings) do
+                    standing.Prio = standing.Prio - 1
+                    if standing.Prio == prio then
+                        tinsert(standing.Names, name)
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function configureEncounter(creatureGuid)
     local label = AceGUI:Create("InteractiveLabel")
     label:SetText(unitNameFromGuid(creatureGuid))
@@ -159,8 +213,15 @@ local function configureItem(creatureId, itemId, itemIndex)
         unassignButton:SetFullWidth(true)
         unassignButton:SetCallback("OnClick", function()
             local oldWinner = itemData.winner
+            local oldPrio = itemData.winningPrio
             itemData.winner = nil
             itemData.traded = nil
+            itemData.winningPrio = nil
+
+            if oldPrio then
+                decrementStandings(itemData.id, oldWinner, oldPrio)
+            end
+
             sendMLMessage(itemData.link .. " unassigned from " .. oldWinner)
             VGT:SendCoreMessage("UA\001" .. itemData.id, "WHISPER", oldWinner)
             VGT.MasterLooter.Refresh()
@@ -232,8 +293,10 @@ local function configureItem(creatureId, itemId, itemIndex)
                         standingButton:SetText("(" .. standing.Prio .. ") " .. standing.Names[1])
                         standingButton:SetCallback("OnClick", function()
                             itemData.winner = standing.Names[1]
+                            itemData.winningPrio = standing.Prio
+                            incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
                             VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
-                            sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. standing.Prio .. " Prio)")
+                            sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
                             VGT.MasterLooter.Refresh()
                         end)
                     else
@@ -275,6 +338,7 @@ local function configureItem(creatureId, itemId, itemIndex)
     
             manualAssign:SetCallback("OnValueChanged", function(self, e, value)
                 itemData.winner = value
+                incrementStandingsInferred(itemData)
                 VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", value)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.MasterLooter.Refresh()
@@ -618,8 +682,16 @@ function VGT.MasterLooter:EndRoll()
 
         if #winners == 1 then
             itemData.winner = winners[1]
+            incrementStandingsInferred(itemData)
             VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
-            sendMLMessage(itemData.link .. " won by " .. itemData.winner .. " (" .. winningAmt .. ")")
+            local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. winningAmt
+            if itemData.winningPrio then
+                msg = msg .. " rolled, " .. itemData.winningPrio .. " prio)"
+            else
+                msg = msg .. ")"
+            end
+
+            sendMLMessage(msg)
         else
             self.Rolls = {}
             self.RollWhitelist = winners
