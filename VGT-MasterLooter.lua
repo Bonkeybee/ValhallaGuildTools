@@ -725,6 +725,7 @@ function VGT.MasterLooter:EndRoll()
     self.Passes = {}
     self.RollWhitelist = nil
     self.Refresh()
+    VGT:SendCoreMessage("CR", "RAID")
 end
 
 function VGT.MasterLooter:RemindRoll()
