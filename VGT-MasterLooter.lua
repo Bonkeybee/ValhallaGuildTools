@@ -52,24 +52,6 @@ local function readData(creatureGuid, itemId, itemIndex)
     end
 end
 
-local function getImportTarget(itemId)
-    for _,creatureData in ipairs(VGT_MasterLootData) do
-        for _,itemData in ipairs(creatureData.items) do
-            if itemData.id == itemId and not itemData.winner and not itemData.imported then
-                return itemData
-            end
-        end
-    end
-end
-
-local function clearImportFlags()
-    for _,creatureData in ipairs(VGT_MasterLootData) do
-        for _,itemData in ipairs(creatureData.items) do
-            itemData.imported = nil
-        end
-    end
-end
-
 local function getRollData()
     return readData(VGT.MasterLooter.RollCreature, VGT.MasterLooter.RollItem, VGT.MasterLooter.RollIndex)
 end
@@ -91,43 +73,44 @@ local function getPrio(standings, name)
 end
 
 local function incrementStandings(itemId, name, prio)
-    for _,creatureData in ipairs(VGT_MasterLootData) do
-        for _,itemData in ipairs(creatureData.items) do
-            if itemData.standings and itemData.id == itemId then
-                for _,standing in ipairs(itemData.standings) do
-                    if standing.Prio == prio then
-                        for i,n in ipairs(standing.Names) do
-                            if n == name then
-                                tremove(standing.Names, i)
-                                break
-                            end
+    if VGT_MasterLootData.Standings then
+        local itemStandings = VGT_MasterLootData.Standings[itemId]
+        if itemStandings then
+            for _,standing in ipairs(itemStandings) do
+                if standing.Prio == prio then
+                    for i,n in ipairs(standing.Names) do
+                        if n == name then
+                            tremove(standing.Names, i)
+                            break
                         end
                     end
-                    standing.Prio = standing.Prio + 1
                 end
+                standing.Prio = standing.Prio + 1
             end
         end
     end
 end
 
 local function incrementStandingsInferred(itemData)
-    if itemData.standings then
-        itemData.winningPrio = getPrio(itemData.standings, itemData.winner)
-        if itemData.winningPrio ~= nil then
-            incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
+    if VGT_MasterLootData.Standings then
+        local itemStandings = VGT_MasterLootData.Standings[itemId]
+        if itemStandings then
+            itemData.winningPrio = getPrio(itemStandings, itemData.winner)
+            if itemData.winningPrio ~= nil then
+                incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
+            end
         end
     end
 end
 
 local function decrementStandings(itemId, name, prio)
-    for _,creatureData in ipairs(VGT_MasterLootData) do
-        for _,itemData in ipairs(creatureData.items) do
-            if itemData.standings and itemData.id == itemId then
-                for _,standing in ipairs(itemData.standings) do
-                    standing.Prio = standing.Prio - 1
-                    if standing.Prio == prio then
-                        tinsert(standing.Names, name)
-                    end
+    if VGT_MasterLootData.Standings then
+        local itemStandings = VGT_MasterLootData.Standings[itemId]
+        if itemStandings then
+            for _,standing in ipairs(itemStandings) do
+                standing.Prio = standing.Prio - 1
+                if standing.Prio == prio then
+                    tinsert(standing.Names, name)
                 end
             end
         end
@@ -284,39 +267,42 @@ local function configureItem(creatureId, itemId, itemIndex)
                 root.scroll:AddChild(spacer)
             end
         else
-            if itemData.standings and #itemData.standings > 0 then
-                for _, s in ipairs(itemData.standings) do
-                    local standing = s
-                    local standingButton = AceGUI:Create("Button")
-                    standingButton:SetFullWidth(true)
-                    if #standing.Names == 1 then
-                        standingButton:SetText("(" .. standing.Prio .. ") " .. standing.Names[1])
-                        standingButton:SetCallback("OnClick", function()
-                            itemData.winner = standing.Names[1]
-                            itemData.winningPrio = standing.Prio
-                            incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
-                            VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
-                            sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
-                            VGT.MasterLooter.Refresh()
-                        end)
-                    else
-                        local sText = "(" .. standing.Prio .. ") "
-                        local addComma = false
-
-                        for _,name in ipairs(standing.Names) do
-                            if addComma then
-                                sText = sText .. ", "
+            if VGT_MasterLootData.Standings then
+                local itemStandings = VGT_MasterLootData.Standings[itemData.id]
+                if itemStandings then
+                    for _, s in ipairs(itemStandings) do
+                        local standing = s
+                        local standingButton = AceGUI:Create("Button")
+                        standingButton:SetFullWidth(true)
+                        if #standing.Names == 1 then
+                            standingButton:SetText("(" .. standing.Prio .. ") " .. standing.Names[1])
+                            standingButton:SetCallback("OnClick", function()
+                                itemData.winner = standing.Names[1]
+                                itemData.winningPrio = standing.Prio
+                                incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
+                                VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
+                                sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
+                                VGT.MasterLooter.Refresh()
+                            end)
+                        else
+                            local sText = "(" .. standing.Prio .. ") "
+                            local addComma = false
+    
+                            for _,name in ipairs(standing.Names) do
+                                if addComma then
+                                    sText = sText .. ", "
+                                end
+                                addComma = true
+                                sText = sText .. name
                             end
-                            addComma = true
-                            sText = sText .. name
+    
+                            standingButton:SetText(sText)
+                            standingButton:SetCallback("OnClick", function()
+                                VGT.MasterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, standing.Names)
+                            end)
                         end
-
-                        standingButton:SetText(sText)
-                        standingButton:SetCallback("OnClick", function()
-                            VGT.MasterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, standing.Names)
-                        end)
+                        root.scroll:AddChild(standingButton)
                     end
-                    root.scroll:AddChild(standingButton)
                 end
             end
 
@@ -353,35 +339,35 @@ local function configureHome()
     rsbutton:SetCallback("OnClick", VGT.ShowRaidStartExport)
     root.scroll:AddChild(rsbutton)
 
-    local failText = AceGUI:Create("Label")
-    failText:SetText(" ")
+    local importStatus = AceGUI:Create("Label")
+    importStatus:SetText(" ")
 
     local importText = AceGUI:Create("EditBox")
     importText:SetMaxLetters(0)
-    importText:SetLabel("Import Code")
+    importText:SetLabel("Import Standings")
     importText:SetCallback("OnEnterPressed", function()
         local text = importText:GetText()
         importText:SetText("")
-        local standings = json.decode(text)
-        if type(standings) ~= "table" then
-            failText:SetText("|cffff0000Import failed.|r")
-        else
-            for _,item in ipairs(standings) do
-                local itemData = getImportTarget(item.Id)
 
-                if not itemData then
-                    _, itemData = VGT.MasterLooter.TrackUnknown("Creature-0-0-0-0-0-0-0", item.Id)
-                end
-                itemData.imported = true
-                itemData.standings = item.Standings
+        local success = pcall(function()
+            local items = json.decode(text)
+            VGT_MasterLootData.Standings = {}
+
+            for _,item in ipairs(items) do
+                VGT_MasterLootData.Standings[item.Id] = item.Standings
             end
-            clearImportFlags()
+        end)
+        if not success then
+            importStatus:SetText("|cffff0000Import failed.|r")
+            VGT_MasterLootData.Standings = nil
+        else
             VGT.MasterLooter.Refresh()
+            importStatus:SetText("|cff00ff00Import Succeeded.|r")
         end
     end)
 
     root.scroll:AddChild(importText)
-    root.scroll:AddChild(failText)
+    root.scroll:AddChild(importStatus)
 
     local clearButton = AceGUI:Create("Button")
     clearButton:SetText("Clear All")
@@ -491,7 +477,7 @@ function VGT.MasterLooter.Refresh()
         }
     }
 
-    for _, creatureData in pairs(VGT_MasterLootData) do
+    for _, creatureData in ipairs(VGT_MasterLootData) do
         local creatureNode = {
             value = creatureData.id,
             text = unitNameFromGuid(creatureData.id),
