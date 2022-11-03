@@ -62,55 +62,71 @@ local function unitNameFromGuid(creatureGuid)
     return VGT._creatures[unitId] or ("Unknown " .. unitType .. " " .. unitId)
 end
 
-local function getPrio(standings, name)
-    for _,standing in ipairs(standings) do
-        for _,n in ipairs(standing.Names) do
-            if n == name then
-                return standing.Prio
-            end
-        end
-    end
-end
-
-local function incrementStandings(itemId, name, prio)
+local function addPrioToStandings(itemId, name, prio)
     if VGT_MasterLootData.Standings then
         local itemStandings = VGT_MasterLootData.Standings[itemId]
         if itemStandings then
-            for _,standing in ipairs(itemStandings) do
-                if standing.Prio == prio then
-                    for i,n in ipairs(standing.Names) do
-                        if n == name then
-                            tremove(standing.Names, i)
-                            break
-                        end
-                    end
-                end
-                standing.Prio = standing.Prio + 1
-            end
-        end
-    end
-end
-
-local function incrementStandingsInferred(itemData)
-    if VGT_MasterLootData.Standings then
-        local itemStandings = VGT_MasterLootData.Standings[itemId]
-        if itemStandings then
-            itemData.winningPrio = getPrio(itemStandings, itemData.winner)
-            if itemData.winningPrio ~= nil then
-                incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
-            end
-        end
-    end
-end
-
-local function decrementStandings(itemId, name, prio)
-    if VGT_MasterLootData.Standings then
-        local itemStandings = VGT_MasterLootData.Standings[itemId]
-        if itemStandings then
-            for _,standing in ipairs(itemStandings) do
-                standing.Prio = standing.Prio - 1
+            for i,standing in ipairs(itemStandings) do
                 if standing.Prio == prio then
                     tinsert(standing.Names, name)
+                    return
+                elseif standing.Prio < prio then
+                    tinsert(itemStandings, i, {Prio = prio, Names = {name}})
+                    return
+                end
+            end
+        end
+    end
+end
+
+local function takePrioFromStandings(itemId, name)
+    if VGT_MasterLootData.Standings then
+        local itemStandings = VGT_MasterLootData.Standings[itemId]
+        if itemStandings then
+            for _,standing in ipairs(itemStandings) do
+                for i,n in ipairs(standing.Names) do
+                    if n == name then
+                        tremove(standing.Names, i)
+                        return standing.Prio
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function getPrio(name)
+    if VGT_MasterLootData.Standings then
+        local itemStandings = VGT_MasterLootData.Standings[itemId]
+        if itemStandings then
+            for _,standing in ipairs(itemStandings) do
+                for _,n in ipairs(standing.Names) do
+                    if n == name then
+                        return standing.Prio
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function incrementStandings(itemId, characters)
+    if VGT_MasterLootData.Standings then
+        for _,character in ipairs(characters) do
+            local prios = {}
+
+            while true do
+                local prio = takePrioFromStandings(itemId, character.Name)
+                if type(prio) == "number" then
+                    tinsert(prios, prio)
+                else
+                    break
+                end
+            end
+            
+            if #prios > 0 then
+                for _,prio in ipairs(prios) do
+                    addPrioToStandings(itemId, character.Name, prio + 1)
                 end
             end
         end
@@ -202,7 +218,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             itemData.winningPrio = nil
 
             if oldPrio then
-                decrementStandings(itemData.id, oldWinner, oldPrio)
+                addPrioToStandings(itemData.id, oldWinner, oldPrio)
             end
 
             sendMLMessage(itemData.link .. " unassigned from " .. oldWinner)
@@ -278,8 +294,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                             standingButton:SetText("(" .. standing.Prio .. ") " .. standing.Names[1])
                             standingButton:SetCallback("OnClick", function()
                                 itemData.winner = standing.Names[1]
-                                itemData.winningPrio = standing.Prio
-                                incrementStandings(itemData.id, itemData.winner, itemData.winningPrio)
+                                itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
                                 VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
                                 sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
                                 VGT.MasterLooter.Refresh()
@@ -324,7 +339,7 @@ local function configureItem(creatureId, itemId, itemIndex)
     
             manualAssign:SetCallback("OnValueChanged", function(self, e, value)
                 itemData.winner = value
-                incrementStandingsInferred(itemData)
+                itemData.winningPrio = takePrioFromStandings(itemData.id, value)
                 VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", value)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.MasterLooter.Refresh()
@@ -522,7 +537,7 @@ function VGT.MasterLooter.Refresh()
 end
 
 function VGT.MasterLooter.TrackUnknown(creatureId, itemId)
-    local creatureData, itemData = VGT.MasterLooter.Track(creatureId, itemId)
+    local creatureData, itemData = VGT.MasterLooter.Track(creatureId or "Creature-0-0-0-0-0-0-0", itemId)
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
         itemData.name = item:GetItemName()
@@ -589,6 +604,8 @@ function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
     }
 
     tinsert(creatureData.items, itemData)
+
+    incrementStandings(itemId, creatureData.characters)
 
     VGT.MasterLooter.Refresh()
 
@@ -673,7 +690,7 @@ function VGT.MasterLooter:EndRoll()
 
         if #winners == 1 then
             itemData.winner = winners[1]
-            incrementStandingsInferred(itemData)
+            itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
             VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
             local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. winningAmt
             if itemData.winningPrio then
@@ -803,10 +820,10 @@ function VGT.MasterLooter:CancelRoll()
 end
 
 function VGT.MasterLooter:AddDummyData()
-    VGT.MasterLooter.TrackUnknown("Creature-0-1465-0-2105-16028-000043F59F", 39272)
-    VGT.MasterLooter.TrackUnknown("Creature-0-1465-0-2105-16028-000043F59F", 39270)
-    VGT.MasterLooter.TrackUnknown("Creature-0-1465-0-2105-15931-000043F59F", 39276)
-    VGT.MasterLooter.TrackUnknown("Creature-0-1465-0-2105-15931-000043F59F", 39280)
+    VGT.MasterLooter.TrackUnknown(nil, 39272)
+    VGT.MasterLooter.TrackUnknown(nil, 39270)
+    VGT.MasterLooter.TrackUnknown(nil, 39276)
+    VGT.MasterLooter.TrackUnknown(nil, 39280)
 end
 
 local function whitelisted(name)
