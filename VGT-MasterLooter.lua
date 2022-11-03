@@ -872,6 +872,17 @@ local function handleChatCommand(channel, text, playerName)
     end
 end
 
+VGT:RegisterCoreMessageHandler(function(message, sender)
+    if VGT.MasterLooter.RollItem then
+        local cmd, id = strsplit("\001", message)
+        
+        if cmd == "RP" and VGT.MasterLooter.RollItem.id == tonumber(id) then
+            VGT.MasterLooter.Passes[sender] = true
+            VGT.MasterLooter.Refresh()
+        end
+    end
+end)
+
 VGT:RegisterEvent("CHAT_MSG_RAID", handleChatCommand)
 VGT:RegisterEvent("CHAT_MSG_RAID_LEADER", handleChatCommand)
 VGT:RegisterEvent("CHAT_MSG_PARTY", handleChatCommand)

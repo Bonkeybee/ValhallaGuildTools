@@ -52,7 +52,7 @@ function VGT:BuildRollWindow()
         VGT.OPTIONS.ROLL.X,
         VGT.OPTIONS.ROLL.Y
     )
-    self.RollWindow:SetSize(200, 24)
+    self.RollWindow:SetSize(300, 24)
     self.RollWindow:SetClampedToScreen(true)
     self.RollWindow:EnableMouse(true)
     self.RollWindow:SetToplevel(true)
@@ -138,17 +138,8 @@ function VGT:BuildRollWindow()
         end
 
         if channel then
-            SendChatMessage("pass", channel)
+            VGT:SendCoreMessage("RP\001" .. VGT.RollWindow.Item:GetItemID(), "RAID")
         end
-        VGT.RollWindow:Hide()
-    end)
-
-    local closeButton = CreateFrame("Button", nil, self.RollWindow, "UIPanelButtonTemplate")
-    closeButton:SetHeight(24)
-    closeButton:SetText("X")
-    closeButton:SetPoint("LEFT", passButton, "RIGHT")
-    closeButton:Show()
-    closeButton:SetScript("OnClick", function()
         VGT.RollWindow:Hide()
     end)
 end
