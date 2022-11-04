@@ -204,7 +204,8 @@ local function configureItem(creatureId, itemId, itemIndex)
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
     label:SetText(
-        itemData.winner and ("|cff00ff00Assigned to " .. itemData.winner .. "|r") or "|cffff0000Unassigned|r"
+        itemData.winner and ((itemData.disenchanted and "|cff2196f3Disenchanted by " or "|cff00ff00Assigned to ") .. itemData.winner .. "|r")
+        or "|cffff0000Unassigned|r"
     )
     root.scroll:AddChild(label)
 
@@ -223,6 +224,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             itemData.winner = nil
             itemData.traded = nil
             itemData.winningPrio = nil
+            itemData.disenchanted = nil
 
             if oldPrio then
                 addPrioToStandings(itemData.id, oldWinner, oldPrio)
@@ -376,6 +378,20 @@ local function configureItem(creatureId, itemId, itemIndex)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.MasterLooter.Refresh()
             end)
+
+            local deAssign = AceGUI:Create("Dropdown")
+            deAssign:SetLabel("Disenchant Assign")
+            deAssign:SetList(characters)
+            deAssign:SetCallback("OnValueChanged", function(self, e, value)
+                itemData.winner = value
+                itemData.winningPrio = takePrioFromStandings(itemData.id, value)
+                itemData.traded = UnitIsUnit(value, "player")
+                itemData.disenchanted = true
+                VGT:SendCoreMessage("AD\001" .. itemData.id, "WHISPER", value)
+                sendMLMessage(itemData.link .. " will be disenchanted by " .. value)
+                VGT.MasterLooter.Refresh()
+            end)
+            root.scroll:AddChild(deAssign)
         end
     end
 end
@@ -554,6 +570,7 @@ end
 function VGT.MasterLooter.Refresh()
     if root then
         local function buildItemNodes(node, items, creatureId)
+            local allAssigned, allTraded = true, true
             local anyAssigned, anyUnassigned
             node.children = {}
 
@@ -568,28 +585,32 @@ function VGT.MasterLooter.Refresh()
                 tinsert(node.children, itemNode)
     
                 if item.winner then
-                    itemNode.text = "|cff00ff00" .. item.name .. "|r"
-                    anyAssigned = true
+                    if not item.traded then
+                        allTraded = false
+                    end
+                    itemNode.text = (item.disenchanted and "|cff2196f3" or "|cff00ff00") .. item.name .. "|r"
                 else
-                    anyUnassigned = true
+                    allAssigned = false
+                    allTraded = false
                 end
             end
-            
-            if anyAssigned then
-                if anyUnassigned then
-                    node.icon = "Interface\\RAIDFRAME\\ReadyCheck-Waiting.blp"
-                else
-                    node.icon = "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"
-                end
+
+            if allTraded then
+                node.icon = "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"
             else
-                node.icon = "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp"
+                node.icon = "Interface\\Buttons\\UI-StopButton.blp"
+            end
+
+            if allAssigned then
+                node.text = "|cff00ff00" .. node.text .. "|r"
             end
         end
 
         local data = {
             {
                 text = "Home",
-                value = nil
+                value = nil,
+                icon = "Interface\\Buttons\\UI-HomeButton.blp"
             }
         }
 
