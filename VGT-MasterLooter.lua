@@ -149,9 +149,22 @@ local function configureEncounter(creatureGuid)
 
             if creatureData then
                 local items = {}
+                local allowedClasses = {
+                    [2] = true, -- Weapon
+                    [4] = true, -- Armor
+                    [15] = true -- Miscellaneous
+                }
+                local ignoredItems = {
+                    [44569] = true, -- Key to the Focusing Iris
+                    [44577] = true -- Heroic Key to the Focusing Iris
+                }
 
                 for _,itemData in ipairs(creatureData.items) do
-                    tinsert(items, itemData.id)
+                    if (not itemData.class or itemData.quality == 4)
+                    and (not itemData.class or allowedClasses[itemData.class])
+                    and not ignoredItems[itemData.id] then
+                        tinsert(items, itemData.id)
+                    end
                 end
                 
                 VGT:ShowKillExport(items, creatureData.characters)
@@ -551,6 +564,9 @@ function VGT.MasterLooter.TrackUnknown(creatureId, itemId)
         itemData.name = item:GetItemName()
         itemData.link = item:GetItemLink()
         itemData.icon = item:GetItemIcon()
+        local itemQuality, _, _, itemType, _, _, _, _, _, classId = select(3, GetItemInfo(link))
+        itemData.class = classId
+        itemData.quality = itemQuality
         VGT.MasterLooter.Refresh()
     end)
     return creatureData, itemData
@@ -603,12 +619,15 @@ function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
         end
     end
 
+    local itemQuality, _, _, itemType, _, _, _, _, _, classId = select(3, GetItemInfo(link))
     local itemData = {
         id = itemId,
         index = nextItemIndex,
         name = itemName,
         link = itemLink,
-        icon = itemIcon
+        icon = itemIcon,
+        class = classId,
+        quality = itemQuality
     }
 
     tinsert(creatureData.items, itemData)
