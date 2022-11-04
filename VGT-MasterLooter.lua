@@ -288,35 +288,48 @@ local function configureItem(creatureId, itemId, itemIndex)
                 if itemStandings then
                     for _, s in ipairs(itemStandings) do
                         local standing = s
-                        local standingButton = AceGUI:Create("Button")
-                        standingButton:SetFullWidth(true)
-                        if #standing.Names == 1 then
-                            standingButton:SetText("(" .. standing.Prio .. ") " .. standing.Names[1])
-                            standingButton:SetCallback("OnClick", function()
-                                itemData.winner = standing.Names[1]
-                                itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
-                                VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
-                                sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
-                                VGT.MasterLooter.Refresh()
-                            end)
-                        else
+                        local whitelist = {}
+                        local lookup = {}
+
+                        for _,name in ipairs(standing.Names) do
+                            lookup[name] = true
+                        end
+
+                        for _,character in ipairs(creatureData.characters) do
+                            if lookup[character.Name] then
+                                tinsert(whitelist, character.Name)
+                            end
+                        end
+
+                        if #whitelist > 0 then
+                            local standingButton = AceGUI:Create("Button")
+                            standingButton:SetFullWidth(true)
                             local sText = "(" .. standing.Prio .. ") "
                             local addComma = false
     
-                            for _,name in ipairs(standing.Names) do
+                            for _,name in ipairs(whitelist) do
                                 if addComma then
                                     sText = sText .. ", "
                                 end
                                 addComma = true
                                 sText = sText .. name
                             end
-    
+                            
                             standingButton:SetText(sText)
                             standingButton:SetCallback("OnClick", function()
-                                VGT.MasterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, standing.Names)
+                                if #whitelist == 1 then
+                                    itemData.winner = whitelist[1]
+                                    itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
+                                    VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
+                                    sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
+                                    VGT.MasterLooter.Refresh()
+                                else
+                                    VGT.MasterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
+                                end
                             end)
+
+                            root.scroll:AddChild(standingButton)
                         end
-                        root.scroll:AddChild(standingButton)
                     end
                 end
             end
