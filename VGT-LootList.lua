@@ -159,22 +159,9 @@ local function ShouldTrack(link)
     return false
   end
 
-  if (VGT.OPTIONS.LOOTLIST.trackEverything) then
-    return true
-  end
+  local _, _, itemQuality, _, _, itemType = GetItemInfo(link)
 
-  local _, _, itemQuality, _, _, itemType, _, _, _, _, _, classID = GetItemInfo(link)
-
-  if (itemQuality == 4) then --epic only
-    if (itemType == "Money") then
-      return false
-    end
-    return classID == 2 or --weapon
-        classID == 4 or --armor/jewelry
-        classID == 15 --misc (tokens)
-  end
-
-  return false
+  return (itemQuality == 4 or VGT.OPTIONS.LOOTLIST.trackEverything) and itemType ~= "Money"
 end
 
 local function ExportItems()
