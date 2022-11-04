@@ -87,7 +87,7 @@ VGT:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED", function(event, slot)
 end)
 
 VGT:RegisterEvent("UI_INFO_MESSAGE", function(event, arg1, arg2)
-    if arg2 ~= ERR_TRADE_CANCELLED then
+    if arg2 == ERR_TRADE_COMPLETE then
         for i=1,6 do
             local itemData = currentTrades[i]
             currentTrades[i] = nil
@@ -96,5 +96,6 @@ VGT:RegisterEvent("UI_INFO_MESSAGE", function(event, arg1, arg2)
                 itemData.traded = true
             end
         end
+        VGT.MasterLooter.Refresh()
     end
 end)

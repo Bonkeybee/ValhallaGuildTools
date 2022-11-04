@@ -233,6 +233,15 @@ local function configureItem(creatureId, itemId, itemIndex)
             VGT.MasterLooter.Refresh()
         end)
         root.scroll:AddChild(unassignButton)
+        
+        local toggleTradeButton = AceGUI:Create("CheckBox")
+        toggleTradeButton:SetLabel("Traded")
+        toggleTradeButton:SetValue(itemData.traded and true or false)
+        toggleTradeButton:SetCallback("OnValueChanged", function()
+            itemData.traded = not itemData.traded
+            VGT.MasterLooter.Refresh()
+        end)
+        root.scroll:AddChild(toggleTradeButton)
     else
         local rollCreature, rollItem = getRollData()
         
@@ -327,6 +336,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                                 if #whitelist == 1 then
                                     itemData.winner = whitelist[1]
                                     itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
+                                    itemData.traded = UnitIsUnit(itemData.winner, "player")
                                     VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
                                     sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
                                     VGT.MasterLooter.Refresh()
@@ -361,6 +371,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             manualAssign:SetCallback("OnValueChanged", function(self, e, value)
                 itemData.winner = value
                 itemData.winningPrio = takePrioFromStandings(itemData.id, value)
+                itemData.traded = UnitIsUnit(value, "player")
                 VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", value)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.MasterLooter.Refresh()
@@ -422,6 +433,23 @@ local function configureHome()
     clearButton:SetText("Clear All")
     clearButton:SetCallback("OnClick", VGT.MasterLooter.ClearAll)
     root.scroll:AddChild(clearButton)
+
+    local treeToggle = AceGUI:Create("CheckBox")
+    treeToggle:SetLabel("Group By Winner")
+    treeToggle:SetValue(VGT.MasterLooter.GroupByWinner and true or false)
+    treeToggle:SetCallback("OnValueChanged", function()
+        VGT.MasterLooter.GroupByWinner = not VGT.MasterLooter.GroupByWinner
+        VGT.MasterLooter.Refresh()
+    end)
+    root.scroll:AddChild(treeToggle)
+end
+
+local function configureCharacter(characterName)
+    local label = AceGUI:Create("InteractiveLabel")
+    label:SetText(characterName or "Unassigned")
+    label:SetFullWidth(true)
+    label:SetFont(GameFontHighlight:GetFont(), 16)
+    root.scroll:AddChild(label)
 end
 
 local function configureSelection(groupId)
@@ -429,12 +457,17 @@ local function configureSelection(groupId)
     VGT.MasterLooter.groupId = groupId
 
     if groupId then
-        local creatureId, itemIdAndIndex = strsplit("\001", groupId)
-        if itemIdAndIndex then
-            local itemId, itemIndex = strsplit("+", itemIdAndIndex)
+        local parentKey, childKey = strsplit("\001", groupId)
+        if childKey then
+            local creatureId, itemId, itemIndex = strsplit("+", childKey)
             configureItem(creatureId, tonumber(itemId), tonumber(itemIndex) or 1)
         else
-            configureEncounter(creatureId)
+            local nodeType, nodeId = strsplit("+", parentKey)
+            if nodeType == "character" then
+                configureCharacter(nodeId)
+            elseif nodeType == "encounter" then
+                configureEncounter(nodeId)
+            end
         end
     else
         configureHome()
@@ -519,52 +552,93 @@ function VGT.MasterLooter.Toggle()
 end
 
 function VGT.MasterLooter.Refresh()
-    local data = {
-        {
-            text = "Home",
-            value = nil
-        }
-    }
-
-    for _, creatureData in ipairs(VGT_MasterLootData) do
-        local creatureNode = {
-            value = creatureData.id,
-            text = VGT:UnitNameFromGuid(creatureData.id),
-            icon = "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp",
-            children = {}
-        }
-
-        tinsert(data, creatureNode)
-
-        local anyUnassigned, anyAssigned
-
-        for _, item in pairs(creatureData.items) do
-            local itemNode = {
-                text = item.name,
-                value = item.id .. "+" .. item.index,
-                icon = item.icon
-            }
-
-            tinsert(creatureNode.children, itemNode)
-
-            if item.winner then
-                itemNode.text = "|cff00ff00" .. item.name .. "|r"
-                anyAssigned = true
-            else
-                anyUnassigned = true
-            end
-        end
-
-        if anyAssigned then
-            if anyUnassigned then
-                creatureNode.icon = "Interface\\RAIDFRAME\\ReadyCheck-Waiting.blp"
-            else
-                creatureNode.icon = "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"
-            end
-        end
-    end
-
     if root then
+        local function buildItemNodes(node, items, creatureId)
+            local anyAssigned, anyUnassigned
+            node.children = {}
+
+            for _, item in ipairs(items) do
+                local itemNode = {
+                    text = item.name,
+                    value = (creatureId or item.creatureId) .. "+" .. item.id .. "+" .. item.index,
+                    icon = item.traded and "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp" or item.icon
+                }
+                item.creatureId = nil
+    
+                tinsert(node.children, itemNode)
+    
+                if item.winner then
+                    itemNode.text = "|cff00ff00" .. item.name .. "|r"
+                    anyAssigned = true
+                else
+                    anyUnassigned = true
+                end
+            end
+            
+            if anyAssigned then
+                if anyUnassigned then
+                    node.icon = "Interface\\RAIDFRAME\\ReadyCheck-Waiting.blp"
+                else
+                    node.icon = "Interface\\RAIDFRAME\\ReadyCheck-Ready.blp"
+                end
+            else
+                node.icon = "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp"
+            end
+        end
+
+        local data = {
+            {
+                text = "Home",
+                value = nil
+            }
+        }
+
+        if VGT.MasterLooter.GroupByWinner then
+            local characters = {}
+            local unassigned = {}
+            for _,creatureData in ipairs(VGT_MasterLootData) do
+                for _,itemData in ipairs(creatureData.items) do
+                    itemData.creatureId = creatureData.id
+                    if itemData.winner then
+                        local charItems = characters[itemData.winner]
+                        if not charItems then
+                            charItems = {}
+                            characters[itemData.winner] = charItems
+                        end
+                        tinsert(charItems, itemData)
+                    else
+                        tinsert(unassigned, itemData)
+                    end
+                end
+            end
+            table.sort(characters)
+
+            for characterName, charItems in pairs(characters) do
+                local characterNode = {
+                    value = "character+" .. characterName,
+                    text = characterName
+                }
+                buildItemNodes(characterNode, charItems)
+                tinsert(data, characterNode)
+            end
+            
+            local unassignedNode = {
+                value = "character",
+                text = "Unassigned",
+            }
+            buildItemNodes(unassignedNode, unassigned)
+            tinsert(data, unassignedNode)
+        else
+            for _, creatureData in ipairs(VGT_MasterLootData) do
+                local creatureNode = {
+                    value = "encounter+" .. creatureData.id,
+                    text = VGT:UnitNameFromGuid(creatureData.id)
+                }
+                buildItemNodes(creatureNode, creatureData.items, creatureData.id)
+                tinsert(data, creatureNode)
+            end
+        end
+
         root.tree:SetTree(data)
         configureSelection(VGT.MasterLooter.groupId)
     end
@@ -733,6 +807,7 @@ function VGT.MasterLooter:EndRoll()
         if #winners == 1 then
             itemData.winner = winners[1]
             itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
+            itemData.traded = UnitIsUnit(itemData.winner, "player")
             VGT:SendCoreMessage("AI\001" .. itemData.id, "WHISPER", itemData.winner)
             local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. winningAmt
             if itemData.winningPrio then
