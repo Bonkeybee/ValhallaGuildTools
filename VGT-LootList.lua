@@ -61,6 +61,12 @@ VGT.ClassLookup = {
   [11] = 1024 -- Druid
 }
 
+VGT.ReverseClassLookup = {}
+
+for k,v in pairs(VGT.ClassLookup) do
+  VGT.ReverseClassLookup[v] = k
+end
+
 VGT.RaceLookup = {
   [1] = 0, -- Human
   [3] = 1, -- Dwarf
@@ -86,6 +92,15 @@ VGT.TrackedInstances = {
 
   [724] = true -- Ruby Sanctum
 }
+
+function VGT:ColorizeCharacterName(character)
+  local _, _, _, color = GetClassColor(select(2, GetClassInfo(VGT.ReverseClassLookup[character.Class])))
+  if not color then
+    return character.Name
+  else
+    return "|c" .. color .. character.Name .. "|r"
+  end
+end
 
 function VGT:GetCharacters()
 

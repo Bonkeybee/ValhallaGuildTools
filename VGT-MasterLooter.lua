@@ -339,11 +339,12 @@ local function configureItem(creatureId, itemId, itemIndex)
             local manualAssign = AceGUI:Create("Dropdown")
             manualAssign:SetLabel("Manual Assign")
             root.scroll:AddChild(manualAssign)
-    
+            local characters = {}
             for i, character in ipairs(creatureData.characters) do
-                manualAssign:AddItem(character.Name, character.Name)
+                characters[character.Name] = VGT:ColorizeCharacterName(character)
             end
-    
+            table.sort(characters)
+            manualAssign:SetList(characters)
             manualAssign:SetCallback("OnValueChanged", function(self, e, value)
                 itemData.winner = value
                 itemData.winningPrio = takePrioFromStandings(itemData.id, value)
