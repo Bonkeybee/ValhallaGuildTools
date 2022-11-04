@@ -1,5 +1,11 @@
 VGT._creatures = {}
 
+function VGT:UnitNameFromGuid(creatureGuid, noUnknown)
+    local unitType, _, _, _, _, unitId, spawnUID = strsplit("-", creatureGuid)
+    unitId = tonumber(unitId)
+    return VGT._creatures[unitId] or (not noUnknown and ("Unknown " .. unitType .. " " .. unitId))
+end
+
 local function addCreature(id, name)
     VGT._creatures[id] = name
 end

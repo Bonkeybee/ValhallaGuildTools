@@ -224,13 +224,20 @@ local function AutoMasterLoot()
 end
 
 local function OnLootOpened(_, autoLoot, isFromItem)
-  if not isFromItem then
-    local lootmethod, masterlooterPartyID, _ = GetLootMethod()
-    if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
-      ExportItems()
-      if (autoLoot and VGT.OPTIONS.LOOTLIST.autoMasterLoot) then
-        AutoMasterLoot()
+  local lootmethod, masterlooterPartyID, _ = GetLootMethod()
+  if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
+    if isFromItem then
+      -- Not doing this check can cause errors if an inventory item is looted while in master loot mode
+      local guid, _ = GetLootSourceInfo(1)
+      if not VGT:UnitNameFromGuid(guid, true) then
+        -- 'isFromItem' seems to also be true for chests. Since there is a comprehensive list of chest items
+        -- built-in, this can be used to look up whether we should export and auto loot or not.
+        return
       end
+    end
+    ExportItems()
+    if (autoLoot and VGT.OPTIONS.LOOTLIST.autoMasterLoot) then
+      AutoMasterLoot()
     end
   end
 end

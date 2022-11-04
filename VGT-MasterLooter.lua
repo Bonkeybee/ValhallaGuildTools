@@ -56,12 +56,6 @@ local function getRollData()
     return readData(VGT.MasterLooter.RollCreature, VGT.MasterLooter.RollItem, VGT.MasterLooter.RollIndex)
 end
 
-local function unitNameFromGuid(creatureGuid)
-    local unitType, _, _, _, _, unitId, spawnUID = strsplit("-", creatureGuid)
-    unitId = tonumber(unitId)
-    return VGT._creatures[unitId] or ("Unknown " .. unitType .. " " .. unitId)
-end
-
 local function addPrioToStandings(itemId, name, prio)
     if VGT_MasterLootData.Standings then
         local itemStandings = VGT_MasterLootData.Standings[itemId]
@@ -135,7 +129,7 @@ end
 
 local function configureEncounter(creatureGuid)
     local label = AceGUI:Create("InteractiveLabel")
-    label:SetText(unitNameFromGuid(creatureGuid))
+    label:SetText(VGT:UnitNameFromGuid(creatureGuid))
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
     root.scroll:AddChild(label)
@@ -508,7 +502,7 @@ function VGT.MasterLooter.Refresh()
     for _, creatureData in ipairs(VGT_MasterLootData) do
         local creatureNode = {
             value = creatureData.id,
-            text = unitNameFromGuid(creatureData.id),
+            text = VGT:UnitNameFromGuid(creatureData.id),
             icon = "Interface\\RAIDFRAME\\ReadyCheck-NotReady.blp",
             children = {}
         }
