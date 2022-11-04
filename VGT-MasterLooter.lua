@@ -405,6 +405,19 @@ local function configureHome()
     root.scroll:AddChild(importText)
     root.scroll:AddChild(importStatus)
 
+    local manualTrackButton = AceGUI:Create("Button")
+    manualTrackButton:SetText("Manual Track Item")
+    manualTrackButton:SetCallback("OnClick", function()
+        local infoType, itemId, itemLink = GetCursorInfo()
+        ClearCursor()
+        if infoType == "item" then
+            VGT.MasterLooter.TrackUnknown(nil, itemId)
+        else
+            print("Click this button while holding an item to add it to the tracker.")
+        end
+    end)
+    root.scroll:AddChild(manualTrackButton)
+
     local clearButton = AceGUI:Create("Button")
     clearButton:SetText("Clear All")
     clearButton:SetCallback("OnClick", VGT.MasterLooter.ClearAll)
@@ -564,7 +577,7 @@ function VGT.MasterLooter.TrackUnknown(creatureId, itemId)
         itemData.name = item:GetItemName()
         itemData.link = item:GetItemLink()
         itemData.icon = item:GetItemIcon()
-        local itemQuality, _, _, itemType, _, _, _, _, _, classId = select(3, GetItemInfo(link))
+        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(itemData.link))
         itemData.class = classId
         itemData.quality = itemQuality
         VGT.MasterLooter.Refresh()
@@ -619,16 +632,18 @@ function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
         end
     end
 
-    local itemQuality, _, _, itemType, _, _, _, _, _, classId = select(3, GetItemInfo(link))
     local itemData = {
         id = itemId,
         index = nextItemIndex,
         name = itemName,
         link = itemLink,
-        icon = itemIcon,
-        class = classId,
-        quality = itemQuality
+        icon = itemIcon
     }
+    if itemLink then
+        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(link))
+        itemData.quality = itemQuality
+        itemData.class = classId
+    end
 
     tinsert(creatureData.items, itemData)
 
