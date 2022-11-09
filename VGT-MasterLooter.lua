@@ -127,6 +127,40 @@ local function incrementStandings(itemId, characters)
     end
 end
 
+local function findExpiringItems()
+    local items = {}
+    for bag=0,4 do
+        for slot=1,GetContainerNumSlots(bag) do
+            local containerItemId = GetContainerItemID(bag, slot)
+            if containerItemId then
+                local icon, _, _, _, _, _, itemLink = GetContainerItemInfo(bag, slot)
+                VGTAutoTradeScanningTooltip:ClearLines()
+                VGTAutoTradeScanningTooltip:SetBagItem(bag, slot)
+                local isSoulbound = false
+                local tradableText
+                for i=1,VGTAutoTradeScanningTooltip:NumLines() do
+                    local line = _G["VGTAutoTradeScanningTooltipTextLeft"..i]
+                    local text = line and line:GetText() or ""
+                    if text == ITEM_SOULBOUND then
+                        isSoulbound = true
+                    elseif isSoulbound and VGT.IsBindTimeRemainingLine(text) then
+                        tradableText = text
+                        break
+                    end
+                end
+                if tradableText then
+                    local timeRemaining = VGT.ExtractSoulboundTimeRemaining(tradableText)
+                    if timeRemaining and timeRemaining > 0 then
+                        tinsert(items, { id = containerItemId, expiration = timeRemaining, icon = icon, link = itemLink })
+                    end
+                end
+            end
+        end
+    end
+    table.sort(items, function(l,r) return l.expiration < r.expiration end)
+    return items
+end
+
 local function configureEncounter(creatureGuid)
     local label = AceGUI:Create("InteractiveLabel")
     label:SetText(VGT:UnitNameFromGuid(creatureGuid))
@@ -458,6 +492,25 @@ local function configureHome()
         VGT.MasterLooter.Refresh()
     end)
     root.scroll:AddChild(treeToggle)
+
+    local expiringItems = findExpiringItems()
+
+    if #expiringItems > 0 then
+        local expiringLabel = AceGUI:Create("Label")
+        expiringLabel:SetText("Expiring Items:")
+        root.scroll:AddChild(expiringLabel)
+        for _,v in ipairs(expiringItems) do
+            if v.expiration > 1800 then
+                --break
+            end 
+            local itemLabel = AceGUI:Create("Label")
+            itemLabel:SetImage(v.icon)
+            itemLabel:SetImageSize(16, 16)
+            itemLabel:SetText("(|cff" .. VGT.RGBToHex(VGT.ColorGradient(v.expiration / 7200, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.TimeToString(v.expiration) .. "|r) " .. v.link)
+            itemLabel:SetFullWidth(true)
+            root.scroll:AddChild(itemLabel)
+        end
+    end
 end
 
 local function configureCharacter(characterName)
@@ -735,7 +788,7 @@ function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
         icon = itemIcon
     }
     if itemLink then
-        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(link))
+        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(itemLink))
         itemData.quality = itemQuality
         itemData.class = classId
     end
