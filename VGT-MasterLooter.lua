@@ -493,24 +493,24 @@ local function configureHome()
     end)
     root.scroll:AddChild(treeToggle)
 
-    local expiringItems = findExpiringItems()
-
-    if #expiringItems > 0 then
-        local expiringLabel = AceGUI:Create("Label")
-        expiringLabel:SetText("Expiring Items:")
-        root.scroll:AddChild(expiringLabel)
-        for _,v in ipairs(expiringItems) do
-            if v.expiration > 1800 then
-                --break
-            end 
-            local itemLabel = AceGUI:Create("Label")
-            itemLabel:SetImage(v.icon)
-            itemLabel:SetImageSize(16, 16)
-            itemLabel:SetText("(|cff" .. VGT.RGBToHex(VGT.ColorGradient(v.expiration / 7200, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.TimeToString(v.expiration) .. "|r) " .. v.link)
-            itemLabel:SetFullWidth(true)
-            root.scroll:AddChild(itemLabel)
-        end
-    end
+    --local expiringItems = findExpiringItems()
+    --
+    --if #expiringItems > 0 then
+    --    local expiringLabel = AceGUI:Create("Label")
+    --    expiringLabel:SetText("Expiring Items:")
+    --    root.scroll:AddChild(expiringLabel)
+    --    for _,v in ipairs(expiringItems) do
+    --        if v.expiration > 1800 then
+    --            --break
+    --        end 
+    --        local itemLabel = AceGUI:Create("Label")
+    --        itemLabel:SetImage(v.icon)
+    --        itemLabel:SetImageSize(16, 16)
+    --        itemLabel:SetText("(|cff" .. VGT.RGBToHex(VGT.ColorGradient(v.expiration / 7200, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.TimeToString(v.expiration) .. "|r) " .. v.link)
+    --        itemLabel:SetFullWidth(true)
+    --        root.scroll:AddChild(itemLabel)
+    --    end
+    --end
 end
 
 local function configureCharacter(characterName)
@@ -753,7 +753,7 @@ function VGT.MasterLooter.TrackAllForCreature(creatureId, itemLinks)
     end
 end
 
-function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon)
+function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon, ignoreNonEpic)
     local creatureData
 
     for i, v in ipairs(VGT_MasterLootData) do
@@ -791,6 +791,18 @@ function VGT.MasterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
         local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(itemLink))
         itemData.quality = itemQuality
         itemData.class = classId
+
+        if quality ~= 4 and ignoreNonEpic then
+            if #creatureData.items == 0 then
+                for i,v in ipairs(VGT_MasterLootData) do
+                    if creatureData == v then
+                        tremove(VGT_MasterLootData, i)
+                        break
+                    end
+                end
+            end
+            return
+        end
     end
 
     tinsert(creatureData.items, itemData)
