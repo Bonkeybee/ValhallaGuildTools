@@ -14,11 +14,12 @@ end
 
 local function DefaultConfig(options)
   options = default(options, {})
-  options.enabled = default(options.enabled, true)
+
   options.LOG = default(options.LOG, {})
-  options.MAP = default(options.MAP, {})
   options.LOG.enabled = default(options.LOG.enabled, true)
   options.LOG.logLevel = default(options.LOG.logLevel, VGT.LOG.LEVELS[VGT.LOG_LEVEL.INFO])
+
+  options.MAP = default(options.MAP, {})
   options.MAP.enabled = default(options.MAP.enabled, true)
   options.MAP.sendMyLocation = default(options.MAP.sendMyLocation, true)
   options.MAP.showMinimapOutOfBounds = default(options.MAP.showMinimapOutOfBounds, false)
@@ -28,8 +29,7 @@ local function DefaultConfig(options)
   else
     options.MAP.showMe = default(options.MAP.showMe, false)
   end
-  options.FUN = default(options.FUN, {})
-  options.FUN.enabled = default(options.FUN.enabled, true)
+
   options.LOOTLIST = default(options.LOOTLIST, {enabled = true, autoMasterLoot = true})
   options.LOOTLIST.ignoredItems = default(options.LOOTLIST.ignoredItems, "")
   options.LOOTLIST.X = default(options.LOOTLIST.X, 0)
@@ -37,9 +37,13 @@ local function DefaultConfig(options)
   options.LOOTLIST.Width = default(options.LOOTLIST.Width, 400)
   options.LOOTLIST.Height = default(options.LOOTLIST.Height, 240)
   options.LOOTLIST.Point = default(options.LOOTLIST.Point, "CENTER")
+
   options.MINIMAP = default(options.MINIMAP, {hide = false})
+
   options.AUTOTRADE = default(options.AUTOTRADE, {enabled=true})
+
   options.ROLL = default(options.ROLL, {enabled = true, X = 0, Y = 0, Point = "CENTER", Width = 400, Height = 240, sound = "Info" })
+
   return options
 end
 
@@ -69,18 +73,6 @@ local options = {
       type = "group",
       order = 1,
       args = {
-        enable = {
-          name = "Enable",
-          desc = "REQUIRES RELOAD",
-          type = "toggle",
-          order = 0,
-          set = function(_, val)
-            VGT.OPTIONS.enabled = val
-          end,
-          get = function(_)
-            return VGT.OPTIONS.enabled
-          end
-        },
         minimap = {
           name = "Show Minimap Button",
           type = "toggle",
@@ -201,6 +193,18 @@ local options = {
             return VGT.OPTIONS.LOOTLIST.autoMasterLoot
           end
         },
+        trackEverything = {
+          order = 1,
+          name = "Track Everything",
+          desc = "When checked, all loot will be tracked regardless of where it was looted or what its quality is.",
+          type = "toggle",
+          set = function(_, val)
+            VGT.OPTIONS.LOOTLIST.trackEverything = val
+          end,
+          get = function(_)
+            return VGT.OPTIONS.LOOTLIST.trackEverything
+          end
+        },
         masterLootTarget = {
           order = 2,
           name = "Master-Loot Target",
@@ -213,16 +217,16 @@ local options = {
             return VGT.OPTIONS.LOOTLIST.masterLootTarget
           end
         },
-        trackEverything = {
+        masterLootDisenchantTarget = {
           order = 3,
-          name = "Track Everything",
-          desc = "When checked, all loot will be tracked regardless of where it was looted or what its quality is.",
-          type = "toggle",
+          name = "Rare and Uncommon Target",
+          desc = "Who to send items with |cff0070ddRare|r and |cff1eff00Uncommon|r quality to. Leave blank to use the Master-Loot Target.",
+          type = "input",
           set = function(_, val)
-            VGT.OPTIONS.LOOTLIST.trackEverything = val
+            VGT.OPTIONS.LOOTLIST.masterLootDisenchantTarget = val
           end,
-          get = function(_)
-            return VGT.OPTIONS.LOOTLIST.trackEverything
+          get = function()
+            return VGT.OPTIONS.LOOTLIST.masterLootDisenchantTarget
           end
         },
         ignoredItems = {

@@ -157,18 +157,6 @@ function VGT:ShowKillExport(items, characters)
   self:ExportPopup("Export Kill", self:ExportKill(items, characters))
 end
 
-local function GetSameItemCount(link)
-  local count = 0
-
-  for i = 1, GetNumLootItems() do
-    if (link == GetLootSlotLink(i)) then
-      count = count + 1
-    end
-  end
-
-  return count
-end
-
 local function ShouldTrack(link)
   if (not link) then
     return false
@@ -202,6 +190,9 @@ local function ExportItems()
 end
 
 local function ShouldIgnore(ignores, link)
+  if not link then
+    return true
+   end
   local itemName, _ = GetItemInfo(link)
   for _, value in pairs(ignores) do
     local ignoreName, _ = GetItemInfo(value)
@@ -211,27 +202,41 @@ local function ShouldIgnore(ignores, link)
   end
 end
 
-local function GetAutoMasterLootTargetName()
-  local target = VGT.OPTIONS.LOOTLIST.masterLootTarget
-  if (target ~= nil) then
+local function GetAutoMasterLootTarget(ignores, lootIndex)
+  local quality, locked = select(5, GetLootSlotInfo(slot))
+  if locked or quality > 4 then
+    return
+  end
+  if ShouldIgnore(ignores, GetLootSlotLink(lootIndex)) then
+    return
+  end
+
+  local target
+
+  if quality < 4 then
+    target = VGT.OPTIONS.LOOTLIST.masterLootDisenchantTarget
+    if UnitExists(target) then
+      return target
+    end
+  end
+
+  target = VGT.OPTIONS.LOOTLIST.masterLootTarget
+  if UnitExists(target) then
     return target
   end
+
   return UnitName("player")
 end
 
 local function AutoMasterLoot()
-  local target = GetAutoMasterLootTargetName()
   local ignores = { strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "") }
   tinsert(ignores, 22726) -- Splinter of Atiesh
   for lootIndex = 1, GetNumLootItems() do
-    local _, _, _, _, _, locked = GetLootSlotInfo(lootIndex)
-    if (not locked) then
-      local link = GetLootSlotLink(lootIndex)
-      if (link and not ShouldIgnore(ignores, link)) then
-        for raidIndex = 1, 40 do
-          if (GetMasterLootCandidate(lootIndex, raidIndex) == target) then
-            GiveMasterLoot(lootIndex, raidIndex)
-          end
+    local target = GetAutoMasterLootTarget(ignores, lootIndex)
+    if target then
+      for raidIndex = 1, 40 do
+        if (GetMasterLootCandidate(lootIndex, raidIndex) == target) then
+          GiveMasterLoot(lootIndex, raidIndex)
         end
       end
     end

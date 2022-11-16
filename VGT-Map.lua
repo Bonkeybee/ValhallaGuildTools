@@ -527,7 +527,7 @@ local main = function()
 end
 
 local function OnAddonLoaded(_, isInitialLogin, isReloadingUI)
-  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.enabled and VGT.OPTIONS.MAP.enabled and not VGT.MapInitialized) then
+  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.MAP.enabled and not VGT.MapInitialized) then
     VGT.MapInitialized = true
     VGT:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
     if (IsInGuild()) then
