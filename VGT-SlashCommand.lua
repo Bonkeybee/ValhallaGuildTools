@@ -1,17 +1,14 @@
 function VGT.PrintAbout()
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "installed version: %s", VGT.VERSION)
+  VGT.LogSystem("installed version: %s", VGT.version)
 end
 
 function VGT.PrintHelp()
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "Command List:")
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "/vgt about - version information")
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "/vgt options - opens the VGT options window")
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "/vgt raidstart - shows raid start import code for loot masters")
-  VGT.Log(VGT.LOG_LEVEL.SYSTEM, "/vgt loot - shows the loot tracking window")
-  VGT.Log(
-    VGT.LOG_LEVEL.SYSTEM,
-    "/vgt users [by version] - shows how many people online in the guild are using the addon, and optionally lists their addon versions."
-  )
+  VGT.LogSystem("Command List:")
+  VGT.LogSystem("/vgt about - version information")
+  VGT.LogSystem("/vgt options - opens the VGT options window")
+  VGT.LogSystem("/vgt raidstart - shows raid start import code for loot masters")
+  VGT.LogSystem("/vgt loot - shows the loot tracking window")
+  VGT.LogSystem("/vgt users [by version] - shows how many people online in the guild are using the addon, and optionally lists their addon versions.")
 end
 
 -- ############################################################
@@ -28,13 +25,13 @@ SlashCmdList["VGT"] = function(message)
   elseif (command == "about") then
     VGT.PrintAbout()
   elseif (command == "users") then
-    VGT.UserFinder:PrintUserCount(arg1 == "by" and arg2 or nil)
+    VGT.userFinder:PrintUserCount(arg1 == "by" and arg2 or nil)
   elseif (command == "raidstart") then
     VGT:ShowRaidStartExport()
   elseif (command == "loot") then
-    VGT.MasterLooter:Toggle()
+    VGT.masterLooter:Toggle()
   else
-    VGT.Log(VGT.LOG_LEVEL.ERROR, "invalid command - type `/vgt help` for a list of commands")
+    VGT.LogError("invalid command - type `/vgt help` for a list of commands")
   end
 end
 

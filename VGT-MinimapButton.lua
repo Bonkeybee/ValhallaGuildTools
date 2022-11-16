@@ -1,8 +1,8 @@
 do
   local ldb = LibStub("LibDataBroker-1.1")
-  VGT.MinimapButton =
+  VGT.minimapButton =
   ldb:NewDataObject(
-    VGT.Name,
+    VGT.name,
     {
       type = "data source",
       text = "Valhalla Guild Tools",
@@ -13,9 +13,9 @@ do
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
         elseif button == "LeftButton" then
           if IsControlKeyDown() then
-            VGT.MasterLooter:Toggle()
+            VGT.masterLooter:Toggle()
           else
-            VGT.MasterLooter:Toggle()
+            VGT.masterLooter:Toggle()
           end
         end
       end,
@@ -32,7 +32,7 @@ do
     }
   )
 
-  function VGT.MinimapButton:UpdateIcon()
+  function VGT.minimapButton:UpdateIcon()
     self.icon = VGT.OPTIONS.oldIcon and
       "Interface\\Addons\\ValhallaGuildTools\\Valhalla.classic.tga" or
       "Interface\\Addons\\ValhallaGuildTools\\Valhalla.wotlk.tga"
@@ -42,8 +42,8 @@ do
     "PLAYER_ENTERING_WORLD",
     function(_, isInitialLogin, isReloadingUI)
       if (isInitialLogin or isReloadingUI) then
-        VGT.MinimapButton:UpdateIcon()
-        VGT.MinimapIcon:Register(VGT.Name, VGT.MinimapButton, VGT.OPTIONS.MINIMAP)
+        VGT.minimapButton:UpdateIcon()
+        LibStub("LibDBIcon-1.0"):Register(VGT.name, VGT.minimapButton, VGT.OPTIONS.MINIMAP)
       end
     end
   )

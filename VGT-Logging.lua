@@ -1,95 +1,66 @@
--- ############################################################
--- ##### CONSTANTS ############################################
--- ############################################################
-
-VGT.LOG_LEVEL = {
-  ALL = "ALL",
-  TRACE = "TRACE",
-  DEBUG = "DEBUG",
-  INFO = "INFO",
-  WARN = "WARN",
-  ERROR = "ERROR",
-  SYSTEM = "SYSTEM",
-  OFF = "OFF"
+VGT.LogLevel = {
+  TRACE = 1,
+  DEBUG = 2,
+  INFO = 3,
+  WARN = 4,
+  ERROR = 5,
+  SYSTEM = 6
 }
 
-VGT.LOG = {
-  LEVELS = {
-    [VGT.LOG_LEVEL.ALL] = -1,
-    [-1] = VGT.LOG_LEVEL.ALL,
-    [VGT.LOG_LEVEL.TRACE] = 2,
-    [2] = VGT.LOG_LEVEL.TRACE,
-    [VGT.LOG_LEVEL.DEBUG] = 3,
-    [3] = VGT.LOG_LEVEL.DEBUG,
-    [VGT.LOG_LEVEL.INFO] = 4,
-    [4] = VGT.LOG_LEVEL.INFO,
-    [VGT.LOG_LEVEL.WARN] = 5,
-    [5] = VGT.LOG_LEVEL.WARN,
-    [VGT.LOG_LEVEL.ERROR] = 6,
-    [6] = VGT.LOG_LEVEL.ERROR,
-    [VGT.LOG_LEVEL.SYSTEM] = 7,
-    [7] = VGT.LOG_LEVEL.SYSTEM,
-    [VGT.LOG_LEVEL.OFF] = 8,
-    [8] = VGT.LOG_LEVEL.OFF
-  },
-  COLORS = {
-    [VGT.LOG_LEVEL.ALL] = "|cff000000",
-    [-1] = "|cff000000", -- black
-    [VGT.LOG_LEVEL.TRACE] = "|cff00ffff",
-    [2] = "|cff00ffff", -- cyan
-    [VGT.LOG_LEVEL.DEBUG] = "|cffff00ff",
-    [3] = "|cffff00ff", -- purple
-    [VGT.LOG_LEVEL.INFO] = "|cffffff00",
-    [4] = "|cffffff00", -- yellow
-    [VGT.LOG_LEVEL.WARN] = "|cffff8800",
-    [5] = "|cffff8800", -- orange
-    [VGT.LOG_LEVEL.ERROR] = "|cffff0000",
-    [6] = "|cffff0000", -- red
-    [VGT.LOG_LEVEL.SYSTEM] = "|cffffff00",
-    [7] = "|cffffff00", -- yellow
-    [VGT.LOG_LEVEL.OFF] = "|cff000000",
-    [8] = "|cff000000" -- black
-  }
+local logColors = {
+  [VGT.LogLevel.TRACE] = GRAY_FONT_COLOR_CODE,
+  [VGT.LogLevel.DEBUG] = LIGHTYELLOW_FONT_COLOR_CODE,
+  [VGT.LogLevel.INFO] = YELLOW_FONT_COLOR_CODE,
+  [VGT.LogLevel.WARN] = ORANGE_FONT_COLOR_CODE,
+  [VGT.LogLevel.ERROR] = RED_FONT_COLOR_CODE,
+  [VGT.LogLevel.SYSTEM] = NORMAL_FONT_COLOR_CODE,
 }
 
--- ############################################################
--- ##### LOCAL FUNCTIONS ######################################
--- ############################################################
-
--- Coverts a log level to its corresponding number or nil
---  level: the log level to convert
-local logLevelToNumber = function(level)
-  -- Ignore converting log level if it doesn't exist
-  if (level ~= nil and VGT.TableContains(VGT.LOG.LEVELS, level) == true) then
-    -- Immediately return the log level if it's already a number
-    if (type(level) == "number") then
-      return level
-    end
-    return VGT.LOG.LEVELS[level]
+local function ShouldLog(level)
+  if level > VGT.LogLevel.INFO then
+    -- Errors, warnings, and system messages should always be displayed.
+    return true
   end
-  return nil
+  if VGT.OPTIONS.LOGGING.enabled then
+    local userLevel = VGT.OPTIONS.LOGGING.level
+    return type(userLevel) ~= "number" or level >= userLevel
+  end
 end
-
--- ############################################################
--- ##### GLOBAL FUNCTIONS #####################################
--- ############################################################
 
 -- Logs (prints) a given message at the specified log level
 --  level: the log level to print at
 --  message: the unformatted message
 --  ...: values to format the message with
-VGT.Log = function(level, message, ...)
-  if (VGT.OPTIONS.LOG.enabled) then
-    local logLevelNumber = logLevelToNumber(level)
-
-    -- Defaulting the log level to SYSTEM if none was provided
-    if (logLevelNumber == nil) then
-      logLevelNumber = VGT.LOG.LEVELS[VGT.LOG_LEVEL.SYSTEM]
+function VGT.Log(level, message, ...)
+  if ShouldLog(level) then
+    if select("#", ...) > 0 then
+      message = format(message, ...)
     end
-
-    -- Print the message if the log level is within bounds or if its a system log
-    if (VGT.OPTIONS.LOG.logLevel <= logLevelNumber or logLevelNumber == VGT.LOG.LEVELS[VGT.LOG_LEVEL.SYSTEM]) then
-      print(format(VGT.LOG.COLORS[logLevelNumber] .. "[%s] " .. message, VGT.Name, ...))
-    end
+    local color = logColors[level] or NORMAL_FONT_COLOR_CODE
+    print(color .. "[" .. VGT.name .. "]", message)
   end
+end
+
+function VGT.LogTrace(message, ...)
+  VGT.Log(VGT.LogLevel.TRACE, message, ...)
+end
+
+function VGT.LogDebug(message, ...)
+  VGT.Log(VGT.LogLevel.DEBUG, message, ...)
+end
+
+function VGT.LogInfo(message, ...)
+  VGT.Log(VGT.LogLevel.INFO, message, ...)
+end
+
+function VGT.LogWarning(message, ...)
+  VGT.Log(VGT.LogLevel.WARN, message, ...)
+end
+
+function VGT.LogError(message, ...)
+  VGT.Log(VGT.LogLevel.ERROR, message, ...)
+end
+
+function VGT.LogSystem(message, ...)
+  VGT.Log(VGT.LogLevel.SYSTEM, message, ...)
 end

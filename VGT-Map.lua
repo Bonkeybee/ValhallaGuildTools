@@ -35,6 +35,9 @@ local hiddenAppearanceData = {
   showRotation = false
 }
 
+local HereBeDragons = LibStub("HereBeDragons-2.0")
+local HereBeDragonsPins = LibStub("HereBeDragons-Pins-2.0")
+
 -- ############################################################
 -- ##### LOCAL FUNCTIONS ######################################
 -- ############################################################
@@ -187,9 +190,9 @@ local createWorldmapPin = function(player)
   local onEnterPin = function(self)
     GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
     local distance = 50
-    local mapId = VGT.HBDP.worldmapProvider:GetMap():GetMapID()
+    local mapId = HereBeDragonsPins.worldmapProvider:GetMap():GetMapID()
     if (mapId) then
-      local mapData = VGT.HBD.mapData[mapId]
+      local mapData = HereBeDragons.mapData[mapId]
       if (mapData and mapData.mapType) then
         --todo: these are just my best guesses of distances. Probably should be tweaked.
         if (mapData.mapType == 1) then --world
@@ -267,15 +270,15 @@ local destroyPlayer = function(name)
   local player = players[name]
   if (player ~= nil) then
     players[name] = nil
-    VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-    VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+    HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+    HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
     returnToBufferPool(player.WorldmapPin)
     returnToBufferPool(player.MinimapPin)
   end
 end
 
 local worldPosition = function(decimals)
-  local x, y, instanceMapId = VGT.HBD:GetPlayerWorldPosition()
+  local x, y, instanceMapId = HereBeDragons:GetPlayerWorldPosition()
   local instance = VGT:GetInstance(instanceMapId)
   if (instance) then
     x = instance.X
@@ -342,7 +345,7 @@ end
 
 local toggleBlizzardPins = function(show)
   if (not blizzardPins) then
-    for bpin in VGT.HBDP.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
+    for bpin in HereBeDragonsPins.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
       blizzardPins = bpin
       if (not originalRaidAppearanceData) then
         originalPartyAppearanceData = bpin.unitAppearanceData["raid"]
@@ -371,12 +374,12 @@ end
 local updatePins = function()
   for name, player in pairs(players) do
     if (player.PendingLocationChange) then
-      --VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-      --VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+      --HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+      --HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
       updatePinColors(name, player)
       if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
         if (VGT.OPTIONS.MAP.mode ~= "minimap") then
-          VGT.HBDP:AddWorldMapIconWorld(
+          HereBeDragonsPins:AddWorldMapIconWorld(
             MODULE_NAME,
             player.WorldmapPin,
             player.ContinentId,
@@ -387,7 +390,7 @@ local updatePins = function()
           )
         end
         if (VGT.OPTIONS.MAP.mode ~= "map" and not UnitIsUnit(name, "player")) then
-          VGT.HBDP:AddMinimapIconWorld(
+          HereBeDragonsPins:AddMinimapIconWorld(
             MODULE_NAME,
             player.MinimapPin,
             player.ContinentId,
@@ -400,13 +403,13 @@ local updatePins = function()
       player.PendingLocationChange = false
     end
   end
-  VGT.HBDP.worldmapProvider:RefreshAllData()
+  HereBeDragonsPins.worldmapProvider:RefreshAllData()
 end
 
 local addOrUpdatePartyMember = function(unit)
   local name = UnitName(unit)
   if (name ~= nil) then
-    local x, y, continentOrInstanceId = VGT.HBD:GetUnitWorldPosition(name)
+    local x, y, continentOrInstanceId = HereBeDragons:GetUnitWorldPosition(name)
 
     if (x == nil or y == nil) then
       local instance = VGT:GetInstance(continentOrInstanceId)
@@ -489,9 +492,9 @@ local cleanUnusedPins = function()
      then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
       destroyPlayer(name)
     elseif (VGT.OPTIONS.MAP.mode == "minimap") then -- remove the worldmap pin if the user changed to minimap only.
-      VGT.HBDP:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
+      HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
     elseif (VGT.OPTIONS.MAP.mode == "map") then -- remove the minimap pin if the user changed to worldmap only.
-      VGT.HBDP:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
+      HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
     end
   end
 end
@@ -527,8 +530,8 @@ local main = function()
 end
 
 local function OnAddonLoaded(_, isInitialLogin, isReloadingUI)
-  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.MAP.enabled and not VGT.MapInitialized) then
-    VGT.MapInitialized = true
+  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.MAP.enabled and not VGT.mapInitialized) then
+    VGT.mapInitialized = true
     VGT:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
     if (IsInGuild()) then
       VGT:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)

@@ -48,7 +48,7 @@ do
   end
 end
 
-VGT.ClassLookup = {
+local classLookup = {
   [1] = 1, -- Warrior
   [2] = 2, -- Paladin
   [3] = 4, -- Hunter
@@ -61,13 +61,13 @@ VGT.ClassLookup = {
   [11] = 1024 -- Druid
 }
 
-VGT.ReverseClassLookup = {}
+local reverseClassLookup = {}
 
-for k,v in pairs(VGT.ClassLookup) do
-  VGT.ReverseClassLookup[v] = k
+for k,v in pairs(classLookup) do
+  reverseClassLookup[v] = k
 end
 
-VGT.RaceLookup = {
+local raceLookup = {
   [1] = 0, -- Human
   [3] = 1, -- Dwarf
   [4] = 2, -- NightElf
@@ -76,7 +76,7 @@ VGT.RaceLookup = {
 }
 
 -- https://wowpedia.fandom.com/wiki/InstanceID
-VGT.TrackedInstances = {
+local trackedInstances = {
   [624] = true, -- Vault of Archavon
 
   [533] = true, -- Naxxramas
@@ -94,7 +94,7 @@ VGT.TrackedInstances = {
 }
 
 function VGT:ColorizeCharacterName(character)
-  local _, _, _, color = GetClassColor(select(2, GetClassInfo(VGT.ReverseClassLookup[character.Class])))
+  local _, _, _, color = GetClassColor(select(2, GetClassInfo(reverseClassLookup[character.Class])))
   if not color then
     return character.Name
   else
@@ -117,8 +117,8 @@ function VGT:GetCharacters()
           {
             Name = name,
             Gender = gender - 2,
-            Class = VGT.ClassLookup[classId],
-            Race = VGT.RaceLookup[raceId]
+            Class = classLookup[classId],
+            Race = raceLookup[raceId]
           }
         )
       end
@@ -175,7 +175,7 @@ local function ExportItems()
     instanceId = tonumber(instanceId)
   end
 
-  if (instanceId and (VGT.TrackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
+  if (instanceId and (trackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
     local itemLinks = {}
 
     for i = 1, GetNumLootItems() do
@@ -185,7 +185,7 @@ local function ExportItems()
       end
     end
 
-    VGT.MasterLooter.TrackAllForCreature(guid, itemLinks)
+    VGT.masterLooter.TrackAllForCreature(guid, itemLinks)
   end
 end
 

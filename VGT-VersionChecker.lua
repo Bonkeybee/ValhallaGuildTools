@@ -1,38 +1,36 @@
-local VersionChecker = {WarnedPlayers = {}, Warned = false}
-VGT.VersionChecker = VersionChecker
+local warnedPlayers = {}
+local warned = false
 
-function VersionChecker:CheckVersion()
+function VGT:CheckVersion()
   if (IsInGuild()) then
-    VGT:SendCoreMessage("SYNCHRONIZATION_REQUEST:" .. VGT.VERSION, "GUILD")
+    self.LogTrace("Requesting addon version from guild")
+    self:SendGuildAddonCommand("GV", self.version)
   end
 end
 
-local function OnCoreMessageReceived(message, sender)
+VGT:RegisterCommandHandler("GV", function(sender, version)
+  version = tonumber(version)
+  if not version or (not warnedPlayers[sender] and not UnitIsUnit(sender, "player") and version < tonumber(VGT.version)) then
+    VGT.LogTrace("Responding to version request from %s. Their version: %s; our version: %s", sender, version or "unspecified", VGT.version)
+    VGT:SendPlayerAddonCommand(sender, "VR", VGT.version)
+    warnedPlayers[sender] = true
+  end
+end)
+
+VGT:RegisterCommandHandler("VR", function(sender, version)
   if not UnitIsUnit(sender, "player") then
-    local event, version = strsplit(":", message)
-    if (event == "SYNCHRONIZATION_REQUEST") then
-      if (not VersionChecker.WarnedPlayers[sender] and version ~= nil and tonumber(version) < tonumber(VGT.VERSION)) then
-        VGT:SendCoreMessage("VERSION:" .. VGT.VERSION, "WHISPER", sender)
-        VersionChecker.WarnedPlayers[sender] = true
-      end
-    elseif (event == "VERSION") then
-      local myVersion = tonumber(VGT.VERSION)
-      local theirVersion = tonumber(version)
-      if (not VersionChecker.Warned and myVersion < theirVersion) then
-        VGT.Log(VGT.LOG_LEVEL.WARN, "there is a newer version of this addon (%s < %s)", myVersion, theirVersion)
-        VersionChecker.Warned = true
-      end
+    VGT.LogTrace("Recieved addon version response from %s (%s)", sender, version)
+    if not warned and version and tonumber(VGT.version) < tonumber(version) then
+      VGT.LogWarning("there is a newer version of this addon (%s < %s)", myVersion, theirVersion)
+      warned = true
     end
   end
-end
+end)
 
-local function OnPlayerEnteringWorld(_, isInitialLogin, isReloadingUI)
+VGT:RegisterEvent("PLAYER_ENTERING_WORLD", function(_, isInitialLogin, isReloadingUI)
   if (isInitialLogin or isReloadingUI) then
-    VGT.Log(VGT.LOG_LEVEL.TRACE, "initialized with version %s", VGT.VERSION)
+    VGT.LogTrace("initialized with version %s", VGT.version)
     GuildRoster()
-    VersionChecker:CheckVersion()
+    VGT:CheckVersion()
   end
-end
-
-VGT:RegisterEvent("PLAYER_ENTERING_WORLD", OnPlayerEnteringWorld)
-VGT:RegisterCoreMessageHandler(OnCoreMessageReceived)
+end)

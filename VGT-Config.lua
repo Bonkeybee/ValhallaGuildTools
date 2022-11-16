@@ -15,9 +15,7 @@ end
 local function DefaultConfig(options)
   options = default(options, {})
 
-  options.LOG = default(options.LOG, {})
-  options.LOG.enabled = default(options.LOG.enabled, true)
-  options.LOG.logLevel = default(options.LOG.logLevel, VGT.LOG.LEVELS[VGT.LOG_LEVEL.INFO])
+  options.LOGGING = default(options.LOGGING, { enabled = false, level = VGT.LogLevel.INFO })
 
   options.MAP = default(options.MAP, {})
   options.MAP.enabled = default(options.MAP.enabled, true)
@@ -47,19 +45,6 @@ local function DefaultConfig(options)
   return options
 end
 
-local function OnAddonLoaded(_, isInitialLogin, isReloadingUI)
-  if (not loaded and (isInitialLogin or isReloadingUI)) then
-    loaded = true
-    VGT.OPTIONS = DefaultConfig(VGT_OPTIONS)
-  end
-end
-
-local function OnPlayerLogout()
-  if (loaded) then
-    VGT_OPTIONS = VGT.OPTIONS
-  end
-end
-
 -- ############################################################
 -- ##### OPTIONS ##############################################
 -- ############################################################
@@ -79,10 +64,10 @@ local options = {
           order = 1,
           set = function(_, val)
             if val then
-              VGT.MinimapIcon:Show(VGT.Name)
+              LibStub("LibDBIcon-1.0"):Show(VGT.name)
               VGT.OPTIONS.MINIMAP.hide = false
             else
-              VGT.MinimapIcon:Hide(VGT.Name)
+              LibStub("LibDBIcon-1.0"):Hide(VGT.name)
               VGT.OPTIONS.MINIMAP.hide = true
             end
           end,
@@ -97,7 +82,7 @@ local options = {
           order = 2,
           set = function(_, val)
             VGT.OPTIONS.oldIcon = val
-            VGT.MinimapButton:UpdateIcon()
+            VGT.minimapButton:UpdateIcon()
           end,
           get = function()
             return VGT.OPTIONS.oldIcon
@@ -108,6 +93,7 @@ local options = {
     vgt_map = {
       name = "Guild Map",
       type = "group",
+      order = 2,
       args = {
         enable = {
           order = 0,
@@ -180,6 +166,7 @@ local options = {
     vgt_lootlist = {
       name = "Auto Master Looting",
       type = "group",
+      order = 4,
       args = {
         enable = {
           order = 0,
@@ -248,16 +235,17 @@ local options = {
     vgt_logging = {
       name = "Logging",
       type = "group",
+      order = 99,
       args = {
         enable = {
           name = "Enable",
           type = "toggle",
           desc = "When enabled, addon logs will be sent to the chat window.",
           set = function(_, val)
-            VGT.OPTIONS.LOG.enabled = val
+            VGT.OPTIONS.LOGGING.enabled = val
           end,
           get = function(_)
-            return VGT.OPTIONS.LOG.enabled
+            return VGT.OPTIONS.LOGGING.enabled
           end
         },
         log_level = {
@@ -265,20 +253,15 @@ local options = {
           desc = "verbosity of the addon",
           type = "select",
           values = {
-            VGT.LOG_LEVEL.ALL,
-            VGT.LOG_LEVEL.TRACE,
-            VGT.LOG_LEVEL.DEBUG,
-            VGT.LOG_LEVEL.INFO,
-            VGT.LOG_LEVEL.WARN,
-            VGT.LOG_LEVEL.ERROR,
-            VGT.LOG_LEVEL.SYSTEM,
-            VGT.LOG_LEVEL.OFF
+            [VGT.LogLevel.TRACE] = "Trace",
+            [VGT.LogLevel.DEBUG] = "Debug",
+            [VGT.LogLevel.INFO] = "Info"
           },
           set = function(_, val)
-            VGT.OPTIONS.LOG.logLevel = val
+            VGT.OPTIONS.LOGGING.level = val
           end,
           get = function(_)
-            return VGT.OPTIONS.LOG.logLevel
+            return VGT.OPTIONS.LOGGING.level
           end
         }
       }
@@ -286,6 +269,7 @@ local options = {
     vgt_roll = {
       name = "Roll Window",
       type = "group",
+      order = 3,
       args = {
         enable = {
           name = "Enable",
@@ -322,8 +306,18 @@ local options = {
     }
   }
 }
-LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(VGT.Name, options, SLASH_VGT1)
-VGT.menu = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(VGT.Name, VGT.Name)
+LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(VGT.name, options, SLASH_VGT1)
+VGT.menu = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(VGT.name, VGT.name)
 
-VGT:RegisterEvent("PLAYER_ENTERING_WORLD", OnAddonLoaded)
-VGT:RegisterEvent("PLAYER_LOGOUT", OnPlayerLogout)
+VGT:RegisterEvent("PLAYER_ENTERING_WORLD", function(_, isInitialLogin, isReloadingUI)
+  if (not loaded and (isInitialLogin or isReloadingUI)) then
+    loaded = true
+    VGT.OPTIONS = DefaultConfig(VGT_OPTIONS)
+  end
+end)
+
+VGT:RegisterEvent("PLAYER_LOGOUT", function()
+  if (loaded) then
+    VGT_OPTIONS = VGT.OPTIONS
+  end
+end)

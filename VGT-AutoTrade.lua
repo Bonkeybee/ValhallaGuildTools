@@ -96,6 +96,6 @@ VGT:RegisterEvent("UI_INFO_MESSAGE", function(event, arg1, arg2)
                 itemData.traded = true
             end
         end
-        VGT.MasterLooter.Refresh()
+        VGT.masterLooter.Refresh()
     end
 end)
