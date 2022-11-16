@@ -173,39 +173,55 @@ local function configureEncounter(creatureGuid)
     spacer:SetText(" ")
     root.scroll:AddChild(spacer)
 
-    local exportButton = AceGUI:Create("Button")
-    exportButton:SetText("Export Items")
-    exportButton:SetFullWidth(true)
-    exportButton:SetCallback(
-        "OnClick",
-        function()
-            local creatureData = readData(creatureGuid)
+    local creatureData = readData(creatureGuid)
 
-            if creatureData then
-                local items = {}
-                local allowedClasses = {
-                    [2] = true, -- Weapon
-                    [4] = true, -- Armor
-                    [15] = true -- Miscellaneous
-                }
-                local ignoredItems = {
-                    [44569] = true, -- Key to the Focusing Iris
-                    [44577] = true -- Heroic Key to the Focusing Iris
-                }
+    if creatureData then
+        local exportButton = AceGUI:Create("Button")
+        exportButton:SetText("Export Items")
+        exportButton:SetFullWidth(true)
+        exportButton:SetCallback("OnClick", function()
+            local items = {}
+            local allowedClasses = {
+                [2] = true, -- Weapon
+                [4] = true, -- Armor
+                [15] = true -- Miscellaneous
+            }
+            local ignoredItems = {
+                [44569] = true, -- Key to the Focusing Iris
+                [44577] = true -- Heroic Key to the Focusing Iris
+            }
 
-                for _,itemData in ipairs(creatureData.items) do
-                    if (not itemData.class or itemData.quality == 4)
-                    and (not itemData.class or allowedClasses[itemData.class])
-                    and not ignoredItems[itemData.id] then
-                        tinsert(items, itemData.id)
-                    end
+            for _,itemData in ipairs(creatureData.items) do
+                if (not itemData.class or itemData.quality == 4)
+                and (not itemData.class or allowedClasses[itemData.class])
+                and not ignoredItems[itemData.id] then
+                    tinsert(items, itemData.id)
                 end
-                
-                VGT:ShowKillExport(items, creatureData.characters)
+            end
+            
+            VGT:ShowKillExport(items, creatureData.characters)
+        end)
+        root.scroll:AddChild(exportButton)
+
+        local allTraded = true
+
+        for _, itemData in ipairs(creatureData.items) do
+            if not itemData.traded then
+                allTraded = false
+                break
             end
         end
-    )
-    root.scroll:AddChild(exportButton)
+
+        if allTraded then
+            local deleteButton = AceGUI:Create("Button")
+            deleteButton:SetText("Delete")
+            deleteButton:SetFullWidth(true)
+            deleteButton:SetCallback("OnClick", function()
+                VGT.masterLooter.Delete(creatureGuid)
+            end)
+            root.scroll:AddChild(deleteButton)
+        end
+    end
 end
 
 local function configureItem(creatureId, itemId, itemIndex)
@@ -589,22 +605,37 @@ local function createRoot()
     VGT.masterLooter.Refresh()
 end
 
-function VGT.masterLooter.ClearAllConfirmed()
-    VGT_MasterLootData = {}
-    VGT.masterLooter.Refresh()
+function VGT.masterLooter.ClearAll()
+    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] = StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] or {
+        text = CONFIRM_CONTINUE,
+        button1 = ACCEPT,
+        button2 = CANCEL,
+        hideOnEscape = true,
+        OnAccept = function()
+            VGT_MasterLootData = {}
+            VGT.masterLooter.Refresh()
+        end
+    }
+    StaticPopup_Show("CONFIRM_VGTML_CLEAR")
 end
 
-function VGT.masterLooter.ClearAll()
-    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] =
-    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] or
-        {
-            text = CONFIRM_CONTINUE,
-            button1 = ACCEPT,
-            button2 = CANCEL,
-            hideOnEscape = true,
-            OnAccept = VGT.masterLooter.ClearAllConfirmed
-        }
-    StaticPopup_Show("CONFIRM_VGTML_CLEAR")
+function VGT.masterLooter.Delete(creatureGuid)
+    StaticPopupDialogs["CONFIRM_VGTML_DELETE"] = StaticPopupDialogs["CONFIRM_VGTML_DELETE"] or {
+        text = CONFIRM_CONTINUE,
+        button1 = ACCEPT,
+        button2 = CANCEL,
+        hideOnEscape = true
+    }
+    StaticPopupDialogs["CONFIRM_VGTML_DELETE"].OnAccept = function()
+        for i, creature in ipairs(VGT_MasterLootData) do
+            if creature.id == creatureGuid then
+                tremove(VGT_MasterLootData, i)
+                VGT.masterLooter.Refresh()
+                return
+            end
+        end
+    end
+    StaticPopup_Show("CONFIRM_VGTML_DELETE")
 end
 
 function VGT.masterLooter.Toggle()
