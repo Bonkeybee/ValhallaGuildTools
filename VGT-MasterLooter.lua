@@ -3,6 +3,24 @@ local root = nil
 VGT.masterLooter = { rolls = {}, passes = {} }
 VGT_MasterLootData = VGT_MasterLootData or {}
 
+-- https://wowpedia.fandom.com/wiki/InstanceID
+local trackedInstances = {
+    [624] = true, -- Vault of Archavon
+
+    [533] = true, -- Naxxramas
+    [615] = true, -- Obsidian Sanctum
+    [616] = true, -- Eye of Eternity
+
+    [603] = true, -- Ulduar
+
+    [649] = true, -- Trial of the Crusader
+    [249] = true, -- Onyxia's Lair
+
+    [631] = true, -- Icecrown Citadel
+
+    [724] = true -- Ruby Sanctum
+}
+
 local function sendMLMessage(message, nowarn)
     if UnitInRaid("player") then
         if nowarn then
@@ -488,7 +506,7 @@ local function configureHome()
         local infoType, itemId, itemLink = GetCursorInfo()
         ClearCursor()
         if infoType == "item" then
-            VGT.masterLooter.TrackUnknown(nil, itemId)
+            VGT.masterLooter:TrackUnknown(itemId)
         else
             VGT.LogSystem("Click this button while holding an item to add it to the tracker.")
         end
@@ -749,43 +767,67 @@ function VGT.masterLooter.Refresh()
     end
 end
 
-function VGT.masterLooter.TrackUnknown(creatureId, itemId)
-    local creatureData, itemData = VGT.masterLooter.Track(creatureId or "Creature-0-0-0-0-0-0-0", itemId)
+function VGT.masterLooter:TrackUnknown(itemId, creatureId)
+    VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId or "Unknown")
+    local creatureData, itemData = self.Track(itemId, creatureId)
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
         itemData.name = item:GetItemName()
         itemData.link = item:GetItemLink()
         itemData.icon = item:GetItemIcon()
-        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(itemData.link))
-        itemData.class = classId
-        itemData.quality = itemQuality
+        itemData.quality = item:GetItemQuality()
+        itemData.class = select(6, GetItemInfoInstant(itemId))
         VGT.masterLooter.Refresh()
     end)
     return creatureData, itemData
 end
 
-function VGT.masterLooter.TrackAllForCreature(creatureId, itemLinks)
-    local creatureData
+function VGT.masterLooter:TrackLoot()
+    local guid = GetLootSourceInfo(1)
+    VGT.LogTrace("Tracking loot for %s", guid)
+    local instanceId = select(4, strsplit("-", guid or ""))
+    instanceId = tonumber(instanceId)
 
-    for i, v in ipairs(VGT_MasterLootData) do
-        if v.id == creatureId then
-            creatureData = v
-            break
+    if (instanceId and (trackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
+        for _, v in ipairs(VGT_MasterLootData) do
+            if v.id == guid then
+                return
+            end
         end
-    end
 
-    if not creatureData then
-        for _,link in ipairs(itemLinks) do
-            local item = Item:CreateFromItemLink(link)
-            item:ContinueOnItemLoad(function()
-              VGT.masterLooter.Track(creatureId, item:GetItemID(), item:GetItemName(), link, item:GetItemIcon())
-            end)
+        local anyAdded
+
+        for i = 1, GetNumLootItems() do
+            if GetLootSlotType(i) == 1 then -- 1 = Item
+                local link = GetLootSlotLink(i)
+                if link then
+                    local itemId, _, _, _, _, classId = GetItemInfoInstant(link)
+                    if classId ~= 10 then -- 10 = Money (currency)
+                        local icon, name, _, currencyId, quality = GetLootSlotInfo(i)
+                        if not currencyId and (quality == 4 or (VGT.OPTIONS.LOOTLIST.trackEverything and quality > 1)) then
+                            VGT.LogTrace("Tracking $s", link)
+                            local creatureData, itemData = self.Track(itemId, guid)
+                            itemData.name = name
+                            itemData.link = link
+                            itemData.icon = icon
+                            itemData.quality = quality
+                            itemData.class = classId
+                            anyAdded = true
+                        end
+                    end
+                end
+            end
+        end
+
+        if anyAdded then
+            self.Refresh()
         end
     end
 end
 
-function VGT.masterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon, ignoreNonEpic)
-    local creatureData
+function VGT.masterLooter.Track(itemId, creatureId)
+    creatureId = creatureId or "Creature-0-0-0-0-0-0-0"
+    local creatureData, newCreature
 
     for i, v in ipairs(VGT_MasterLootData) do
         if v.id == creatureId then
@@ -800,7 +842,7 @@ function VGT.masterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
             items = {},
             characters = VGT:GetCharacters()
         }
-        tinsert(VGT_MasterLootData, creatureData)
+        newCreature = true
     end
 
     local nextItemIndex = 1
@@ -813,29 +855,12 @@ function VGT.masterLooter.Track(creatureId, itemId, itemName, itemLink, itemIcon
 
     local itemData = {
         id = itemId,
-        index = nextItemIndex,
-        name = itemName,
-        link = itemLink,
-        icon = itemIcon
+        index = nextItemIndex
     }
-    if itemLink then
-        local itemQuality, _, _, _, _, _, _, _, _, classId = select(3, GetItemInfo(itemLink))
-        itemData.quality = itemQuality
-        itemData.class = classId
 
-        if quality ~= 4 and ignoreNonEpic then
-            if #creatureData.items == 0 then
-                for i,v in ipairs(VGT_MasterLootData) do
-                    if creatureData == v then
-                        tremove(VGT_MasterLootData, i)
-                        break
-                    end
-                end
-            end
-            return
-        end
+    if newCreature then
+        tinsert(VGT_MasterLootData, creatureData)
     end
-
     tinsert(creatureData.items, itemData)
 
     incrementStandings(itemId, creatureData.characters)
@@ -1053,10 +1078,10 @@ function VGT.masterLooter:CancelRoll()
 end
 
 function VGT.masterLooter:AddDummyData()
-    VGT.masterLooter.TrackUnknown(nil, 39272)
-    VGT.masterLooter.TrackUnknown(nil, 39270)
-    VGT.masterLooter.TrackUnknown(nil, 39276)
-    VGT.masterLooter.TrackUnknown(nil, 39280)
+    VGT.masterLooter:TrackUnknown(39272)
+    VGT.masterLooter:TrackUnknown(39270)
+    VGT.masterLooter:TrackUnknown(39276)
+    VGT.masterLooter:TrackUnknown(39280)
 end
 
 local function whitelisted(name)

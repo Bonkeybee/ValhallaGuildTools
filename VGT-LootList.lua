@@ -75,24 +75,6 @@ local raceLookup = {
   [11] = 4 -- Draenei
 }
 
--- https://wowpedia.fandom.com/wiki/InstanceID
-local trackedInstances = {
-  [624] = true, -- Vault of Archavon
-
-  [533] = true, -- Naxxramas
-  [615] = true, -- Obsidian Sanctum
-  [616] = true, -- Eye of Eternity
-
-  [603] = true, -- Ulduar
-
-  [649] = true, -- Trial of the Crusader
-  [249] = true, -- Onyxia's Lair
-
-  [631] = true, -- Icecrown Citadel
-
-  [724] = true -- Ruby Sanctum
-}
-
 function VGT:ColorizeCharacterName(character)
   local _, _, _, color = GetClassColor(select(2, GetClassInfo(reverseClassLookup[character.Class])))
   if not color then
@@ -157,38 +139,6 @@ function VGT:ShowKillExport(items, characters)
   self:ExportPopup("Export Kill", self:ExportKill(items, characters))
 end
 
-local function ShouldTrack(link)
-  if (not link) then
-    return false
-  end
-
-  local _, _, itemQuality, _, _, itemType = GetItemInfo(link)
-
-  return (itemQuality == 4 or VGT.OPTIONS.LOOTLIST.trackEverything) and itemType ~= "Money"
-end
-
-local function ExportItems()
-  local guid, _ = GetLootSourceInfo(1)
-  local instanceId = select(4, strsplit("-", guid or ""))
-
-  if (instanceId) then
-    instanceId = tonumber(instanceId)
-  end
-
-  if (instanceId and (trackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
-    local itemLinks = {}
-
-    for i = 1, GetNumLootItems() do
-      local link = GetLootSlotLink(i)
-      if (ShouldTrack(link)) then
-        tinsert(itemLinks, link)
-      end
-    end
-
-    VGT.masterLooter.TrackAllForCreature(guid, itemLinks)
-  end
-end
-
 local function ShouldIgnore(ignores, link)
   if not link then
     return true
@@ -203,8 +153,8 @@ local function ShouldIgnore(ignores, link)
 end
 
 local function GetAutoMasterLootTarget(ignores, lootIndex)
-  local quality, locked = select(5, GetLootSlotInfo(slot))
-  if locked or quality > 4 then
+  local quality, locked = select(5, GetLootSlotInfo(lootIndex))
+  if locked or not quality or quality > 4 then
     return
   end
   if ShouldIgnore(ignores, GetLootSlotLink(lootIndex)) then
@@ -229,13 +179,14 @@ local function GetAutoMasterLootTarget(ignores, lootIndex)
 end
 
 local function AutoMasterLoot()
+  VGT.LogTrace("Auto masterlooting")
   local ignores = { strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "") }
-  tinsert(ignores, 22726) -- Splinter of Atiesh
   for lootIndex = 1, GetNumLootItems() do
     local target = GetAutoMasterLootTarget(ignores, lootIndex)
     if target then
       for raidIndex = 1, 40 do
         if (GetMasterLootCandidate(lootIndex, raidIndex) == target) then
+          VGT.LogTrace("Giving %s to %s", GetLootSlotLink(lootIndex), target)
           GiveMasterLoot(lootIndex, raidIndex)
         end
       end
@@ -243,23 +194,18 @@ local function AutoMasterLoot()
   end
 end
 
-local function OnLootOpened(_, autoLoot, isFromItem)
+VGT:RegisterEvent("LOOT_READY", function(_, autoLoot)
   local lootmethod, masterlooterPartyID, _ = GetLootMethod()
   if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
-    if isFromItem then
-      -- Not doing this check can cause errors if an inventory item is looted while in master loot mode
-      local guid, _ = GetLootSourceInfo(1)
-      if not VGT:UnitNameFromGuid(guid, true) then
-        -- 'isFromItem' seems to also be true for chests. Since there is a comprehensive list of chest items
-        -- built-in, this can be used to look up whether we should export and auto loot or not.
-        return
+    local guid = GetLootSourceInfo(1)
+    if guid then
+      local sourceType = strsplit("-", guid, 2)
+      if sourceType ~= "Item" then
+        VGT.masterLooter:TrackLoot()
+        if (autoLoot and VGT.OPTIONS.LOOTLIST.autoMasterLoot) then
+          AutoMasterLoot()
+        end
       end
     end
-    ExportItems()
-    if (autoLoot and VGT.OPTIONS.LOOTLIST.autoMasterLoot) then
-      AutoMasterLoot()
-    end
   end
-end
-
-VGT:RegisterEvent("LOOT_OPENED", OnLootOpened)
+end)
