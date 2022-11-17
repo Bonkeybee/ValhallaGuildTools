@@ -3,9 +3,6 @@ local activeSlots = {}
 
 CreateFrame("GameTooltip", "VGTAutoTradeScanningTooltip", nil, "GameTooltipTemplate")
 VGTAutoTradeScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-VGTAutoTradeScanningTooltip:AddFontStrings(
-    VGTAutoTradeScanningTooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
-    VGTAutoTradeScanningTooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText"))
 
 local function bagSlotActive(bag, slot)
     local v = bag..","..slot
@@ -60,39 +57,54 @@ VGT:RegisterEvent("TRADE_SHOW", function()
         activeSlots[6] = nil
         local name = UnitName("npc")
         local targetSlot = 1
+        VGT.LogTrace("Checking autotrades for %s", name)
         for _,creatureData in ipairs(VGT_MasterLootData) do
             for _,itemData in ipairs(creatureData.items) do
                 if targetSlot > 6 then
+                    VGT.LogTrace("Reached autotrade limit")
                     return
                 end
                 if itemData.winner and name == itemData.winner and not itemData.traded then
+                    VGT.LogTrace("%s needs to be traded %s", name, itemData.link)
                     local bagId, slotId = findEligibleItemLoc(itemData.id)
                     if bagId ~= nil and slotId ~= nil then
-                        ClearCursor()
-                        PickupContainerItem(bagId, slotId)
-                        ClickTradeButton(targetSlot)
-                        currentTrades[targetSlot] = itemData
-                        activeSlots[targetSlot] = bagId..","..slotId
+                        local thisSlot = targetSlot
+                        C_Timer.After(thisSlot / 10, function()
+                            VGT.LogTrace("Assigning %s (bag %s, slot %s) to trade slot %s", itemData.link, bagId, slotId, targetSlot)
+                            ClearCursor()
+                            PickupContainerItem(bagId, slotId)
+                            ClickTradeButton(thisSlot)
+                            currentTrades[thisSlot] = itemData
+                            activeSlots[thisSlot] = bagId..","..slotId
+                        end)
                         targetSlot = targetSlot + 1
                     end
                 end
             end
         end
+        VGT.LogTrace("Autotrade complete")
     end
 end)
 
 VGT:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED", function(event, slot)
-    currentTrades[slot] = nil
-    activeSlots[slot] = nil
+    if VGT.OPTIONS.AUTOTRADE.enabled then
+        local data = currentTrades[slot]
+        if data then
+            VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
+            currentTrades[slot] = nil
+        end
+        activeSlots[slot] = nil
+    end
 end)
 
 VGT:RegisterEvent("UI_INFO_MESSAGE", function(event, arg1, arg2)
-    if arg2 == ERR_TRADE_COMPLETE then
+    if arg2 == ERR_TRADE_COMPLETE and VGT.OPTIONS.AUTOTRADE.enabled then
         for i=1,6 do
             local itemData = currentTrades[i]
             currentTrades[i] = nil
             activeSlots[i] = nil
             if itemData then
+                VGT.LogTrace("Auto trade in slot %s for %s complete.", i, itemData.link)
                 itemData.traded = true
             end
         end
