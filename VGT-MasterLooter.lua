@@ -520,9 +520,9 @@ local function configureHome()
 
     local treeToggle = AceGUI:Create("CheckBox")
     treeToggle:SetLabel("Group By Winner")
-    treeToggle:SetValue(VGT.masterLooter.groupByWinner and true or false)
+    treeToggle:SetValue(VGT.db.profile.lootTracker.groupByWinner and true or false)
     treeToggle:SetCallback("OnValueChanged", function()
-        VGT.masterLooter.groupByWinner = not VGT.masterLooter.groupByWinner
+        VGT.db.profile.lootTracker.groupByWinner = not VGT.db.profile.lootTracker.groupByWinner
         VGT.masterLooter.Refresh()
     end)
     root.scroll:AddChild(treeToggle)
@@ -582,22 +582,14 @@ local function createRoot()
     VGT.masterLooter.root = root
     root:SetTitle("Valhalla Master Looter")
     root:SetLayout("Fill")
-    root:SetHeight(VGT.OPTIONS.LOOTLIST.Height < 240 and 240 or VGT.OPTIONS.LOOTLIST.Height)
-    root:SetWidth(VGT.OPTIONS.LOOTLIST.Width < 400 and 400 or VGT.OPTIONS.LOOTLIST.Width)
-    root:SetPoint(
-      VGT.OPTIONS.LOOTLIST.Point,
-      UIParent,
-      VGT.OPTIONS.LOOTLIST.Point,
-      VGT.OPTIONS.LOOTLIST.X,
-      VGT.OPTIONS.LOOTLIST.Y
-    )
+    VGT.masterLooter:RefreshWindowConfig() -- SetPoint, SetWidth, SetHeight
     root:SetCallback("OnClose", function()
         local point, _, _, x, y = root.frame:GetPoint(1)
-        VGT.OPTIONS.LOOTLIST.X = x
-        VGT.OPTIONS.LOOTLIST.Y = y
-        VGT.OPTIONS.LOOTLIST.Point = point
-        VGT.OPTIONS.LOOTLIST.Width = root.frame:GetWidth()
-        VGT.OPTIONS.LOOTLIST.Height = root.frame:GetHeight()
+        VGT.db.profile.lootTracker.x = x
+        VGT.db.profile.lootTracker.y = y
+        VGT.db.profile.lootTracker.point = point
+        VGT.db.profile.lootTracker.width = root.frame:GetWidth()
+        VGT.db.profile.lootTracker.height = root.frame:GetHeight()
     end)
 
     local tree = AceGUI:Create("TreeGroup")
@@ -621,6 +613,20 @@ local function createRoot()
     root.scroll = scroll
 
     VGT.masterLooter.Refresh()
+end
+
+function VGT.masterLooter:RefreshWindowConfig()
+    if root then
+        root:SetHeight(VGT.db.profile.lootTracker.height < 240 and 240 or VGT.db.profile.lootTracker.height)
+        root:SetWidth(VGT.db.profile.lootTracker.width < 400 and 400 or VGT.db.profile.lootTracker.width)
+        root:SetPoint(
+            VGT.db.profile.lootTracker.point,
+            UIParent,
+            VGT.db.profile.lootTracker.point,
+            VGT.db.profile.lootTracker.x,
+            VGT.db.profile.lootTracker.y
+        )
+    end
 end
 
 function VGT.masterLooter.ClearAll()
@@ -716,7 +722,7 @@ function VGT.masterLooter.Refresh()
             }
         }
 
-        if VGT.masterLooter.groupByWinner then
+        if VGT.db.profile.lootTracker.groupByWinner then
             local characters = {}
             local unassigned = {}
             for _,creatureData in ipairs(VGT_MasterLootData) do
@@ -788,7 +794,7 @@ function VGT.masterLooter:TrackLoot()
     local instanceId = select(4, strsplit("-", guid or ""))
     instanceId = tonumber(instanceId)
 
-    if (instanceId and (trackedInstances[instanceId] or VGT.OPTIONS.LOOTLIST.trackEverything)) then
+    if (instanceId and (trackedInstances[instanceId] or VGT.db.profile.lootTracker.trackAllInstances)) then
         for _, v in ipairs(VGT_MasterLootData) do
             if v.id == guid then
                 return
@@ -804,7 +810,7 @@ function VGT.masterLooter:TrackLoot()
                     local itemId, _, _, _, _, classId = GetItemInfoInstant(link)
                     if classId ~= 10 then -- 10 = Money (currency)
                         local icon, name, _, currencyId, quality = GetLootSlotInfo(i)
-                        if not currencyId and (quality == 4 or (VGT.OPTIONS.LOOTLIST.trackEverything and quality > 1)) then
+                        if not currencyId and (quality == 4 or (VGT.db.profile.lootTracker.trackUncommon and quality > 1)) then
                             VGT.LogTrace("Tracking $s", link)
                             local creatureData, itemData = self.Track(itemId, guid)
                             itemData.name = name

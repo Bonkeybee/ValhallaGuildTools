@@ -1,12 +1,3 @@
-VGT.LogLevel = {
-  TRACE = 1,
-  DEBUG = 2,
-  INFO = 3,
-  WARN = 4,
-  ERROR = 5,
-  SYSTEM = 6
-}
-
 local logColors = {
   [VGT.LogLevel.TRACE] = GRAY_FONT_COLOR_CODE,
   [VGT.LogLevel.DEBUG] = LIGHTYELLOW_FONT_COLOR_CODE,
@@ -21,8 +12,8 @@ local function ShouldLog(level)
     -- Errors, warnings, and system messages should always be displayed.
     return true
   end
-  if VGT.OPTIONS.LOGGING.enabled then
-    local userLevel = VGT.OPTIONS.LOGGING.level
+  if VGT.db and VGT.db.profile.logging.enabled then
+    local userLevel = VGT.db.profile.logging.level
     return type(userLevel) ~= "number" or level >= userLevel
   end
 end

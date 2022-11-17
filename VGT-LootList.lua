@@ -164,13 +164,13 @@ local function GetAutoMasterLootTarget(ignores, lootIndex)
   local target
 
   if quality < 4 then
-    target = VGT.OPTIONS.LOOTLIST.masterLootDisenchantTarget
+    target = VGT.db.char.autoMasterLoot.disenchantTarget
     if UnitExists(target) then
       return target
     end
   end
 
-  target = VGT.OPTIONS.LOOTLIST.masterLootTarget
+  target = VGT.db.char.autoMasterLoot.target
   if UnitExists(target) then
     return target
   end
@@ -180,7 +180,7 @@ end
 
 local function AutoMasterLoot()
   VGT.LogTrace("Auto masterlooting")
-  local ignores = { strsplit(";", VGT.OPTIONS.LOOTLIST.ignoredItems or "") }
+  local ignores = { strsplit(";", VGT.db.profile.autoMasterLoot.ignoredItems or "") }
   for lootIndex = 1, GetNumLootItems() do
     local target = GetAutoMasterLootTarget(ignores, lootIndex)
     if target then
@@ -202,7 +202,7 @@ VGT:RegisterEvent("LOOT_READY", function(_, autoLoot)
       local sourceType = strsplit("-", guid, 2)
       if sourceType ~= "Item" then
         VGT.masterLooter:TrackLoot()
-        if (autoLoot and VGT.OPTIONS.LOOTLIST.autoMasterLoot) then
+        if (autoLoot and VGT.db.profile.autoMasterLoot.enabled) then
           AutoMasterLoot()
         end
       end

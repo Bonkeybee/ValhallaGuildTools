@@ -288,7 +288,7 @@ local worldPosition = function(decimals)
 end
 
 local sendMyLocation = function(target)
-  if (IsInGuild() and VGT.OPTIONS.MAP.sendMyLocation) then
+  if (IsInGuild() and VGT.db.profile.map.sendMyLocation) then
     local x, y, instanceMapId = worldPosition()
     local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
     if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
@@ -303,24 +303,6 @@ local sendMyLocation = function(target)
     end
   end
 end
---local lastPublicSend = 0
---local sendMyLocationChat = function()
---  if (IsInGuild() and VGT.OPTIONS.MAP.sendMyLocation) then
---    local x, y, instanceMapId = worldPosition()
---    local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
---    if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
---      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
---      if (GetServerTime() - lastPublicSend > 36) then
---        lastPublicSend = GetServerTime()
---        local id = GetChannelName("VGTMAP")
---        if (id) then
---          SetChannelOwner("VGTMAP", "Bonkeybee")
---          SendChatMessage(data, "CHANNEL", nil, id)
---        end
---      end
---    end
---  end
---end
 
 local updatePinColors = function(name, player)
   local width = 0.07
@@ -378,7 +360,7 @@ local updatePins = function()
       --HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
       updatePinColors(name, player)
       if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
-        if (VGT.OPTIONS.MAP.mode ~= "minimap") then
+        if (VGT.db.profile.map.mode ~= VGT.MapOutput.MINIMAP) then
           HereBeDragonsPins:AddWorldMapIconWorld(
             MODULE_NAME,
             player.WorldmapPin,
@@ -389,14 +371,14 @@ local updatePins = function()
             "PIN_FRAME_LEVEL_GROUP_MEMBER"
           )
         end
-        if (VGT.OPTIONS.MAP.mode ~= "map" and not UnitIsUnit(name, "player")) then
+        if (VGT.db.profile.map.mode ~= VGT.MapOutput.MAP and not UnitIsUnit(name, "player")) then
           HereBeDragonsPins:AddMinimapIconWorld(
             MODULE_NAME,
             player.MinimapPin,
             player.ContinentId,
             player.X,
             player.Y,
-            VGT.OPTIONS.MAP.showMinimapOutOfBounds and UnitInParty(name)
+            VGT.db.profile.map.showMinimapOutOfBounds and UnitInParty(name)
           )
         end
       end
@@ -443,7 +425,7 @@ local addOrUpdatePartyMember = function(unit)
 end
 
 local updatePartyMembers = function()
-  if (VGT.OPTIONS.MAP.showMe) then
+  if (VGT.db.profile.map.showMe) then
     addOrUpdatePartyMember("player")
   else
     destroyPlayer(UnitName("player"))
@@ -486,14 +468,14 @@ end
 local cleanUnusedPins = function()
   for name, player in pairs(players) do
     if
-      (not VGT.OPTIONS.MAP.enabled or -- remove all pins if the addon is disabled.
+      (not VGT.db.profile.map.enabled or -- remove all pins if the addon is disabled.
         (not UnitInParty(name) and not player.HasCommMessages and not UnitIsUnit(name, PLAYER)) or -- remove non-party members that aren't sending comm messages
         (player.HasCommMessages and player.LastCommReceived and (GetTime() - player.LastCommReceived) > 180))
      then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
       destroyPlayer(name)
-    elseif (VGT.OPTIONS.MAP.mode == "minimap") then -- remove the worldmap pin if the user changed to minimap only.
+    elseif (VGT.db.profile.map.mode == VGT.MapOutput.MINIMAP) then -- remove the worldmap pin if the user changed to minimap only.
       HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-    elseif (VGT.OPTIONS.MAP.mode == "map") then -- remove the minimap pin if the user changed to worldmap only.
+    elseif (VGT.db.profile.map.mode == VGT.MapOutput.MAP) then -- remove the minimap pin if the user changed to worldmap only.
       HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
     end
   end
@@ -501,7 +483,12 @@ end
 
 local lastUpdate = GetTime()
 local main = function()
-  if (VGT.OPTIONS.MAP.enabled) then
+  if (VGT.db.profile.map.enabled) then
+    updatePartyMembers()
+    cleanUnusedPins()
+    toggleBlizzardPins(VGT.db.profile.map.mode == VGT.MapOutput.MINIMAP or C_PvP.IsPVPMap())
+    updatePins()
+
     local now = GetTime()
     local delay = 3
     if (UnitAffectingCombat(PLAYER)) then
@@ -514,11 +501,6 @@ local main = function()
       delay = 120
     end
 
-    updatePartyMembers()
-    cleanUnusedPins()
-    toggleBlizzardPins(VGT.OPTIONS.MAP.mode == "minimap" or C_PvP.IsPVPMap())
-    updatePins()
-
     if (now - lastUpdate >= delay) then
       sendMyLocation()
       lastUpdate = now
@@ -526,27 +508,6 @@ local main = function()
   else
     cleanUnusedPins()
     toggleBlizzardPins(true)
-  end
-end
-
-local function OnAddonLoaded(_, isInitialLogin, isReloadingUI)
-  if ((isInitialLogin or isReloadingUI) and VGT.OPTIONS.MAP.enabled and not VGT.mapInitialized) then
-    VGT.mapInitialized = true
-    VGT:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
-    if (IsInGuild()) then
-      VGT:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)
-    end
-    local FRAME = CreateFrame("Frame")
-    FRAME:SetScript("OnUpdate", main)
-  --JoinChannelByName("VGTMAP", "7cd3b0c3")
-  -- hooksecurefunc("SendChatMessage", sendMyLocationChat)
-  -- hooksecurefunc("AssistUnit", sendMyLocationChat)
-  -- hooksecurefunc("TargetUnit", sendMyLocationChat)
-  -- hooksecurefunc("TargetLastFriend", sendMyLocationChat)
-  -- hooksecurefunc("TargetLastTarget", sendMyLocationChat)
-  -- hooksecurefunc("UseAction", sendMyLocationChat)
-  -- hooksecurefunc("CastSpellByName", sendMyLocationChat)
-  -- hooksecurefunc("SpellTargetUnit", sendMyLocationChat)
   end
 end
 
@@ -569,6 +530,35 @@ local function OnPlayerTargetChanged()
   end
 end
 
-VGT:RegisterEvent("PLAYER_ENTERING_WORLD", OnAddonLoaded)
-VGT:RegisterEvent("GUILD_ROSTER_UPDATE", OnGuildRosterUpdate)
-VGT:RegisterEvent("PLAYER_TARGET_CHANGED", OnPlayerTargetChanged)
+local function OnEvent(self, event)
+  if event == "PLAYER_TARGET_CHANGED" then
+    OnPlayerTargetChanged()
+  elseif event == "GUILD_ROSTER_UPDATE" then
+    OnGuildRosterUpdate()
+  end
+end
+
+function VGT:InitializeMap()
+  self:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
+  self.map = { frame = CreateFrame("Frame") }
+  self.map.frame:RegisterEvent("GUILD_ROSTER_UPDATE")
+  self.map.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
+  self.map.frame:SetScript("OnUpdate", main)
+  self.map.frame:SetScript("OnEvent", OnEvent)
+
+  if not self.db.profile.map.enabled then
+    self.map.frame:Hide()
+  elseif IsInGuild() then
+    self:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)
+  end
+end
+
+function VGT:RefreshMapConfig()
+  if self.db.profile.map.enabled then
+    self.map.frame:Show()
+  else
+    self.map.frame:Hide()
+    cleanUnusedPins()
+    toggleBlizzardPins(true)
+  end
+end

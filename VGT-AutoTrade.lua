@@ -42,7 +42,7 @@ local function findEligibleItemLoc(itemId)
 end
 
 VGT:RegisterEvent("TRADE_SHOW", function()
-    if VGT_OPTIONS.AUTOTRADE.enabled then
+    if VGT.db.profile.lootTracker.autoTrade then
         currentTrades[1] = nil
         currentTrades[2] = nil
         currentTrades[3] = nil
@@ -87,7 +87,7 @@ VGT:RegisterEvent("TRADE_SHOW", function()
 end)
 
 VGT:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED", function(event, slot)
-    if VGT.OPTIONS.AUTOTRADE.enabled then
+    if VGT.db.profile.lootTracker.autoTrade then
         local data = currentTrades[slot]
         if data then
             VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
@@ -98,7 +98,7 @@ VGT:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED", function(event, slot)
 end)
 
 VGT:RegisterEvent("UI_INFO_MESSAGE", function(event, arg1, arg2)
-    if arg2 == ERR_TRADE_COMPLETE and VGT.OPTIONS.AUTOTRADE.enabled then
+    if arg2 == ERR_TRADE_COMPLETE and VGT.db.profile.lootTracker.autoTrade then
         for i=1,6 do
             local itemData = currentTrades[i]
             currentTrades[i] = nil

@@ -3,7 +3,7 @@ local LSM = LibStub("LibSharedMedia-3.0")
 
 VGT:RegisterCommandHandler("SR", function(sender, id)
     id = tonumber(id)
-    if id and VGT.OPTIONS.ROLL.enabled then
+    if id and VGT.db.profile.roller.enabled then
         VGT:ShowRollWindow(id, true)
     end
 end)
@@ -15,8 +15,8 @@ VGT:RegisterCommandHandler("CR", function(sender)
 end)
 
 function VGT:ShowRollWindow(itemId, auto)
-    if auto and self.OPTIONS.ROLL.sound then
-        local sound = LSM:Fetch("sound", self.OPTIONS.ROLL.sound, true)
+    if auto and self.db.profile.roller.sound then
+        local sound = LSM:Fetch("sound", self.db.profile.roller.sound, true)
         if sound then
             PlaySoundFile(sound, "Master")
         end
@@ -43,13 +43,7 @@ function VGT:BuildRollWindow()
         tile = true,
         tileSize = 16
     })
-    self.rollWindow:SetPoint(
-        VGT.OPTIONS.ROLL.Point,
-        UIParent,
-        VGT.OPTIONS.ROLL.Point,
-        VGT.OPTIONS.ROLL.X,
-        VGT.OPTIONS.ROLL.Y
-    )
+    self:RefreshRollWindowConfig() -- SetPoint
     self.rollWindow:SetSize(400, 24)
     self.rollWindow:SetClampedToScreen(true)
     self.rollWindow:EnableMouse(true)
@@ -62,9 +56,9 @@ function VGT:BuildRollWindow()
     self.rollWindow:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, _, x, y = self:GetPoint(1)
-        VGT.OPTIONS.ROLL.X = x
-        VGT.OPTIONS.ROLL.Y = y
-        VGT.OPTIONS.ROLL.Point = point
+        VGT.db.profile.roller.x = x
+        VGT.db.profile.roller.y = y
+        VGT.db.profile.roller.point = point
     end)
 
     local title = self.rollWindow:CreateFontString(nil, "OVERLAY", "GameTooltipText")
@@ -88,9 +82,9 @@ function VGT:BuildRollWindow()
     pictureFrame:SetScript("OnDragStop", function()
         VGT.rollWindow:StopMovingOrSizing()
         local point, _, _, x, y = VGT.rollWindow:GetPoint(1)
-        VGT.OPTIONS.ROLL.X = x
-        VGT.OPTIONS.ROLL.Y = y
-        VGT.OPTIONS.ROLL.Point = point
+        VGT.db.profile.roller.x = x
+        VGT.db.profile.roller.y = y
+        VGT.db.profile.roller.point = point
     end)
     pictureFrame:SetScript("OnEnter", function(self)
         if VGT.rollWindow.item then
@@ -169,4 +163,16 @@ function VGT:BuildRollWindow()
     title:SetPoint("BOTTOMRIGHT", rollButton, "BOTTOMLEFT", 1, 2)
     rollButton:SetPoint("BOTTOMRIGHT", passButton, "BOTTOMLEFT", 1, -2)
     passButton:SetPoint("BOTTOMRIGHT", self.rollWindow, "BOTTOMRIGHT")
+end
+
+function VGT:RefreshRollWindowConfig()
+    if self.rollWindow then
+        self.rollWindow:SetPoint(
+            VGT.db.profile.roller.point,
+            UIParent,
+            VGT.db.profile.roller.point,
+            VGT.db.profile.roller.x,
+            VGT.db.profile.roller.y
+        )
+    end
 end

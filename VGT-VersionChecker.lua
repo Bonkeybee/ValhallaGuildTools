@@ -26,11 +26,3 @@ VGT:RegisterCommandHandler("VR", function(sender, version)
     end
   end
 end)
-
-VGT:RegisterEvent("PLAYER_ENTERING_WORLD", function(_, isInitialLogin, isReloadingUI)
-  if (isInitialLogin or isReloadingUI) then
-    VGT.LogTrace("initialized with version %s", VGT.version)
-    GuildRoster()
-    VGT:CheckVersion()
-  end
-end)

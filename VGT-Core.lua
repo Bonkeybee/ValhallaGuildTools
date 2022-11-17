@@ -4,6 +4,23 @@ local COMMAND_MODULE = "VGT-CMD"
 VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceTimer-3.0", "AceEvent-3.0")
 VGT.version = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
 
+-- Define enums
+
+VGT.MapOutput = {
+  MAP = 1,
+  MINIMAP = 2,
+  BOTH = 3
+}
+
+VGT.LogLevel = {
+  TRACE = 1,
+  DEBUG = 2,
+  INFO = 3,
+  WARN = 4,
+  ERROR = 5,
+  SYSTEM = 6
+}
+
 local function serializeArg(arg)
   local t = type(arg)
   if t == "nil" or t == "string" or t == "number" or t == "boolean" then
@@ -27,6 +44,32 @@ end
 -- ############################################################
 -- ##### GLOBAL FUNCTIONS #####################################
 -- ############################################################
+
+function VGT:OnInitialize()
+  self:InitializeOptions()
+
+  self.LogTrace("Initializing addon version %s", self.version)
+
+  self:InitializeMinimapButton()
+
+  self:InitializeMap()
+  
+  GuildRoster()
+  self:CheckVersion()
+end
+
+function VGT:RefreshConfig()
+  self.LogTrace("Configuration changed")
+
+  self:RefreshMinimapButtonConfig()
+
+  self:RefreshRollWindowConfig()
+
+  self.masterLooter.Refresh()
+  self.masterLooter:RefreshWindowConfig()
+
+  self:RefreshMapConfig()
+end
 
 function VGT:SendGuildAddonCommand(command, ...)
   if IsInGuild() then
