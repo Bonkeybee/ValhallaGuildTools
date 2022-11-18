@@ -1,6 +1,6 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local root = nil
-VGT.masterLooter = { rolls = {}, passes = {} }
+VGT.masterLooter = { responses = {} }
 VGT_MasterLootData = VGT_MasterLootData or {}
 
 -- https://wowpedia.fandom.com/wiki/InstanceID
@@ -345,15 +345,51 @@ local function configureItem(creatureId, itemId, itemIndex)
                 end)
                 root.scroll:AddChild(cancelButton)
 
-                for i,v in ipairs(VGT.masterLooter.rolls) do
-                    local label = AceGUI:Create("Label")
-                    label:SetText(v.name .. ": " .. v.roll .. "\n")
-                    root.scroll:AddChild(label)
+                local orderedResponses = {}
+
+                if VGT.masterLooter.rollWhitelist then
+                    for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
+                        local response = VGT.masterLooter.responses[name]
+                        if response then
+                            tinsert(orderedResponses, response)
+                        else
+                            tinsert(orderedResponses, { name = name })
+                        end
+                    end
+                else
+                    for _,character in ipairs(rollCreature.characters) do
+                        local response = VGT.masterLooter.responses[character.Name]
+                        if response then
+                            tinsert(orderedResponses, response)
+                        else
+                            tinsert(orderedResponses, { name = character.Name })
+                        end
+                    end
                 end
-        
-                for name,_ in pairs(VGT.masterLooter.passes) do
+
+                table.sort(orderedResponses, function(l, r)
+                    if l.pass == r.pass then
+                        if l.roll == r.roll or l.pass then
+                            return l.name < r.name
+                        end
+                        return (l.roll or 0) > (r.roll or 0)
+                    end
+                    return (l.pass and 1 or 0) < (r.pass and 1 or 0)
+                end)
+
+                for i,v in ipairs(orderedResponses) do
+                    local text = v.name
+
+                    if v.pass then
+                        text = text .. " - passed"
+                    elseif v.roll then
+                        text = text .. " - |cff00ff00" .. v.roll .. "|r"
+                    else
+                        text = text .. " - |cffff0000no response|r"
+                    end
+
                     local label = AceGUI:Create("Label")
-                    label:SetText(name .. ": Pass\n")
+                    label:SetText(text)
                     root.scroll:AddChild(label)
                 end
             else
@@ -923,15 +959,18 @@ end
 function VGT.masterLooter:CountdownRoll()
     local t = 5
     local function tick()
+        if not VGT.masterLooter.rollItem then
+            return -- stop if rolls were manually ended during the countdown
+        end
         if t > 0 then
             sendMLMessage(t)
-            VGT:ScheduleTimer(tick, 1)
+            C_Timer.After(1, tick)
         else
             self:EndRoll()
         end
         t = t - 1
     end
-    VGT:ScheduleTimer(tick, 1)
+    C_Timer.After(1, tick)
 end
 
 function VGT.masterLooter:EndRoll()
@@ -941,13 +980,29 @@ function VGT.masterLooter:EndRoll()
         return
     end
 
-    if #self.rolls > 0 then
-        local winningAmt = self.rolls[1].roll
+    local hasRoll
+
+    for _, response in pairs(self.responses) do
+        if response.roll and not response.pass then
+            hasRoll = true
+            break
+        end
+    end
+
+    if hasRoll then
+        local topRoll = 0
+
+        for _,response in pairs(self.responses) do
+            if not response.pass and response.roll and response.roll > topRoll then
+                topRoll = response.roll
+            end
+        end
+
         local winners = {}
         
-        for i,v in ipairs(self.rolls) do
-            if v.roll == winningAmt then
-                tinsert(winners, v.name)
+        for _,response in pairs(self.responses) do
+            if response.roll == topRoll then
+                tinsert(winners, response.name)
             end
         end
 
@@ -956,16 +1011,16 @@ function VGT.masterLooter:EndRoll()
             itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
             itemData.traded = UnitIsUnit(itemData.winner, "player")
             VGT:SendPlayerAddonCommand(itemData.winner, "AI", itemData.id)
-            local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. winningAmt
+            local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. topRoll
             if itemData.winningPrio then
                 msg = msg .. " rolled, " .. itemData.winningPrio .. " prio)"
             else
-                msg = msg .. ")"
+                msg = msg .. " rolled)"
             end
 
             sendMLMessage(msg)
         else
-            self.rolls = {}
+            self.responses = {}
             self.rollWhitelist = winners
 
             local msg = "Reroll: "
@@ -988,8 +1043,7 @@ function VGT.masterLooter:EndRoll()
     self.rollCreature = nil
     self.rollItem = nil
     self.rollIndex = nil
-    self.rolls = {}
-    self.passes = {}
+    self.responses = {}
     self.rollWhitelist = nil
     self.Refresh()
     VGT:SendGroupAddonCommand("CR")
@@ -1001,18 +1055,25 @@ function VGT.masterLooter:RemindRoll()
     if itemData then
         local msg = "Rolling on " .. itemData.link .. "."
 
-        if #self.rolls > 0 then
-            local winningAmt = self.rolls[1].roll
+        if #self.responses > 0 then
+            local topRoll = 0
+
+            for _,response in pairs(self.responses) do
+                if not response.pass and response.roll and response.roll > topRoll then
+                    topRoll = response.roll
+                end
+            end
+
             local winners = {}
             
-            for i,v in ipairs(self.rolls) do
-                if v.roll == winningAmt then
-                    tinsert(winners, v.name)
+            for _,response in pairs(self.responses) do
+                if response.roll == topRoll then
+                    tinsert(winners, response.name)
                 end
             end
     
             if #winners == 1 then
-                msg = msg .. " Current Winner: " .. winners[1] .. " (" .. winningAmt .. ")"
+                msg = msg .. " Current Winner: " .. winners[1] .. " (" .. topRoll .. " rolled)"
             else
                 msg = msg .. " Current Winners: "
                 for i,v in ipairs(winners) do
@@ -1021,28 +1082,18 @@ function VGT.masterLooter:RemindRoll()
                     end
                     msg = msg .. v
                 end
-                msg = msg .. " (" .. winningAmt .. ")"
+                msg = msg .. " (" .. topRoll .. " rolled)"
             end
         end
         sendMLMessage(msg, true)
 
         msg = "Missing rolls from: "
 
-        local responded = {}
-
-        for playerName,_ in pairs(VGT.masterLooter.passes) do
-            responded[playerName] = true
-        end
-
-        for _,v in ipairs(VGT.masterLooter.rolls) do
-            responded[v.name] = true
-        end
-
         local needsComma
 
         if VGT.masterLooter.rollWhitelist then
             for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
-                if not responded[name] then
+                if not VGT.masterLooter.responses[name] then
                     if needsComma then
                         msg = msg .. ", "
                     end
@@ -1052,7 +1103,7 @@ function VGT.masterLooter:RemindRoll()
             end
         else
             for _,character in ipairs(creatureData.characters) do
-                if not responded[character.Name] then
+                if not VGT.masterLooter.responses[character.Name] then
                     if needsComma then
                         msg = msg .. ", "
                     end
@@ -1074,8 +1125,7 @@ function VGT.masterLooter:CancelRoll()
         self.rollCreature = nil
         self.rollItem = nil
         self.rollIndex = nil
-        self.rolls = {}
-        self.passes = {}
+        self.responses = {}
         self.rollWhitelist = nil
         self.Refresh()
         VGT:SendGroupAddonCommand("CR")
@@ -1090,7 +1140,7 @@ function VGT.masterLooter:AddDummyData()
     VGT.masterLooter:TrackUnknown(39280)
 end
 
-local function whitelisted(name)
+local function Whitelisted(name)
     if not VGT.masterLooter.rollWhitelist then
         return true
     end
@@ -1102,29 +1152,69 @@ local function whitelisted(name)
     end
 end
 
+local function GetOrCreateResponse(name)
+    if Whitelisted(name) then
+        local response = VGT.masterLooter.responses[name]
+        if not response then
+            response = { name = name }
+            VGT.masterLooter.responses[name] = response
+        end
+        return response
+    end
+end
+
+local function TryEndRoll()
+    if VGT.db.profile.lootTracker.autoEndRoll then
+        local creatureData, itemData = getRollData()
+
+        if creatureData and itemData then
+            if VGT.masterLooter.rollWhitelist then
+                for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
+                    if not VGT.masterLooter.responses[name] then
+                        return
+                    end
+                end
+            else
+                for _,character in ipairs(creatureData.characters) do
+                    if not VGT.masterLooter.responses[character.Name] then
+                        return
+                    end
+                end
+            end
+            VGT.masterLooter:EndRoll()
+        end
+    end
+end
+
+local function RecordPassResponse(name)
+    local response = GetOrCreateResponse(name)
+    if response then
+        VGT.LogTrace("Recorded %s's pass message", name)
+        response.pass = true
+        TryEndRoll()
+        VGT.masterLooter.Refresh()
+    end
+end
+
 VGT:RegisterEvent("CHAT_MSG_SYSTEM", function(channel, text)
     if VGT.masterLooter.rollItem then
         local name, roll, minRoll, maxRoll = text:match("^(.+) rolls (%d+) %((%d+)%-(%d+)%)$")
         if name and roll and minRoll and maxRoll then
+            VGT.LogTrace("Found roll message from %s of %s (%s-%s)", name, roll, minRoll, maxRoll)
             roll = tonumber(roll)
             minRoll = tonumber(minRoll)
             maxRoll = tonumber(maxRoll)
-            if minRoll == 1 and maxRoll == 100 and whitelisted(name) then
-                local existingRoll = false
-                for i,v in ipairs(VGT.masterLooter.rolls) do
-                    if (v.name == name) then
-                        existingRoll = true
-                        break
-                    end
-                end
-                if not existingRoll then
-                    tinsert(VGT.masterLooter.rolls, {name = name, roll = roll})
-                    table.sort(VGT.masterLooter.rolls, function(a,b) return a.roll > b.roll end)
-                    VGT.masterLooter.Refresh()
-                elseif VGT.masterLooter.passes[name] then
-                    VGT.masterLooter.passes[name] = nil
+            if minRoll == 1 and maxRoll == 100 then
+                VGT.LogTrace("%s's roll message is valid", name)
+                local response = GetOrCreateResponse(name)
+                if response then
+                    VGT.LogTrace("Recorded %s's roll message", name)
+                    response.pass = false
+                    response.roll = response.roll or roll
+                    TryEndRoll()
                     VGT.masterLooter.Refresh()
                 end
+                --table.sort(VGT.masterLooter.rolls, function(a,b) return a.roll > b.roll end)
             end
         end
     end
@@ -1132,17 +1222,18 @@ end)
 
 local function handleChatCommand(channel, text, playerName)
     if VGT.masterLooter.rollItem then
-        if (text == "pass" or text == "Pass" or text == "PASS") and whitelisted(playerName) then
-            VGT.masterLooter.passes[playerName] = true
-            VGT.masterLooter.Refresh()
+        if (text == "pass" or text == "Pass" or text == "PASS") then
+            VGT.LogTrace("Received pass message from %s", playerName)
+            RecordPassResponse(playerName)
         end
     end
 end
 
 VGT:RegisterCommandHandler("RP", function(sender, id)
-    if VGT.masterLooter.rollItem and VGT.masterLooter.rollItem.id == tonumber(id) then
-        VGT.masterLooter.passes[sender] = true
-        VGT.masterLooter.Refresh()
+    VGT.LogTrace("Received pass message from %s for %s", sender, id)
+    if VGT.masterLooter.rollItem and VGT.masterLooter.rollItem == tonumber(id) then
+        VGT.LogTrace("%s's pass message is valid for %s", sender, id)
+        RecordPassResponse(sender)
     end
 end)
 

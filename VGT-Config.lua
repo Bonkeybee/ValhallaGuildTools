@@ -85,6 +85,7 @@ function VGT:InitializeOptions()
         trackAllInstances = false,
         trackUncommon = false,
         groupByWinner = false,
+        autoEndRoll = true,
         x = 0,
         y = 0,
         width = 400,
@@ -305,14 +306,21 @@ function VGT:InitializeOptions()
             name = "",
             type = "header"
           },
-          trackAllInstances = {
+          autoEndRoll = {
             order = 2,
+            name = "End rolling on last response",
+            desc = "When checked, rolling items will automatically end when everyone eligible to roll responds.",
+            type = "toggle",
+            width = "full"
+          },
+          trackAllInstances = {
+            order = 3,
             name = "Track All Instances",
             desc = "When checked, all loot will be tracked regardless of what zone it was looted in.",
             type = "toggle"
           },
           trackUncommon = {
-            order = 3,
+            order = 4,
             name = "Track Rare and Uncommon",
             desc = "When checked, |cff0070ddRare|r and |cff1eff00Uncommon|r items will be tracked.",
             type = "toggle"
