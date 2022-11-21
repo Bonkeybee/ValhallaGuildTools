@@ -1,564 +1,427 @@
 local MODULE_NAME = "VGT-Map"
-
-local bufferSize = 0
-local bufferPins = {}
-local players = {}
-
-local FRAME_TYPE = "Frame"
-local PLAYER = "player"
-local COMM_CHANNEL = "GUILD"
-local WHISPER_CHANNEL = "WHISPER"
-local COMM_PRIORITY = "NORMAL"
-local PERCENT = "%"
-local NEW_LINE = "\n"
 local DELIMITER = ":"
-local NAME_SEPERATOR = "-"
-local HP_SEPERATOR = " - "
-local BACKGROUND = "BACKGROUND"
-local SCRIPT_ENTER = "OnEnter"
-local SCRIPT_LEAVE = "OnLeave"
-local PIN_TEXTURE = "Interface\\MINIMAP\\ObjectIcons.blp"
 local REQUEST_LOCATION_MESSAGE = "RL"
-
-local PIN_SIZE = 10
-
-local blizzardPins
-local originalPinsHidden = false
-local originalPartyAppearanceData
-local originalRaidAppearanceData
-local hiddenAppearanceData = {
-  size = 0,
-  sublevel = UNIT_POSITION_FRAME_DEFAULT_SUBLEVEL,
-  texture = UNIT_POSITION_FRAME_DEFAULT_TEXTURE,
-  shouldShow = false,
-  useClassColor = false,
-  showRotation = false
-}
+local MAP_ICON_TEXTURE = "Interface\\AddOns\\ValhallaGuildTools\\MapIcon.tga"
+local MAP_ICON_DOT_TEXTURE = "Interface\\AddOns\\ValhallaGuildTools\\MapIconDot.tga"
 
 local HereBeDragons = LibStub("HereBeDragons-2.0")
 local HereBeDragonsPins = LibStub("HereBeDragons-Pins-2.0")
 
--- ############################################################
--- ##### LOCAL FUNCTIONS ######################################
--- ############################################################
+local bufferPins = {}
+local extendedGuildRoster = { members = {}, memberNames = {} }
+local nextUpdate = GetTime()
+local nextSend = nextUpdate
 
-local colorString = function(colorHex, str)
-  return "|c" .. colorHex .. str .. "|r"
+function extendedGuildRoster:GetMember(nameOrGuid)
+  local member = self.members[nameOrGuid]
+  if not member then
+    for i = 1, GetNumGuildMembers() do
+      local name, _, _, _, _, _, _, _, _, _, class, _, _, _, _, _, guid = GetGuildRosterInfo(i)
+      name = strsplit("-", name, 2)
+
+      self.memberNames[guid] = name
+      local thisMember = self.members[guid]
+      if thisMember then
+        thisMember.name = name
+        thisMember.class = class
+        thisMember.guid = guid
+      else
+        thisMember = { name = name, class = class, guid = guid }
+        self.members[name] = thisMember
+        self.members[guid] = thisMember
+      end
+
+      if nameOrGuid == name or nameOrGuid == guid then
+        member = thisMember
+      end
+    end
+  end
+  return member
 end
 
-local getClass = function(name, guildIndex)
-  if (guildIndex ~= nil) then
-    return select(11, GetGuildRosterInfo(guildIndex))
-  end
+function extendedGuildRoster:EnumerateMembers()
+  local guid
 
-  if (UnitPlayerOrPetInParty(name)) then
-    for i = 1, 5 do
-      local unitId = "party" .. i
-      if (UnitName(unitId) == name) then
-        local class = select(2, UnitClass(unitId))
-        if class then
-          return class
-        end
-      end
-    end
-  end
-  if (UnitPlayerOrPetInRaid(name)) then
-    for i = 1, 40 do
-      local unitId = "raid" .. i
-      if (UnitName(unitId) == name) then
-        local class = select(2, UnitClass(unitId))
-        if class then
-          return class
-        end
-      end
-    end
-  end
-  local numTotalMembers = GetNumGuildMembers()
-  for i = 1, numTotalMembers do
-    local fullname, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(i)
-    if (fullname ~= nil) then
-      local memberName = strsplit(NAME_SEPERATOR, fullname)
-      if (memberName == name) then
-        return class
-      end
+  return function()
+    guid = next(extendedGuildRoster.memberNames, guid)
+    if guid then
+      return extendedGuildRoster.members[guid]
     end
   end
 end
 
-local formatPlayerTooltip = function(player, class)
-  if (not class) then
-    class = getClass(player.Name, player.GuildNumber)
+function TakePin()
+  if #bufferPins == 0 then
+    local pin = CreateFrame("Frame", nil, WorldFrame)
+    pin:SetWidth(VGT.db.profile.map.size)
+    pin:SetHeight(VGT.db.profile.map.size)
+    local texture = pin:CreateTexture(nil, "BACKGROUND")
+    texture:SetAllPoints()
+    texture:SetTexture(MAP_ICON_TEXTURE)
+    texture:SetVertexColor(0.14, 0.67, 0.02) -- Green
+    pin:EnableMouse(true)
+    pin.texture = texture
+    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return pin
   end
-
-  local text = colorString(select(4, GetClassColor(class)), player.Name)
-
-  if (player.HP ~= nil) then
-    return text ..
-      HP_SEPERATOR ..
-        colorString(
-          "ff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.HP), 1, 0, 0, 1, 1, 0, 0, 1, 0)),
-          VGT.Round(player.HP * 100, 0) .. PERCENT
-        )
-  end
+  return table.remove(bufferPins)
 end
 
-local getGuildNumber = function(name)
-  local numTotalMembers = GetNumGuildMembers()
-  for i = 1, numTotalMembers do
-    local fullname = select(1, GetGuildRosterInfo(i))
-    if (fullname ~= nil) then
-      local memberName = strsplit(NAME_SEPERATOR, fullname)
-      if (name == memberName) then
-        return i
-      end
-    end
-  end
-  return nil
+local function UnitHasDefaultPin(unit)
+  return UnitIsUnit(unit, "player") or UnitInParty(unit) or UnitInRaid(unit)
 end
 
-local formatTooltip = function(player, distance)
+local function FormatPlayerTooltip(player)
+  local text = "|c" .. select(4, GetClassColor(player.class)) .. player.name .. "|r"
+
+  if (player.hp ~= nil) then
+    text = text .. " |cffffffff-|r |cff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.hp), 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.Round(player.hp * 100, 0) .. "%|r"
+  end
+  return text
+end
+
+local function FormatTooltip(player, distance)
   local text = ""
-  local class
   local zone
+  local timeNow = GetTime()
 
-  if (not player.NotInGuild and player.GuildNumber == nil) then
-    player.GuildNumber = getGuildNumber(player.Name)
-    if (player.GuildNumber == nil) then
-      player.NotInGuild = true
-    end
-  end
+  text = text .. FormatPlayerTooltip(player)
 
-  if (player.GuildNumber ~= nil) then
-    _, _, _, _, _, zone, _, _, _, _, class = GetGuildRosterInfo(player.GuildNumber)
-    player.Class = class
-    if (zone ~= nil) then
-      text = zone .. NEW_LINE
-    end
-  elseif (player.Zone ~= nil) then
-    text = player.Zone .. NEW_LINE
-  end
-
-  text = text .. formatPlayerTooltip(player, class)
-
-  for _, otherPlayer in pairs(players) do
-    if
-      (otherPlayer ~= player and otherPlayer.X ~= nil and otherPlayer.Y ~= nil and player.X ~= nil and player.Y ~= nil and
-        (math.abs(player.X - otherPlayer.X) + math.abs(player.Y - otherPlayer.Y) < distance))
-     then
-      text = text .. NEW_LINE .. formatPlayerTooltip(otherPlayer, otherPlayer.Class)
+  for otherPlayer in extendedGuildRoster:EnumerateMembers() do
+    if otherPlayer ~= player and otherPlayer.x ~= nil and otherPlayer.y ~= nil and player.x ~= nil and player.y ~= nil
+    and otherPlayer.lastUpdate and (timeNow - otherPlayer.lastUpdate) < 180
+    and math.sqrt(math.pow(player.x - otherPlayer.x, 2) + math.pow(player.y - otherPlayer.y, 2)) < distance
+    then
+      text = text .. "\n" .. FormatPlayerTooltip(otherPlayer)
     end
   end
 
   return text
 end
 
-local onLeavePin = function(_)
-  GameTooltip:Hide()
-end
-
-local createNewPin = function()
-  local pin = CreateFrame(FRAME_TYPE, nil, WorldFrame)
-  pin:SetWidth(PIN_SIZE)
-  pin:SetHeight(PIN_SIZE)
-  local texture = pin:CreateTexture(nil, BACKGROUND)
-  local width = 0.07
-  local height = 0.30
-  local x = 0.53
-  local y = 0.10
-  texture:SetTexCoord(x, x+width, y, y+height) -- Green
-  texture:SetAllPoints()
-  pin:EnableMouse(true)
-  pin.Texture = texture
-  return pin
-end
-
-local takeFromBufferPool = function()
-  if (bufferSize == 0) then
-    return createNewPin()
-  end
-  local pin = bufferPins[bufferSize]
-  bufferSize = bufferSize - 1
-  return pin
-end
-
-local returnToBufferPool = function(pin)
-  bufferSize = bufferSize + 1
-  bufferPins[bufferSize] = pin
-end
-
-local createWorldmapPin = function(player)
-  local onEnterPin = function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-    local distance = 50
-    local mapId = HereBeDragonsPins.worldmapProvider:GetMap():GetMapID()
-    if (mapId) then
-      local mapData = HereBeDragons.mapData[mapId]
-      if (mapData and mapData.mapType) then
-        --todo: these are just my best guesses of distances. Probably should be tweaked.
-        if (mapData.mapType == 1) then --world
-          distance = 300
-        end
-        if (mapData.mapType == 2) then --continent
-          distance = 100
-        end
-        if (mapData.mapType == 3) then --zone or city
-          distance = 25
-        end
-      end
-    end
-    GameTooltip:SetText(formatTooltip(self.Player, distance))
-    GameTooltip:Show()
-  end
-  local pin = takeFromBufferPool()
-  pin:SetScript(SCRIPT_ENTER, onEnterPin)
-  pin:SetScript(SCRIPT_LEAVE, onLeavePin)
-  pin.Texture:SetTexture(PIN_TEXTURE)
-  pin.Player = player
-  player.WorldmapPin = pin
-  player.WorldmapTexture = pin.Texture
-end
-
-local createMinimapPin = function(player)
-  local onEnterPin = function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-    local distance = 15
-    --todo set distance for minimap based on zoom level
-    GameTooltip:SetText(formatTooltip(self.Player, distance))
-    GameTooltip:Show()
-  end
-  local pin = takeFromBufferPool()
-  pin:SetScript(SCRIPT_ENTER, onEnterPin)
-  pin:SetScript(SCRIPT_LEAVE, onLeavePin)
-  pin.Texture:SetTexture(PIN_TEXTURE)
-  pin.Player = player
-  player.MinimapPin = pin
-  player.MinimapTexture = pin.Texture
-end
-
-local addOrUpdatePlayer = function(name, x, y, continentId, hp, fromCommMessage, zone)
-  local player = players[name]
-  if (not player) then
-    player = {}
-    createMinimapPin(player)
-    createWorldmapPin(player)
-    player.X = 0
-    player.Y = 0
-    player.ContinentId = nil
-    player.Name = name
-    player.HasCommMessages = false
-    player.LastCommReceived = 0
-    if (UnitName("target") == name) then
-      player.Targeted = true
-    end
-    players[name] = player
-  end
-
-  if (fromCommMessage) then
-    player.HasCommMessages = true
-    player.LastCommReceived = GetTime()
-  end
-
-  player.HP = hp
-  player.Zone = zone
-  player.PendingLocationChange = (x ~= player.X or y ~= player.Y or continentId ~= player.ContinentId)
-  player.X = x
-  player.Y = y
-  player.ContinentId = continentId
-end
-
-local destroyPlayer = function(name)
-  local player = players[name]
-  if (player ~= nil) then
-    players[name] = nil
-    HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-    HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
-    returnToBufferPool(player.WorldmapPin)
-    returnToBufferPool(player.MinimapPin)
-  end
-end
-
-local worldPosition = function(decimals)
-  local x, y, instanceMapId = HereBeDragons:GetPlayerWorldPosition()
-  local instance = VGT:GetInstance(instanceMapId)
-  if (instance) then
-    x = instance.X
-    y = instance.Y
-  end
-  return VGT.Round(x, decimals or 0), VGT.Round(y, decimals or 0), instanceMapId
-end
-
-local sendMyLocation = function(target)
+local function SendMyLocation(target)
   if (IsInGuild() and VGT.db.profile.map.sendMyLocation) then
-    local x, y, instanceMapId = worldPosition()
-    local hp = UnitHealth(PLAYER) / UnitHealthMax(PLAYER)
+    local x, y, continent = HereBeDragons:GetPlayerWorldPosition()
+    x = VGT.Round(x, 0)
+    y = VGT.Round(y, 0)
+    local hp = UnitHealth("player") / UnitHealthMax("player")
     if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
       local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
       if (target ~= nil) then
-        VGT:SendCommMessage(MODULE_NAME, data, WHISPER_CHANNEL, target, COMM_PRIORITY)
-      else
-        if (IsInGuild()) then
-          VGT:SendCommMessage(MODULE_NAME, data, COMM_CHANNEL, nil, COMM_PRIORITY)
-        end
+        VGT:SendCommMessage(MODULE_NAME, data, "WHISPER", target)
+      elseif (IsInGuild()) then
+        VGT:SendCommMessage(MODULE_NAME, data, "GUILD")
       end
     end
   end
 end
 
-local updatePinColors = function(name, player)
-  local width = 0.07
-  local height = 0.30
-  if (player.Targeted) then
-    local x = 0.28
-    local y = 0.10
-    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Red
-    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Red
-  elseif (UnitInParty(name)) then
-    local x = 0.03
-    local y = 0.10
-    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Blue
-    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Blue
+local function UpdatePinColors(player)
+  if not player.minimapPin and not player.worldPin then
+    return
+  end
+  local r, g, b
+  if player.targeted then
+    r, g, b = 0.59, 0.01, 0.01 -- Red
+  elseif VGT.db.profile.map.useClassColor then
+    r, g, b = GetClassColor(player.class)
+  elseif UnitInParty(player.name) then
+    r, g, b = 0.21, 0.38, 0.79 -- Blue
   else
-    local x = 0.53
-    local y = 0.10
-    player.MinimapTexture:SetTexCoord(x, x+width, y, y+height) -- Green
-    player.WorldmapTexture:SetTexCoord(x, x+width, y, y+height) -- Green
+    r, g, b = 0.14, 0.67, 0.02 -- Green
+  end
+  if player.minimapPin then
+    player.minimapPin.texture:SetVertexColor(r, g, b)
+  end
+  if player.worldPin then
+    player.worldPin.texture:SetVertexColor(r, g, b)
   end
 end
 
-local toggleBlizzardPins = function(show)
-  if (not blizzardPins) then
-    for bpin in HereBeDragonsPins.worldmapProvider:GetMap():EnumeratePinsByTemplate("GroupMembersPinTemplate") do
-      blizzardPins = bpin
-      if (not originalRaidAppearanceData) then
-        originalPartyAppearanceData = bpin.unitAppearanceData["raid"]
-      end
-      if (not originalPartyAppearanceData) then
-        originalRaidAppearanceData = bpin.unitAppearanceData["party"]
-      end
-      originalPinsHidden = false
-    end
-  end
-  if (show) then
-    if (originalPinsHidden) then
-      blizzardPins.unitAppearanceData["raid"] = originalRaidAppearanceData
-      blizzardPins.unitAppearanceData["party"] = originalPartyAppearanceData
-      originalPinsHidden = false
-    end
-  else
-    if (not originalPinsHidden) then
-      blizzardPins.unitAppearanceData["raid"] = hiddenAppearanceData
-      blizzardPins.unitAppearanceData["party"] = hiddenAppearanceData
-      originalPinsHidden = true
-    end
-  end
-end
+local function UpdatePins(timeNow)
+  for player in extendedGuildRoster:EnumerateMembers() do
+    local shouldDisplay = player.lastUpdate and (timeNow - player.lastUpdate) < 180 and VGT.db.profile.map.enabled and not UnitHasDefaultPin(player.name)
+    local shouldDisplayWorld = shouldDisplay and VGT.db.profile.map.mode ~= VGT.MapOutput.MINIMAP
+    local shouldDisplayMinimap = shouldDisplay and VGT.db.profile.map.mode ~= VGT.MapOutput.MAP
 
-local updatePins = function()
-  for name, player in pairs(players) do
-    if (player.PendingLocationChange) then
-      --HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-      --HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
-      updatePinColors(name, player)
-      if (player.ContinentId ~= nil and player.X ~= nil and player.Y ~= nil) then
-        if (VGT.db.profile.map.mode ~= VGT.MapOutput.MINIMAP) then
-          HereBeDragonsPins:AddWorldMapIconWorld(
-            MODULE_NAME,
-            player.WorldmapPin,
-            player.ContinentId,
-            player.X,
-            player.Y,
-            3,
-            "PIN_FRAME_LEVEL_GROUP_MEMBER"
-          )
-        end
-        if (VGT.db.profile.map.mode ~= VGT.MapOutput.MAP and not UnitIsUnit(name, "player")) then
-          HereBeDragonsPins:AddMinimapIconWorld(
-            MODULE_NAME,
-            player.MinimapPin,
-            player.ContinentId,
-            player.X,
-            player.Y,
-            VGT.db.profile.map.showMinimapOutOfBounds and UnitInParty(name)
-          )
-        end
+    if shouldDisplayWorld then
+      if not player.worldPin then
+        player.worldPin = TakePin()
+        player.worldPin.player = player
+        player.worldPin:SetScript("OnEnter", function(self)
+          GameTooltip:SetOwner(self, "ANCHOR_CURSOR_RIGHT")
+          local distance = 50
+          local mapId = HereBeDragonsPins.worldmapProvider:GetMap():GetMapID()
+          if (mapId) then
+            local mapData = HereBeDragons.mapData[mapId]
+            if (mapData and mapData.mapType) then
+              --todo: these are just my best guesses of distances. Probably should be tweaked.
+              if (mapData.mapType == 1) then --world
+                distance = 300
+              end
+              if (mapData.mapType == 2) then --continent
+                distance = 100
+              end
+              if (mapData.mapType == 3) then --zone or city
+                distance = 25
+              end
+            end
+          end
+          GameTooltip:SetText(FormatTooltip(self.player, distance))
+          GameTooltip:Show()
+        end)
       end
-      player.PendingLocationChange = false
+      if player.needsUpdate then
+        HereBeDragonsPins:AddWorldMapIconWorld(MODULE_NAME, player.worldPin, player.continent, player.x, player.y, 3, "PIN_FRAME_LEVEL_GROUP_MEMBER")
+      end
+    elseif player.worldPin then
+      HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.worldPin)
+      table.insert(bufferPins, player.worldPin)
+      player.worldPin = nil
     end
+
+    if shouldDisplayMinimap then
+      if not player.minimapPin then
+        player.minimapPin = TakePin()
+        player.minimapPin.player = player
+        player.minimapPin:SetScript("OnEnter", function(self)
+          GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+          local distance = 15
+          --todo set distance for minimap based on zoom level
+          GameTooltip:SetText(FormatTooltip(self.player, distance))
+          GameTooltip:Show()
+        end)
+      end
+      if player.needsUpdate then
+        HereBeDragonsPins:AddMinimapIconWorld(MODULE_NAME, player.minimapPin, player.continent, player.x, player.y)
+      end
+    elseif player.minimapPin then
+      HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.minimapPin)
+      table.insert(bufferPins, player.minimapPin)
+      player.minimapPin = nil
+    end
+
+    if shouldDisplay then
+      UpdatePinColors(player)
+    end
+
+    player.needsUpdate = false
   end
   HereBeDragonsPins.worldmapProvider:RefreshAllData()
+  nextUpdate = timeNow + 6
 end
 
-local addOrUpdatePartyMember = function(unit)
-  local name = UnitName(unit)
-  if (name ~= nil) then
-    local x, y, continentOrInstanceId = HereBeDragons:GetUnitWorldPosition(name)
-
-    if (x == nil or y == nil) then
-      local instance = VGT:GetInstance(continentOrInstanceId)
-      if (instance) then
-        addOrUpdatePlayer(
-          name,
-          instance.X,
-          instance.Y,
-          instance.ContinentId,
-          UnitHealth(unit) / UnitHealthMax(unit),
-          false,
-          instance.Name
-        )
-        return
-      else
-        --destroyPlayer(name) -- Unit is in an unknown instance. Don't show a pin.
-      end
-    end
-
-    local zone
-    local mapId = C_Map.GetBestMapForUnit(unit)
-    if (mapId) then
-      local mapInfo = C_Map.GetMapInfo(mapId)
-      if (mapInfo) then
-        zone = mapInfo.name
-      end
-    end
-
-    addOrUpdatePlayer(name, x, y, continentOrInstanceId, UnitHealth(unit) / UnitHealthMax(unit), false, zone)
-  end
-end
-
-local updatePartyMembers = function()
-  if (VGT.db.profile.map.showMe) then
-    addOrUpdatePartyMember("player")
-  else
-    destroyPlayer(UnitName("player"))
-  end
-  if (IsInRaid()) then
-    for i = 1, 40 do
-      local unit = "raid" .. i
-      if (not UnitIsUnit(unit, "player")) then
-        addOrUpdatePartyMember(unit)
-      end
-    end
-  elseif (IsInGroup()) then
-    for i = 1, 4 do
-      addOrUpdatePartyMember("party" .. i)
-    end
-  end
-end
-
-local parseMessage = function(message)
-  local continentIdString, xString, yString, hpString = strsplit(DELIMITER, message)
-  return tonumber(continentIdString), tonumber(xString), tonumber(yString), tonumber(hpString)
-end
-
-local handleMapMessageReceivedEvent = function(prefix, message, _, sender)
+local function OnMessageReceived(prefix, message, _, sender)
   if (prefix ~= MODULE_NAME) then
     return
   end
 
   if (message == REQUEST_LOCATION_MESSAGE) then
-    sendMyLocation(sender)
-  else
-    local continentId, x, y, hp = parseMessage(message)
+    SendMyLocation(sender)
+  elseif not UnitHasDefaultPin(sender) then
+    local continent, x, y, hp = strsplit(DELIMITER, message)
+    continent = tonumber(continent)
+    x = tonumber(x)
+    y = tonumber(y)
+    hp = tonumber(hp)
 
-    if (continentId ~= nil and x ~= nil and y ~= nil and not UnitIsUnit(sender, PLAYER) and not UnitInParty(sender)) then
-      addOrUpdatePlayer(sender, x, y, continentId, hp, true)
+    if continent ~= nil and x ~= nil and y ~= nil then
+      local player = extendedGuildRoster:GetMember(sender)
+      if player then
+        player.needsUpdate = (x ~= player.x or y ~= player.y or continent ~= player.continent)
+        player.x = x
+        player.y = y
+        player.continent = continent
+        player.hp = hp
+        player.lastUpdate = GetTime()
+      end
     end
   end
 end
 
-local cleanUnusedPins = function()
-  for name, player in pairs(players) do
-    if
-      (not VGT.db.profile.map.enabled or -- remove all pins if the addon is disabled.
-        (not UnitInParty(name) and not player.HasCommMessages and not UnitIsUnit(name, PLAYER)) or -- remove non-party members that aren't sending comm messages
-        (player.HasCommMessages and player.LastCommReceived and (GetTime() - player.LastCommReceived) > 180))
-     then -- remove pins that haven't had a new comm message in 3 minutes. (happens if a user disables reporting, or if the addon crashes)
-      destroyPlayer(name)
-    elseif (VGT.db.profile.map.mode == VGT.MapOutput.MINIMAP) then -- remove the worldmap pin if the user changed to minimap only.
-      HereBeDragonsPins:RemoveWorldMapIcon(MODULE_NAME, player.WorldmapPin)
-    elseif (VGT.db.profile.map.mode == VGT.MapOutput.MAP) then -- remove the minimap pin if the user changed to worldmap only.
-      HereBeDragonsPins:RemoveMinimapIcon(MODULE_NAME, player.MinimapPin)
-    end
+local function GetSendDelay()
+  if UnitIsAFK("player") then
+    return 120
+  end
+  if IsInInstance() then
+    return 60
+  end
+  if UnitAffectingCombat("player") then
+    return 10
+  end
+  return 3
+end
+
+local function TrimDelay()
+  local now = GetTime()
+  local delay = GetSendDelay()
+  if nextSend - now > delay then
+    nextSend = now + delay
   end
 end
 
-local lastUpdate = GetTime()
-local main = function()
-  if (VGT.db.profile.map.enabled) then
-    updatePartyMembers()
-    cleanUnusedPins()
-    toggleBlizzardPins(VGT.db.profile.map.mode == VGT.MapOutput.MINIMAP or C_PvP.IsPVPMap())
-    updatePins()
+local function OnUpdate()
+  local now = GetTime()
 
-    local now = GetTime()
-    local delay = 3
-    if (UnitAffectingCombat(PLAYER)) then
-      delay = 6
-    end
-    if (select(1, IsInInstance())) then
-      delay = 60
-    end
-    if (UnitIsAFK(PLAYER)) then
-      delay = 120
-    end
-
-    if (now - lastUpdate >= delay) then
-      sendMyLocation()
-      lastUpdate = now
-    end
-  else
-    cleanUnusedPins()
-    toggleBlizzardPins(true)
+  if now >= nextUpdate then
+    UpdatePins(now)
   end
-end
 
-local function OnGuildRosterUpdate()
-  for _, player in pairs(players) do
-    player.GuildNumber = nil
+  if now >= nextSend then
+    SendMyLocation()
+    nextSend = now + GetSendDelay()
   end
 end
 
 local function OnPlayerTargetChanged()
-  local targetName = UnitName("target")
-  for name, player in pairs(players) do
-    if (name == targetName) then
-      player.Targeted = true
-      updatePinColors(name, player)
-    elseif (player.Targeted) then
-      player.Targeted = false
-      updatePinColors(name, player)
+  VGT.LogTrace("Target Changed")
+  local targetName = UnitName("target") -- UnitIsUnit does not work for non party members
+  for player in extendedGuildRoster:EnumerateMembers() do
+    if player.targeted then
+      player.targeted = false
+      UpdatePinColors(player)
+      VGT.LogTrace("Untargeted %s", player.name)
+    elseif player.name == targetName then
+      player.targeted = true
+      UpdatePinColors(player)
+      VGT.LogTrace("Targeted %s", player.name)
     end
   end
 end
 
-local function OnEvent(self, event)
+local function OnEvent(self, event, arg1)
   if event == "PLAYER_TARGET_CHANGED" then
     OnPlayerTargetChanged()
-  elseif event == "GUILD_ROSTER_UPDATE" then
-    OnGuildRosterUpdate()
+  elseif event == "PLAYER_LEAVE_COMBAT" then
+    TrimDelay()
+  elseif event == "PLAYER_FLAGS_CHANGED" and UnitIsUnit(arg1, "player") then
+    TrimDelay()
+  end
+end
+
+local originalUpdateUnitTooltips = UnitPositionFrameMixin.UpdateUnitTooltips
+local function newUpdateUnitTooltips(self, tooltipFrame)
+  VGT.LogTrace("Custom UnitPositionFrameMixin")
+	local tooltipText = ""
+	local prefix = ""
+	local timeNow = GetTime()
+
+	for unit in pairs(self.currentMouseOverUnits) do
+		local unitName = UnitName(unit)
+		if not self:IsMouseOverUnitExcluded(unit) then
+			local formattedUnitName = 
+        GetIsPVPInactive(unit, timeNow) and format(PLAYER_IS_PVP_AFK, unitName) or
+        ("|c" .. select(4, GetClassColor(select(2, UnitClass(unit)))) .. unitName .. "|r")
+      
+			tooltipText = tooltipText .. prefix .. formattedUnitName
+      
+      local unitHp = UnitHealth(unitName)
+      if type(unitHp) == "number" then
+        unitHp = unitHp / UnitHealthMax(unitName)
+        tooltipText = tooltipText .. " |cffffffff-|r |cff" ..
+          VGT.RGBToHex(VGT.ColorGradient(unitHp, 1, 0, 0, 1, 1, 0, 0, 1, 0)) ..
+          VGT.Round(unitHp * 100, 0) .. "%|r"
+      end
+
+			prefix = "\n"
+		end
+	end
+
+	if tooltipText ~= "" then
+		self.previousOwner = tooltipFrame:GetOwner()
+		tooltipFrame:SetOwner(self, "ANCHOR_CURSOR_RIGHT")
+		tooltipFrame:SetText(tooltipText)
+	elseif tooltipFrame:GetOwner() == self then
+		tooltipFrame:ClearLines()
+		tooltipFrame:Hide()
+		if self.previousOwner and self.previousOwner ~= self and self.previousOwner:IsVisible() and self.previousOwner:IsMouseOver() then
+			local func = self.previousOwner:HasScript("OnEnter") and self.previousOwner:GetScript("OnEnter")
+			if func then
+				func(self.previousOwner)
+			end
+		end
+		self.previousOwner = nil
+	end
+end
+
+local originalGetUnitColor = UnitPositionFrameMixin.GetUnitColor
+local function newGetUnitColor(self, timeNow, unit, appearanceData)
+	if appearanceData.shouldShow then
+		local r, g, b  = 1, 1, 1
+
+		if not UnitIsUnit(unit, "player") then
+      if UnitIsUnit(unit, "target") then
+        r, g, b = 0.59, 0.01, 0.01 -- Red
+      elseif VGT.db.profile.map.useClassColor then
+        local class = select(2, UnitClass(unit))
+        r, g, b = GetClassColor(class)
+      elseif UnitInParty(unit) or UnitInRaid(unit) then
+        r, g, b = 0.21, 0.38, 0.79 -- Blue
+      elseif appearanceData.useClassColor then
+        local class = select(2, UnitClass(unit))
+        r, g, b = GetClassColor(class)
+      end
+		end
+
+		return true, CheckColorOverrideForPVPInactive(unit, timeNow, r, g, b)
+	end
+
+	return false
+end
+
+local function UpdateBlizzardPins()
+  local override = VGT.db.profile.map.enabled and VGT.db.profile.map.improveBlizzardPins
+  for pin in WorldMapFrame:EnumeratePinsByTemplate("GroupMembersPinTemplate") do
+    if override then
+      pin.UpdateUnitTooltips = newUpdateUnitTooltips
+      pin.GetUnitColor = newGetUnitColor
+      pin:SetPinTexture("raid", MAP_ICON_TEXTURE)
+      pin:SetPinTexture("party", MAP_ICON_TEXTURE)
+    else
+      pin.UpdateUnitTooltips = originalUpdateUnitTooltips
+      pin.GetUnitColor = originalGetUnitColor
+    end
   end
 end
 
 function VGT:InitializeMap()
-  self:RegisterComm(MODULE_NAME, handleMapMessageReceivedEvent)
+  UpdateBlizzardPins()
+  self:RegisterComm(MODULE_NAME, OnMessageReceived)
   self.map = { frame = CreateFrame("Frame") }
-  self.map.frame:RegisterEvent("GUILD_ROSTER_UPDATE")
   self.map.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-  self.map.frame:SetScript("OnUpdate", main)
+  self.map.frame:RegisterEvent("PLAYER_LEAVE_COMBAT")
+  self.map.frame:RegisterEvent("PLAYER_FLAGS_CHANGED")
+  self.map.frame:SetScript("OnUpdate", OnUpdate)
   self.map.frame:SetScript("OnEvent", OnEvent)
 
   if not self.db.profile.map.enabled then
     self.map.frame:Hide()
   elseif IsInGuild() then
-    self:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, COMM_CHANNEL, nil, COMM_PRIORITY)
+    self:SendCommMessage(MODULE_NAME, REQUEST_LOCATION_MESSAGE, "GUILD")
+  end
+end
+
+function VGT:RefreshPinSizeAndColor()
+  for player in extendedGuildRoster:EnumerateMembers() do
+    UpdatePinColors(player)
+    if player.minimapPin then
+      player.minimapPin:SetWidth(VGT.db.profile.map.size)
+      player.minimapPin:SetHeight(VGT.db.profile.map.size)
+    end
+    if player.worldPin then
+      player.worldPin:SetWidth(VGT.db.profile.map.size)
+      player.worldPin:SetHeight(VGT.db.profile.map.size)
+    end
   end
 end
 
 function VGT:RefreshMapConfig()
+  UpdateBlizzardPins()
   if self.db.profile.map.enabled then
+    self:RefreshPinSizeAndColor()
     self.map.frame:Show()
   else
     self.map.frame:Hide()
-    cleanUnusedPins()
-    toggleBlizzardPins(true)
+    UpdatePins()
   end
 end

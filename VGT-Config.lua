@@ -9,8 +9,6 @@ local function MigrateOptionsToDB(db)
     if VGT_OPTIONS.MAP then
       db.profile.map.enabled = VGT_OPTIONS.MAP.enabled
       db.profile.map.sendMyLocation = VGT_OPTIONS.MAP.sendMyLocation
-      db.profile.map.showMinimapOutOfBounds = VGT_OPTIONS.MAP.showMinimapOutOfBounds
-      db.profile.map.showMe = VGT_OPTIONS.MAP.showMe
       if VGT_OPTIONS.MAP.mode == "map" then
         db.profile.map.mode = VGT.MapOutput.MAP
       elseif VGT_OPTIONS.MAP.mode == "minimap" then
@@ -71,9 +69,10 @@ function VGT:InitializeOptions()
       map = {
         enabled = true,
         sendMyLocation = true,
-        showMinimapOutOfBounds = false,
         mode = VGT.MapOutput.BOTH,
-        showMe = false
+        improveBlizzardPins = true,
+        useClassColor = false,
+        size = 14
       },
       autoMasterLoot = {
         enabled = false,
@@ -216,28 +215,10 @@ function VGT:InitializeOptions()
             name = "",
             type = "header"
           },
-          sendMyLocation = {
-            order = 2,
-            name = "Send My Location",
-            desc = "sends your location to other addon users",
-            type = "toggle"
-          },
-          showMe = {
-            order = 3,
-            name = "Show My Pin",
-            desc = "shows your own pin on the map",
-            type = "toggle"
-          },
-          showMinimapOutOfBounds = {
-            order = 4,
-            name = "Show Distant Players on Minimap",
-            desc = "shows party member pins on the minimap borders if they are out of range",
-            type = "toggle"
-          },
           mode = {
-            order = 5,
+            order = 2,
             name = "Display Mode",
-            desc = "choose where pins are shown",
+            desc = "Choose where pins are shown",
             values = {
               [VGT.MapOutput.MAP] = "Only World Map",
               [VGT.MapOutput.MINIMAP] = "Only Minimap",
@@ -245,6 +226,40 @@ function VGT:InitializeOptions()
             },
             type = "select",
             style = "dropdown"
+          },
+          size = {
+            order = 3,
+            name = "Pin Size",
+            desc = "Sets the size of guild pins.",
+            type = "range",
+            min = 1,
+            max = 32,
+            set = function(info, value)
+              SetProfileValue(info, value)
+              VGT:RefreshPinSizeAndColor()
+            end
+          },
+          sendMyLocation = {
+            order = 4,
+            name = "Send My Location",
+            desc = "sends your location to other addon users",
+            type = "toggle"
+          },
+          improveBlizzardPins = {
+            order = 5,
+            name = "Configure Raid & Party Pins",
+            desc = "When checked, the minimap icons for raid and party members will match the style of the guild pins. Disabling this requires a UI reload.",
+            type = "toggle"
+          },
+          useClassColor = {
+            order = 6,
+            name = "Use Class Colors",
+            desc = "When checked, minimap icons will use the pin's class color instead of green for guild and blue for party or raid.",
+            type = "toggle",
+            set = function(info, value)
+              SetProfileValue(info, value)
+              VGT:RefreshPinSizeAndColor()
+            end
           }
         }
       },
