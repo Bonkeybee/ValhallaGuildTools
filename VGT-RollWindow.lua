@@ -15,10 +15,16 @@ VGT:RegisterCommandHandler(VGT.Commands.CANCEL_ROLL, function(sender)
 end)
 
 function VGT:ShowRollWindow(itemId, auto)
-    if auto and self.db.profile.roller.sound then
-        local sound = LSM:Fetch("sound", self.db.profile.roller.sound, true)
-        if sound then
-            PlaySoundFile(sound, "Master")
+    if auto then
+        if not self:Equippable(itemId) then
+            return
+        end
+    
+        if self.db.profile.roller.sound then
+            local sound = LSM:Fetch("sound", self.db.profile.roller.sound, true)
+            if sound then
+                PlaySoundFile(sound, "Master")
+            end
         end
     end
 
