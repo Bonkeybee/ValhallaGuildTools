@@ -1,14 +1,14 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
-VGT:RegisterCommandHandler("SR", function(sender, id)
+VGT:RegisterCommandHandler(VGT.Commands.START_ROLL, function(sender, id)
     id = tonumber(id)
     if id and VGT.db.profile.roller.enabled then
         VGT:ShowRollWindow(id, true)
     end
 end)
 
-VGT:RegisterCommandHandler("CR", function(sender)
+VGT:RegisterCommandHandler(VGT.Commands.CANCEL_ROLL, function(sender)
     if VGT.rollWindow then
         VGT.rollWindow:Hide()
     end
@@ -144,7 +144,7 @@ function VGT:BuildRollWindow()
     passButton:SetSize(24, 24)
     passButton:Show()
     passButton:SetScript("OnClick", function()
-        VGT:SendGroupAddonCommand("RP", VGT.rollWindow.item:GetItemID())
+        VGT:SendGroupAddonCommand(VGT.Commands.ROLL_PASS, VGT.rollWindow.item:GetItemID())
         VGT.rollWindow:Hide()
     end)
     passButton:SetScript("OnMouseDown", function(self)

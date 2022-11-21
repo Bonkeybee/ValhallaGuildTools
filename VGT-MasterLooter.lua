@@ -299,7 +299,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             end
 
             sendMLMessage(itemData.link .. " unassigned from " .. oldWinner)
-            VGT:SendPlayerAddonCommand(oldWinner, "UI", itemData.id)
+            VGT:SendPlayerAddonCommand(oldWinner, VGT.Commands.UNASSIGN_ITEM, itemData.id)
             VGT.masterLooter.Refresh()
         end)
         root.scroll:AddChild(unassignButton)
@@ -443,7 +443,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                                     itemData.winner = whitelist[1]
                                     itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
                                     itemData.traded = UnitIsUnit(itemData.winner, "player")
-                                    VGT:SendPlayerAddonCommand(itemData.winner, "AI", itemData.id)
+                                    VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
                                     sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
                                     VGT.masterLooter.Refresh()
                                 else
@@ -478,7 +478,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                 itemData.winner = value
                 itemData.winningPrio = takePrioFromStandings(itemData.id, value)
                 itemData.traded = UnitIsUnit(value, "player")
-                VGT:SendPlayerAddonCommand(value, "AI", itemData.id)
+                VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id)
                 sendMLMessage(itemData.link .. " assigned to " .. value)
                 VGT.masterLooter.Refresh()
             end)
@@ -491,7 +491,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                 itemData.winningPrio = takePrioFromStandings(itemData.id, value)
                 itemData.traded = UnitIsUnit(value, "player")
                 itemData.disenchanted = true
-                VGT:SendPlayerAddonCommand(value, "AI", itemData.id, true)
+                VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id, true)
                 sendMLMessage(itemData.link .. " will be disenchanted by " .. value)
                 VGT.masterLooter.Refresh()
             end)
@@ -932,7 +932,7 @@ function VGT.masterLooter:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
             text = text .. name
 
             if UnitInRaid(name) then
-                VGT:SendPlayerAddonCommand(name, "SR", itemData.id)
+                VGT:SendPlayerAddonCommand(name, VGT.Commands.START_ROLL, itemData.id)
             end
         end
 
@@ -952,7 +952,7 @@ function VGT.masterLooter:OpenRoll(creatureId, itemId, itemIndex)
         self.Refresh()
         sendMLMessage("Open Roll on " .. itemData.link)
         sendMLMessage("/roll or type \"pass\" in chat", true)
-        VGT:SendGroupAddonCommand("SR", itemId)
+        VGT:SendGroupAddonCommand(VGT.Commands.START_ROLL, itemId)
     end
 end
 
@@ -1010,7 +1010,7 @@ function VGT.masterLooter:EndRoll()
             itemData.winner = winners[1]
             itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
             itemData.traded = UnitIsUnit(itemData.winner, "player")
-            VGT:SendPlayerAddonCommand(itemData.winner, "AI", itemData.id)
+            VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
             local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. topRoll
             if itemData.winningPrio then
                 msg = msg .. " rolled, " .. itemData.winningPrio .. " prio)"
@@ -1046,7 +1046,7 @@ function VGT.masterLooter:EndRoll()
     self.responses = {}
     self.rollWhitelist = nil
     self.Refresh()
-    VGT:SendGroupAddonCommand("CR")
+    VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
 end
 
 function VGT.masterLooter:RemindRoll()
@@ -1128,7 +1128,7 @@ function VGT.masterLooter:CancelRoll()
         self.responses = {}
         self.rollWhitelist = nil
         self.Refresh()
-        VGT:SendGroupAddonCommand("CR")
+        VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
         sendMLMessage("Roll for " .. itemData.link .. " cancelled.")
     end
 end
@@ -1229,7 +1229,7 @@ local function handleChatCommand(channel, text, playerName)
     end
 end
 
-VGT:RegisterCommandHandler("RP", function(sender, id)
+VGT:RegisterCommandHandler(VGT.Commands.ROLL_PASS, function(sender, id)
     VGT.LogTrace("Received pass message from %s for %s", sender, id)
     if VGT.masterLooter.rollItem and VGT.masterLooter.rollItem == tonumber(id) then
         VGT.LogTrace("%s's pass message is valid for %s", sender, id)

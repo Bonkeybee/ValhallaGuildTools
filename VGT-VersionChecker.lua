@@ -4,20 +4,20 @@ local warned = false
 function VGT:CheckVersion()
   if (IsInGuild()) then
     self.LogTrace("Requesting addon version from guild")
-    self:SendGuildAddonCommand("GV", self.version)
+    self:SendGuildAddonCommand(VGT.Commands.GET_VERSION, self.version)
   end
 end
 
-VGT:RegisterCommandHandler("GV", function(sender, version)
+VGT:RegisterCommandHandler(VGT.Commands.GET_VERSION, function(sender, version)
   version = tonumber(version)
   if not version or (not warnedPlayers[sender] and not UnitIsUnit(sender, "player") and version < tonumber(VGT.version)) then
     VGT.LogTrace("Responding to version request from %s. Their version: %s; our version: %s", sender, version or "unspecified", VGT.version)
-    VGT:SendPlayerAddonCommand(sender, "VR", VGT.version)
+    VGT:SendPlayerAddonCommand(sender, VGT.Commands.VERSION_RESPOND, VGT.version)
     warnedPlayers[sender] = true
   end
 end)
 
-VGT:RegisterCommandHandler("VR", function(sender, version)
+VGT:RegisterCommandHandler(VGT.Commands.VERSION_RESPOND, function(sender, version)
   if not UnitIsUnit(sender, "player") then
     VGT.LogTrace("Recieved addon version response from %s (%s)", sender, version)
     if not warned and version and tonumber(VGT.version) < tonumber(version) then

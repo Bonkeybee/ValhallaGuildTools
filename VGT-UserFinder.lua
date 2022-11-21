@@ -11,7 +11,7 @@ function VGT.userFinder:EnumerateUsers(callback, wait)
 
   if (IsInGuild()) then
     VGT.LogSystem("Requesting addon user info...")
-    VGT:SendGuildAddonCommand("GV")
+    VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
   
     C_Timer.After(wait or 3, function()
       callback(VGT.userFinder.results)
@@ -93,7 +93,7 @@ function VGT.userFinder:PrintUserCount(by)
   end)
 end
 
-VGT:RegisterCommandHandler("VR", function(sender, version)
+VGT:RegisterCommandHandler(VGT.Commands.VERSION_RESPOND, function(sender, version)
   if VGT.userFinder.enumerating and version then
     VGT.LogTrace("Gathered user finder version response from %s", sender)
     VGT.userFinder.results[sender] = version

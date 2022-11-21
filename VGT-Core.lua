@@ -21,6 +21,16 @@ VGT.LogLevel = {
   SYSTEM = 6
 }
 
+VGT.Commands = {
+  GET_VERSION = "GV",
+  VERSION_RESPOND = "VR",
+  START_ROLL = "SR",
+  CANCEL_ROLL = "CR",
+  ASSIGN_ITEM = "AI",
+  UNASSIGN_ITEM = "UI",
+  ROLL_PASS = "RP"
+}
+
 local function serializeArg(arg)
   local t = type(arg)
   if t == "nil" or t == "string" or t == "number" or t == "boolean" then
