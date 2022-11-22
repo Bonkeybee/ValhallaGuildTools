@@ -28,7 +28,10 @@ VGT.Commands = {
   CANCEL_ROLL = "CR",
   ASSIGN_ITEM = "AI",
   UNASSIGN_ITEM = "UI",
-  ROLL_PASS = "RP"
+  ROLL_PASS = "RP",
+  NOTIFY_INTERESTED = "NI",
+  NOTIFY_PASSING = "NP",
+  ITEM_TRACKED = "IT"
 }
 
 local function serializeArg(arg)
@@ -95,6 +98,8 @@ function VGT:SendGroupAddonCommand(command, ...)
     channel = "RAID"
   elseif UnitInParty("player") then
     channel = "PARTY"
+  else
+    self:SendPlayerAddonCommand(UnitName("player"), command, ...)
   end
 
   if channel then

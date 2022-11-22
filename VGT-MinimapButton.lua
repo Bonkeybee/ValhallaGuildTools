@@ -6,13 +6,13 @@ function VGT:InitializeMinimapButton()
     text = "Valhalla Guild Tools",
     OnClick = function(_, button)
       if button == "RightButton" then
-        InterfaceOptionsFrame_OpenToCategory(VGT.menu)
-        InterfaceOptionsFrame_OpenToCategory(VGT.menu)
+        VGT.masterLooter:Toggle()
       elseif button == "LeftButton" then
         if IsControlKeyDown() then
-          VGT.masterLooter:Toggle()
+          InterfaceOptionsFrame_OpenToCategory(VGT.menu)
+          InterfaceOptionsFrame_OpenToCategory(VGT.menu)
         else
-          VGT.masterLooter:Toggle()
+          VGT.dropTracker:Toggle()
         end
       end
     end,
@@ -22,9 +22,9 @@ function VGT:InitializeMinimapButton()
       end
       tooltip:AddLine("Valhalla Guild Tools", 1, 1, 1)
       tooltip:AddLine(" ")
-      tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Left Click:|r Toggle Loot Master Window")
-      tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Right Click:|r Show Options")
-      --tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Ctrl + Left Click:|r Toggle Loot Master Window")
+      tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Left Click:|r Toggle Drop Tracker Window")
+      tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Right Click:|r Toggle Loot Master Window")
+      tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Ctrl + Left Click:|r Show Options")
     end
   })
   

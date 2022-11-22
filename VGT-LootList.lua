@@ -76,12 +76,16 @@ local raceLookup = {
 }
 
 function VGT:ColorizeCharacterName(character)
-  local _, _, _, color = GetClassColor(select(2, GetClassInfo(reverseClassLookup[character.Class])))
+  local _, _, _, color = GetClassColor(select(2, self:CharacterClassInfo(character)))
   if not color then
     return character.Name
   else
     return "|c" .. color .. character.Name .. "|r"
   end
+end
+
+function VGT:CharacterClassInfo(character)
+  return GetClassInfo(reverseClassLookup[character.Class])
 end
 
 function VGT:GetCharacters()

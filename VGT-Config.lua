@@ -55,6 +55,9 @@ function VGT:InitializeOptions()
       autoMasterLoot = {
         target = "",
         disenchantTarget = ""
+      },
+      dropTracker = {
+        items = {}
       }
     },
     profile = {
@@ -96,6 +99,15 @@ function VGT:InitializeOptions()
         sound = "Info",
         x = 0,
         y = 0,
+        point = "CENTER"
+      },
+      dropTracker = {
+        enabled = true,
+        wonSound = "Kaching",
+        x = -900,
+        y = 0,
+        width = 512,
+        height = 240,
         point = "CENTER"
       }
     }
@@ -360,7 +372,7 @@ function VGT:InitializeOptions()
           },
           sound = {
             order = 2,
-            name = "Sound",
+            name = "New Roll Sound",
             desc = "Sound to play when the loot window shows.",
             type = "select",
             values = LSM:List("sound"),
@@ -374,6 +386,27 @@ function VGT:InitializeOptions()
             set = function(_, val)
               VGT.db.profile.roller.sound = LSM:List("sound")[val]
               local sound = LSM:Fetch("sound", VGT.db.profile.roller.sound, true)
+              if sound then
+                PlaySoundFile(sound, "Master")
+              end
+            end
+          },
+          wonSound = {
+            order = 3,
+            name = "Won Item Sound",
+            desc = "Sound to play when you win an item.",
+            type = "select",
+            values = LSM:List("sound"),
+            get = function(_)
+              for key, value in pairs(LSM:List("sound")) do
+                if value == VGT.db.profile.dropTracker.wonSound then
+                  return key
+                end
+              end
+            end,
+            set = function(_, val)
+              VGT.db.profile.dropTracker.wonSound = LSM:List("sound")[val]
+              local sound = LSM:Fetch("sound", VGT.db.profile.dropTracker.wonSound, true)
               if sound then
                 PlaySoundFile(sound, "Master")
               end

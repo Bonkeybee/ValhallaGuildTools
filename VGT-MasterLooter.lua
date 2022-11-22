@@ -21,6 +21,18 @@ local trackedInstances = {
     [724] = true -- Ruby Sanctum
 }
 
+local function GetOrCreatePreemtiveResponse(itemId)
+    if not VGT_MasterLootData.PreemptiveResponses then
+        VGT_MasterLootData.PreemptiveResponses = {}
+    end
+    local itemResponses = VGT_MasterLootData.PreemptiveResponses[itemId]
+    if not itemResponses then
+        itemResponses = {}
+        VGT_MasterLootData.PreemptiveResponses[itemId] = itemResponses
+    end
+    return itemResponses
+end
+
 local function sendMLMessage(message, nowarn)
     if UnitInRaid("player") then
         if nowarn then
@@ -254,8 +266,7 @@ local function configureItem(creatureId, itemId, itemIndex)
     label:SetCallback(
         "OnEnter",
         function()
-            GameTooltip:SetOwner(label.frame, "ANCHOR_NONE")
-            GameTooltip:SetPoint("TOP", label.frame, "BOTTOM", 0, 0)
+            GameTooltip:SetOwner(label.frame, "ANCHOR_CURSOR_RIGHT")
             GameTooltip:SetHyperlink("item:" .. itemId)
             GameTooltip:Show()
         end
@@ -496,6 +507,34 @@ local function configureItem(creatureId, itemId, itemIndex)
                 VGT.masterLooter.Refresh()
             end)
             root.scroll:AddChild(deAssign)
+
+            local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
+
+            if next(preemptiveResponses) then
+                local interested = {}
+                local passCount = 0
+
+                for name, response in pairs(preemptiveResponses) do
+                    if response then
+                        tinsert(interested, name)
+                    else
+                        passCount = passCount + 1
+                    end
+                end
+
+                if #interested > 0 then
+                    table.sort(interested)
+                    local label = AceGUI:Create("Label")
+                    label:SetText("Wanted by: " .. strjoin(", ", unpack(interested)))
+                    root.scroll:AddChild(label)
+                end
+
+                if passCount > 0 then
+                    local label = AceGUI:Create("Label")
+                    label:SetText("Passed by " .. passCount .. " of " .. #creatureData.characters .. " people.")
+                    root.scroll:AddChild(label)
+                end
+            end
         end
     end
 end
@@ -907,7 +946,17 @@ function VGT.masterLooter.Track(itemId, creatureId)
 
     incrementStandings(itemId, creatureData.characters)
 
+    local preemptiveResponses = GetOrCreatePreemtiveResponse(itemId)
+
+    for _, character in ipairs(creatureData.characters) do
+        if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
+            preemptiveResponses[character.Name] = false
+        end
+    end
+
     VGT.masterLooter.Refresh()
+
+    VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, creatureData.id)
 
     return creatureData, itemData
 end
@@ -920,22 +969,29 @@ function VGT.masterLooter:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
         self.rollItem = itemId
         self.rollIndex = itemIndex
         self.rollWhitelist = whitelist
-        self.Refresh()
 
         local text = "Roll on " .. itemData.link .. " for "
         local addComma = false
+        local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
         for _,name in ipairs(whitelist) do
-            if addComma then
-                text = text .. ", "
-            end
-            addComma = true
-            text = text .. name
-
-            if UnitInRaid(name) then
-                VGT:SendPlayerAddonCommand(name, VGT.Commands.START_ROLL, itemData.id)
+            if preemptiveResponses[name] == false then
+                local ended = VGT.masterLooter:RecordPassResponse(name)
+                if ended then
+                    return
+                end
+            else
+                if addComma then
+                    text = text .. ", "
+                end
+                addComma = true
+                text = text .. name
+                if UnitInRaid(name) then
+                    VGT:SendPlayerAddonCommand(name, VGT.Commands.START_ROLL, itemData.id)
+                end
             end
         end
 
+        self.Refresh()
         sendMLMessage(text)
         sendMLMessage("/roll or type \"pass\" in chat", true)
     end
@@ -949,6 +1005,17 @@ function VGT.masterLooter:OpenRoll(creatureId, itemId, itemIndex)
         self.rollItem = itemId
         self.rollIndex = itemIndex
         self.rollWhitelist = nil
+
+        local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
+        for _,character in ipairs(creatureData.characters) do
+            if preemptiveResponses[character.Name] == false then
+                local ended = VGT.masterLooter:RecordPassResponse(character.Name)
+                if ended then
+                    return
+                end
+            end
+        end
+
         self.Refresh()
         sendMLMessage("Open Roll on " .. itemData.link)
         sendMLMessage("/roll or type \"pass\" in chat", true)
@@ -1182,17 +1249,19 @@ local function TryEndRoll()
                 end
             end
             VGT.masterLooter:EndRoll()
+            return true
         end
     end
 end
 
-local function RecordPassResponse(name)
+function VGT.masterLooter:RecordPassResponse(name)
     local response = GetOrCreateResponse(name)
     if response then
         VGT.LogTrace("Recorded %s's pass message", name)
         response.pass = true
-        TryEndRoll()
+        local ended = TryEndRoll()
         VGT.masterLooter.Refresh()
+        return ended
     end
 end
 
@@ -1220,22 +1289,42 @@ VGT:RegisterEvent("CHAT_MSG_SYSTEM", function(channel, text)
     end
 end)
 
-local function handleChatCommand(channel, text, playerName)
-    if VGT.masterLooter.rollItem then
-        if (text == "pass" or text == "Pass" or text == "PASS") then
-            VGT.LogTrace("Received pass message from %s", playerName)
-            RecordPassResponse(playerName)
-        end
+VGT:RegisterCommandHandler(VGT.Commands.NOTIFY_INTERESTED, function(sender, id)
+    local lootmethod, masterlooterPartyID = GetLootMethod()
+    if lootmethod == "master" and masterlooterPartyID == 0 then
+        VGT.LogTrace("Received interested message from %s for %s", sender, id)
+        local itemResponses = GetOrCreatePreemtiveResponse(id)
+        itemResponses[sender] = true
+        VGT.masterLooter.Refresh()
     end
-end
+end)
+
+VGT:RegisterCommandHandler(VGT.Commands.NOTIFY_PASSING, function(sender, id)
+    local lootmethod, masterlooterPartyID = GetLootMethod()
+    if lootmethod == "master" and masterlooterPartyID == 0 then
+        VGT.LogTrace("Received preemptive pass message from %s for %s", sender, id)
+        local itemResponses = GetOrCreatePreemtiveResponse(id)
+        itemResponses[sender] = false
+        VGT.masterLooter.Refresh()
+    end
+end)
 
 VGT:RegisterCommandHandler(VGT.Commands.ROLL_PASS, function(sender, id)
     VGT.LogTrace("Received pass message from %s for %s", sender, id)
     if VGT.masterLooter.rollItem and VGT.masterLooter.rollItem == tonumber(id) then
         VGT.LogTrace("%s's pass message is valid for %s", sender, id)
-        RecordPassResponse(sender)
+        VGT.masterLooter:RecordPassResponse(sender)
     end
 end)
+
+local function handleChatCommand(channel, text, playerName)
+    if VGT.masterLooter.rollItem then
+        if (text == "pass" or text == "Pass" or text == "PASS") then
+            VGT.LogTrace("Received pass message from %s", playerName)
+            VGT.masterLooter:RecordPassResponse(playerName)
+        end
+    end
+end
 
 VGT:RegisterEvent("CHAT_MSG_RAID", handleChatCommand)
 VGT:RegisterEvent("CHAT_MSG_RAID_LEADER", handleChatCommand)

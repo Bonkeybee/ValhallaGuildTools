@@ -46,3 +46,4 @@ VGT-MinimapButton.lua
 VGT-MasterLooter.lua
 VGT-AutoTrade.lua
 VGT-RollWindow.lua
+VGT-DropTracker.lua
