@@ -1,5 +1,12 @@
 local LSM = LibStub("LibSharedMedia-3.0")
 
+LSM:Register("sound", "An Awesome Choice", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\anawesomechoice.ogg")
+LSM:Register("sound", "Navi Hey Listen", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\heylisten.ogg")
+LSM:Register("sound", "What Are You Buyin", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\whatareyoubuyin.ogg")
+LSM:Register("sound", "What Can I Do For Ya", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\whatcanidoforya.ogg")
+LSM:Register("sound", "Tatl Hey", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\tatlhey.ogg")
+LSM:Register("sound", "Tatl Listen", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\tatllisten.ogg")
+
 local function MigrateOptionsToDB(db)
   if VGT_OPTIONS and not VGT_OPTIONS.migrated then
     if VGT_OPTIONS.LOGGING then
@@ -96,14 +103,14 @@ function VGT:InitializeOptions()
       },
       roller = {
         enabled = true,
-        sound = "Info",
+        sound = "Tatl Hey",
         x = 0,
         y = 0,
         point = "CENTER"
       },
       dropTracker = {
         enabled = true,
-        wonSound = "Kaching",
+        wonSound = "Tatl Listen",
         x = -900,
         y = 0,
         width = 512,
