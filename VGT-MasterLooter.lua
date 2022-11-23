@@ -631,8 +631,12 @@ local function configureCharacter(characterName)
 end
 
 local function configureSelection(groupId)
-    root.scroll:ReleaseChildren()
+    local currentScroll = root.scroll.localstatus.scrollvalue
+
+    local lastId = VGT.masterLooter.groupId
     VGT.masterLooter.groupId = groupId
+
+    root.scroll:ReleaseChildren()
 
     if groupId then
         local parentKey, childKey = strsplit("\001", groupId)
@@ -650,6 +654,9 @@ local function configureSelection(groupId)
     else
         configureHome()
     end
+
+    root.scroll:SetScroll(lastId == groupId and currentScroll or 0)
+    root.scroll:FixScroll()
 end
 
 local function createRoot()
@@ -673,12 +680,9 @@ local function createRoot()
     tree:SetFullHeight(true)
     tree:SetLayout("Fill")
     tree:SetAutoAdjustHeight(false)
-    tree:SetCallback(
-        "OnGroupSelected",
-        function(self, e, groupId)
-            configureSelection(groupId)
-        end
-    )
+    tree:SetCallback("OnGroupSelected", function(self, e, groupId)
+        configureSelection(groupId)
+    end)
     root:AddChild(tree)
     root.tree = tree
 
