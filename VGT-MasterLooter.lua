@@ -357,11 +357,14 @@ local function configureItem(creatureId, itemId, itemIndex)
                 root.scroll:AddChild(cancelButton)
 
                 local orderedResponses = {}
+                local responseCount, totalCount = 0, 0
 
                 if VGT.masterLooter.rollWhitelist then
                     for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
+                        totalCount = totalCount + 1
                         local response = VGT.masterLooter.responses[name]
                         if response then
+                            responseCount = responseCount + 1
                             tinsert(orderedResponses, response)
                         else
                             tinsert(orderedResponses, { name = name })
@@ -369,8 +372,10 @@ local function configureItem(creatureId, itemId, itemIndex)
                     end
                 else
                     for _,character in ipairs(rollCreature.characters) do
+                        totalCount = totalCount + 1
                         local response = VGT.masterLooter.responses[character.Name]
                         if response then
+                            responseCount = responseCount + 1
                             tinsert(orderedResponses, response)
                         else
                             tinsert(orderedResponses, { name = character.Name })
@@ -387,6 +392,10 @@ local function configureItem(creatureId, itemId, itemIndex)
                     end
                     return (l.pass and 1 or 0) < (r.pass and 1 or 0)
                 end)
+
+                local label = AceGUI:Create("Label")
+                label:SetText(responseCount .. " of " .. totalCount .. " responded.")
+                root.scroll:AddChild(label)
 
                 for i,v in ipairs(orderedResponses) do
                     local text = v.name
