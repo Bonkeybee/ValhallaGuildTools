@@ -7,7 +7,8 @@ function VGT.PrintHelp()
   VGT.LogSystem("/vgt about - version information")
   VGT.LogSystem("/vgt options - opens the VGT options window")
   VGT.LogSystem("/vgt raidstart - shows raid start import code for loot masters")
-  VGT.LogSystem("/vgt loot - shows the loot tracking window")
+  VGT.LogSystem("/vgt loot or /vgt drops - toggles the drop tracker window")
+  VGT.LogSystem("/vgt ml or /vgt masterlooter - toggles the master loot tracker window")
   VGT.LogSystem("/vgt users [by version] - shows how many people online in the guild are using the addon, and optionally lists their addon versions.")
 end
 
@@ -28,7 +29,9 @@ SlashCmdList["VGT"] = function(message)
     VGT.userFinder:PrintUserCount(arg1 == "by" and arg2 or nil)
   elseif (command == "raidstart") then
     VGT:ShowRaidStartExport()
-  elseif (command == "loot") then
+  elseif (command == "loot" or command == "drops") then
+    VGT.dropTracker:Toggle()
+  elseif (command == "ml" or command == "masterlooter") then
     VGT.masterLooter:Toggle()
   else
     VGT.LogError("invalid command - type `/vgt help` for a list of commands")
