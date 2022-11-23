@@ -11,7 +11,7 @@ end
 VGT:RegisterCommandHandler(VGT.Commands.GET_VERSION, function(sender, version)
   version = tonumber(version)
   if not version or (not warnedPlayers[sender] and not UnitIsUnit(sender, "player") and version < tonumber(VGT.version)) then
-    VGT.LogTrace("Responding to version request from %s. Their version: %s; our version: %s", sender, version or "unspecified", VGT.version)
+    VGT.LogTrace("Responding to version request from %s. Their version: %s; our version: %s", sender, version, VGT.version)
     VGT:SendPlayerAddonCommand(sender, VGT.Commands.VERSION_RESPOND, VGT.version)
     warnedPlayers[sender] = true
   end

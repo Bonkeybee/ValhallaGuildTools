@@ -18,6 +18,43 @@ local function ShouldLog(level)
   end
 end
 
+local function Sanitize(param)
+  local t = type(param)
+  if t == "string" or t == "number" then
+    return param
+  elseif t == "nil" then
+    return "nil"
+  elseif t == "boolean" then
+    return param and "true" or "false"
+  elseif t == "table" then
+    return strjoin(", ", table.unpack(param))
+  else
+    return tostring(param)
+  end
+end
+
+local function SanitizeParams(...)
+  local count = select("#", ...)
+  if count == 0 then
+    return
+  else
+    local p1, p2, p3, p4, p5 = ...
+    if count == 1 then
+      return Sanitize(p1)
+    elseif count == 2 then
+      return Sanitize(p1), Sanitize(p2)
+    elseif count == 3 then
+      return Sanitize(p1), Sanitize(p2), Sanitize(p3)
+    elseif count == 4 then
+      return Sanitize(p1), Sanitize(p2), Sanitize(p3), Sanitize(p4)
+    elseif count == 5 then
+      return Sanitize(p1), Sanitize(p2), Sanitize(p3), Sanitize(p4), Sanitize(p5)
+    else
+      return Sanitize(p1), Sanitize(p2), Sanitize(p3), Sanitize(p4), Sanitize(p5), SanitizeParams(select(6, ...))
+    end
+  end
+end
+
 -- Logs (prints) a given message at the specified log level
 --  level: the log level to print at
 --  message: the unformatted message
@@ -25,7 +62,7 @@ end
 function VGT.Log(level, message, ...)
   if ShouldLog(level) then
     if select("#", ...) > 0 then
-      message = format(message, ...)
+      message = format(message, SanitizeParams(...))
     end
     local color = logColors[level] or NORMAL_FONT_COLOR_CODE
     print(color .. "[" .. VGT.name .. "]", message)

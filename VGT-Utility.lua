@@ -146,7 +146,7 @@ VGT.equipTable = {
 
 local function GetNextLevel(source, levels, level, playerClass)
   if type(source) ~= "table" then
-    VGT.LogTrace("Level %s was %s; returning as value", level, source and tostring(source) or "nil")
+    VGT.LogTrace("Level %s was %s; returning as value", level, source)
     return source
   end
 
@@ -182,7 +182,7 @@ end
 function VGT:Equippable(item, playerClass)
   local itemId, _, _, equipLocId, _, classId, subclassId = GetItemInfoInstant(item)
   playerClass = playerClass or UnitClassBase("player")
-  VGT.LogTrace("Equippable invoked. equipLocId = %s; classId = %s; subclassId = %s; playerClass = %s", equipLocId or "", classId or "", subclassId or "", playerClass or "")
+  VGT.LogTrace("Equippable invoked. equipLocId = %s; classId = %s; subclassId = %s; playerClass = %s", equipLocId, classId, subclassId, playerClass)
 
   local overrideClasses = self.overrideEquipTable[itemId]
   if overrideClasses then

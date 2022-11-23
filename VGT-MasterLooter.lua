@@ -849,7 +849,7 @@ function VGT.masterLooter.Refresh()
 end
 
 function VGT.masterLooter:TrackUnknown(itemId, creatureId)
-    VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId or "Unknown")
+    VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId)
     local creatureData, itemData = self.Track(itemId, creatureId)
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
@@ -1278,6 +1278,8 @@ VGT:RegisterEvent("CHAT_MSG_SYSTEM", function(channel, text)
                 local response = GetOrCreateResponse(name)
                 if response then
                     VGT.LogTrace("Recorded %s's roll message", name)
+                    local preemptiveResponses = GetOrCreatePreemtiveResponse(VGT.masterLooter.rollItem)
+                    preemptiveResponses[name] = nil
                     response.pass = false
                     response.roll = response.roll or roll
                     TryEndRoll()
