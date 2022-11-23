@@ -105,11 +105,13 @@ local function SendMyLocation(target)
     x = VGT.Round(x, 0)
     y = VGT.Round(y, 0)
     local hp = UnitHealth("player") / UnitHealthMax("player")
-    if (instanceMapId ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
-      local data = instanceMapId .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
+    if (continent ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
+      local data = continent .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
       if (target ~= nil) then
+        VGT.LogTrace("Sending map location to %s", target)
         VGT:SendCommMessage(MODULE_NAME, data, "WHISPER", target)
       elseif (IsInGuild()) then
+        VGT.LogTrace("Sending map location to guild")
         VGT:SendCommMessage(MODULE_NAME, data, "GUILD")
       end
     end
@@ -431,6 +433,6 @@ function VGT:RefreshMapConfig()
     self.map.frame:Show()
   else
     self.map.frame:Hide()
-    UpdatePins()
+    UpdatePins(GetTime())
   end
 end
