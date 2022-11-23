@@ -103,6 +103,7 @@ function VGT:InitializeOptions()
       },
       roller = {
         enabled = true,
+        showPasses = false,
         sound = "Tatl Hey",
         x = 0,
         y = 0,
@@ -111,6 +112,7 @@ function VGT:InitializeOptions()
       dropTracker = {
         enabled = true,
         wonSound = "Tatl Listen",
+        autoShow = true,
         x = -900,
         y = 0,
         width = 512,
@@ -285,7 +287,7 @@ function VGT:InitializeOptions()
       autoMasterLoot = {
         name = "Auto Master Looting",
         type = "group",
-        order = 4,
+        order = 5,
         args = {
           enabled = {
             order = 0,
@@ -327,7 +329,7 @@ function VGT:InitializeOptions()
       lootTracker = {
         name = "Master Loot Tracker",
         type = "group",
-        order = 5,
+        order = 6,
         args = {
           enabled = {
             order = 0,
@@ -418,6 +420,26 @@ function VGT:InitializeOptions()
                 PlaySoundFile(sound, "Master")
               end
             end
+          },
+          showPasses = {
+            order = 4,
+            name = "Show on passed items",
+            desc = "When checked, the roll window will show even for items you have passed on.",
+            type = "toggle"
+          }
+        }
+      },
+      dropTracker = {
+        name = "Drop Tracker",
+        type = "group",
+        order = 4,
+        args = {
+          autoShow = {
+            order = 3,
+            name = "Auto Show on New Loot",
+            type = "toggle",
+            desc = "When enabled, the drop tracker will pop up whenever new loot is tracked.",
+            width = "full"
           }
         }
       },

@@ -19,6 +19,14 @@ function VGT:ShowRollWindow(itemId, auto)
         if not self:Equippable(itemId) then
             return
         end
+
+        if not self.db.profile.roller.showPasses then
+            self.dropTracker:ResetItems()
+            local item = self.dropTracker:GetForItem(itemId)
+            if item and item.passed then
+                return
+            end
+        end
     
         if self.db.profile.roller.sound then
             local sound = LSM:Fetch("sound", self.db.profile.roller.sound, true)

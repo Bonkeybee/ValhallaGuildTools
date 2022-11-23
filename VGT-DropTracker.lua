@@ -10,23 +10,46 @@ function VGT.dropTracker:ResetItems(force)
     end
 end
 
+function VGT.dropTracker:ClearAll()
+    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] = StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] or {
+        text = CONFIRM_CONTINUE,
+        button1 = ACCEPT,
+        button2 = CANCEL,
+        hideOnEscape = true,
+        OnAccept = function()
+            VGT.dropTracker:ResetItems(true)
+            VGT.dropTracker:Refresh()
+        end
+    }
+    StaticPopup_Show("CONFIRM_VGTML_CLEAR")
+end
+
+function VGT.dropTracker:GetForItem(itemId)
+    for _,item in ipairs(VGT.db.char.dropTracker.items) do
+        if item.id == itemId then
+            return item
+        end
+    end
+end
+
 function VGT.dropTracker:Track(itemId)
     if not VGT:Equippable(itemId) then
         return
     end
     self:ResetItems()
     VGT.db.char.dropTracker.expiration = VGT.db.char.dropTracker.expiration or (GetTime() + 21600)
-    local item = Item:CreateFromItemID(itemId)
-    item:ContinueOnItemLoad(function()
-        local name = item:GetItemName()
-        VGT.db.char.dropTracker.items[name] = VGT.db.char.dropTracker.items[name] or {
-            id = itemId,
-            name = name,
-            link = item:GetItemLink(),
-            icon = item:GetItemIcon()
-        }
-        VGT.dropTracker:Refresh()
-    end)
+    local trackedItem = self:GetForItem(itemId)
+    if not trackedItem then
+        trackedItem = { id = itemId }
+        tinsert(VGT.db.char.dropTracker.items, trackedItem)
+        local item = Item:CreateFromItemID(itemId)
+        item:ContinueOnItemLoad(function()
+            trackedItem.name = item:GetItemName()
+            trackedItem.link = item:GetItemLink()
+            trackedItem.icon = item:GetItemIcon()
+            VGT.dropTracker:Refresh()
+        end)
+    end
 end
 
 function VGT.dropTracker:SetWon(itemId, won)
@@ -36,12 +59,10 @@ function VGT.dropTracker:SetWon(itemId, won)
             PlaySoundFile(sound, "Master")
         end
     end
-    for _,item in pairs(VGT.db.char.dropTracker.items) do
-        if item.id == itemId then
-            item.won = won
-            self:Refresh()
-            return
-        end
+    local item = self:GetForItem(itemId)
+    if item then
+        item.won = won
+        self:Refresh()
     end
 end
 
@@ -75,7 +96,7 @@ function VGT.dropTracker:Refresh()
         return
     end
 
-    for _, i in pairs(VGT.db.char.dropTracker.items) do
+    for _, i in ipairs(VGT.db.char.dropTracker.items) do
         local item = i
         local group = AceGUI:Create("InlineGroup")
         group:SetFullWidth(true)
@@ -132,8 +153,7 @@ function VGT.dropTracker:Refresh()
     resetButton:SetFullWidth(true)
     resetButton:SetText("Clear All")
     resetButton:SetCallback("OnClick", function()
-        VGT.dropTracker:ResetItems(true)
-        VGT.dropTracker:Refresh()
+        VGT.dropTracker:ClearAll()
     end)
     self.scroll:AddChild(resetButton)
     self.scroll:SetScroll(currentScroll)
@@ -148,6 +168,17 @@ function VGT.dropTracker:Toggle()
     else
         self.frame:Show()
         self:Refresh()
+    end
+end
+
+function VGT.dropTracker:Show()
+    if self.frame then
+        if not self.frame:IsShown() then
+            self.frame:Show()
+        end
+        self:Refresh()
+    else
+        self:BuildWindow()
     end
 end
 
@@ -203,4 +234,7 @@ end)
 
 VGT:RegisterCommandHandler(VGT.Commands.ITEM_TRACKED, function(sender, itemId, creatureId)
     VGT.dropTracker:Track(itemId)
+    if VGT.db.profile.dropTracker.autoShow then
+        VGT.dropTracker:Show()
+    end
 end)
