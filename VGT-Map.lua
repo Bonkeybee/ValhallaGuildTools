@@ -377,6 +377,15 @@ local function UpdateBlizzardPins()
       pin.GetUnitColor = newGetUnitColor
       pin:SetPinTexture("raid", MAP_ICON_TEXTURE)
       pin:SetPinTexture("party", MAP_ICON_TEXTURE)
+      if not pin.hooked then
+        hooksecurefunc(pin, "UpdateAppearanceData", function(self)
+          self.UpdateUnitTooltips = newUpdateUnitTooltips
+          self.GetUnitColor = newGetUnitColor
+          self:SetPinTexture("raid", MAP_ICON_TEXTURE)
+          self:SetPinTexture("party", MAP_ICON_TEXTURE)
+        end)
+        pin.hooked = true
+      end
     else
       pin.UpdateUnitTooltips = originalUpdateUnitTooltips
       pin.GetUnitColor = originalGetUnitColor
