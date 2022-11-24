@@ -810,6 +810,11 @@ function VGT.masterLooter.Refresh()
             }
         }
 
+        if VGT_MasterLootData.expiration and GetTime() > VGT_MasterLootData.expiration then
+            VGT_MasterLootData = {}
+            VGT.masterLooter.groupId = nil
+        end
+
         if VGT.db.profile.lootTracker.groupByWinner then
             local characters = {}
             local unassigned = {}
@@ -966,6 +971,8 @@ function VGT.masterLooter.Track(itemId, creatureId)
             preemptiveResponses[character.Name] = false
         end
     end
+
+    VGT_MasterLootData.expiration = (GetTime() + 21600)
 
     VGT.masterLooter.Refresh()
 
