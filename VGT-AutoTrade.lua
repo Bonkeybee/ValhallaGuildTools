@@ -26,7 +26,7 @@ local function findEligibleItemLoc(itemId)
                     for i=1,VGTAutoTradeScanningTooltip:NumLines() do
                         local line = _G["VGTAutoTradeScanningTooltipTextLeft"..i]
                         local text = line and line:GetText() or ""
-                        if text == "Soulbound" then
+                        if text == ITEM_SOULBOUND then
                             isSoulbound = true
                         elseif string.find(text, "You may trade this item with players") then
                             hasTradableText = true
