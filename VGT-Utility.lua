@@ -29,22 +29,41 @@ function VGT.Round(number, decimals)
   return (("%%.%df"):format(decimals)):format(number)
 end
 
-do
-  VGT.overrideEquipTable = {}
-  local ppw = { PALADIN = true, PRIEST = true, WARLOCK = true }
-  local whs = { WARRIOR = true, HUNTER = true, SHAMAN = true }
-  local rdmd = { ROGUE = true, DEATHKNIGHT = true, MAGE = true, DRUID = true }
-  local ppwItems = { 40610, 40613, 40616, 40619, 40622, 40625, 40628, 40631, 40634, 40637, 45632, 45635, 45638, 45641, 45644, 45647, 45650, 45653, 45656, 45659, 47557, 52027, 52030 }
-  local whsItems = { 40611, 40614, 40617, 40620, 40623, 40626, 40629, 40632, 40635, 40638, 45633, 45636, 45639, 45642, 45645, 45648, 45651, 45654, 45657, 45660, 47558, 52026, 52029 }
-  local rdmdItems = { 40612, 40615, 40618, 40621, 40624, 40627, 40630, 40633, 40636, 40639, 45634, 45637, 45640, 45643, 45646, 45649, 45652, 45655, 45658, 45661, 47559, 52025, 52028 }
-  local function AddOverrides(classes, items)
-    for _,itemId in ipairs(items) do
-      VGT.overrideEquipTable[itemId] = classes
-    end
+VGT.overrideEquipTable = {}
+local classesPrefix = ITEM_CLASSES_ALLOWED:gsub("%%s", "(.*)")
+
+local function BuildRestrictions(itemId)
+  VGTAutoTradeScanningTooltip:ClearLines()
+  VGTAutoTradeScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
+  for i=1,VGTAutoTradeScanningTooltip:NumLines() do
+      local line = _G["VGTAutoTradeScanningTooltipTextLeft"..i]
+      local text = line and line:GetText() or ""
+      text = string.match(text, classesPrefix)
+      if text then
+        local overrides = {}
+        local classes = {}
+        for i=1,GetNumClasses() do
+          local name, fileName = GetClassInfo(i)
+          if name and fileName then
+            classes[name] = fileName
+          end
+        end
+        for class in string.gmatch(text, "([%a]+[ ]?[%a]*)[, ]?") do
+          overrides[classes[class]] = true
+        end
+        return overrides
+      end
   end
-  AddOverrides(ppw, ppwItems)
-  AddOverrides(whs, whsItems)
-  AddOverrides(rdmd, rdmdItems)
+  return true
+end
+
+local function GetClassRestrictions(itemId)
+  local overrideResult = VGT.overrideEquipTable[itemId]
+  if not overrideResult then
+    overrideResult = BuildRestrictions(itemId)
+    VGT.overrideEquipTable[itemId] = overrideResult
+  end
+  return overrideResult
 end
 
 VGT.equipTable = {
@@ -184,10 +203,11 @@ function VGT:Equippable(item, playerClass)
   playerClass = playerClass or UnitClassBase("player")
   VGT.LogTrace("Equippable invoked. equipLocId = %s; classId = %s; subclassId = %s; playerClass = %s", equipLocId, classId, subclassId, playerClass)
 
-  local overrideClasses = self.overrideEquipTable[itemId]
-  if overrideClasses then
-    VGT.LogTrace("Found override table for item #%s", itemId)
-    return overrideClasses[playerClass]
+  local classRestrictions = GetClassRestrictions(itemId)
+  if classRestrictions == true then
+    return GetNextLevel(self.equipTable, { classId, subclassId, equipLocId }, 1, playerClass)
+  else
+    VGT.LogTrace("Found class restrictions for item #%s", itemId)
+    return classRestrictions[playerClass]
   end
-  return GetNextLevel(self.equipTable, { classId, subclassId, equipLocId }, 1, playerClass)
 end
