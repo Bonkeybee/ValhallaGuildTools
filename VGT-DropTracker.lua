@@ -49,6 +49,7 @@ function VGT.dropTracker:Track(itemId)
             trackedItem.icon = item:GetItemIcon()
             VGT.dropTracker:Refresh()
         end)
+        return true
     end
 end
 
@@ -233,8 +234,7 @@ VGT:RegisterCommandHandler(VGT.Commands.UNASSIGN_ITEM, function(sender, id)
 end)
 
 VGT:RegisterCommandHandler(VGT.Commands.ITEM_TRACKED, function(sender, itemId, creatureId)
-    VGT.dropTracker:Track(itemId)
-    if VGT.db.profile.dropTracker.autoShow then
+    if VGT.dropTracker:Track(itemId) and VGT.db.profile.dropTracker.autoShow then
         VGT.dropTracker:Show()
     end
 end)
