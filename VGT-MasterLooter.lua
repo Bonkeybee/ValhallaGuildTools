@@ -233,24 +233,13 @@ local function configureEncounter(creatureGuid)
         end)
         root.scroll:AddChild(exportButton)
 
-        local allTraded = true
-
-        for _, itemData in ipairs(creatureData.items) do
-            if not itemData.traded then
-                allTraded = false
-                break
-            end
-        end
-
-        if allTraded then
-            local deleteButton = AceGUI:Create("Button")
-            deleteButton:SetText("Delete")
-            deleteButton:SetFullWidth(true)
-            deleteButton:SetCallback("OnClick", function()
-                VGT.masterLooter.Delete(creatureGuid)
-            end)
-            root.scroll:AddChild(deleteButton)
-        end
+        local deleteButton = AceGUI:Create("Button")
+        deleteButton:SetText("Delete")
+        deleteButton:SetFullWidth(true)
+        deleteButton:SetCallback("OnClick", function()
+            VGT.masterLooter.Delete(creatureGuid)
+        end)
+        root.scroll:AddChild(deleteButton)
     end
 end
 
