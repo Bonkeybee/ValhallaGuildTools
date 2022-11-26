@@ -99,56 +99,86 @@ function VGT.dropTracker:Refresh()
 
     for _, i in ipairs(VGT.db.char.dropTracker.items) do
         local item = i
-        local group = AceGUI:Create("InlineGroup")
-        group:SetFullWidth(true)
-        group:SetLayout("Flow")
-        self.scroll:AddChild(group)
-
-        local text = item.link
-        
+        local shouldShow = true
         if item.won then
-            text = text .. " - |cff00ff00Won|r"
-        elseif item.passed then
-            text = text .. " - |cffffff00Passing|r"
-        elseif item.interested then
-            text = text .. " - |cff00ff00Interested|r"
+            shouldShow = VGT.db.profile.dropTracker.showWon
+        elseif item.passed or item.interested then
+            shouldShow = VGT.db.profile.dropTracker.showResponded
         end
+        if shouldShow then
+            local group = AceGUI:Create("InlineGroup")
+            group:SetFullWidth(true)
+            group:SetLayout("Flow")
+            self.scroll:AddChild(group)
 
-        local label = AceGUI:Create("InteractiveLabel")
-        label:SetFont(GameFontHighlight:GetFont(), 16)
-        label:SetImage(item.icon)
-        label:SetImageSize(24, 24)
-        label:SetHeight(24)
-        label:SetFullWidth(true)
-        label:SetText(text)
-        label:SetCallback("OnEnter", function()
-            GameTooltip:SetOwner(label.frame, "ANCHOR_CURSOR_RIGHT")
-            GameTooltip:SetHyperlink(item.link)
-            GameTooltip:Show()
-        end)
-        label:SetCallback("OnLeave",function()
-            GameTooltip:Hide()
-        end)
-        group:AddChild(label)
+            local text = item.link
+            
+            if item.won then
+                text = text .. " - |cff00ff00Won|r"
+            elseif item.passed then
+                text = text .. " - |cffffff00Passing|r"
+            elseif item.interested then
+                text = text .. " - |cff00ff00Interested|r"
+            end
 
-        if not item.won then
-            local interestedButton = AceGUI:Create("Button")
-            interestedButton:SetText("Interested")
-            interestedButton:SetHeight(24)
-            interestedButton:SetCallback("OnClick", function()
-                VGT.dropTracker:NotifyInterested(item)
+            local label = AceGUI:Create("InteractiveLabel")
+            label:SetFont(GameFontHighlight:GetFont(), 16)
+            label:SetImage(item.icon)
+            label:SetImageSize(24, 24)
+            label:SetHeight(24)
+            label:SetFullWidth(true)
+            label:SetText(text)
+            label:SetCallback("OnEnter", function()
+                GameTooltip:SetOwner(label.frame, "ANCHOR_CURSOR_RIGHT")
+                GameTooltip:SetHyperlink(item.link)
+                GameTooltip:Show()
             end)
-            group:AddChild(interestedButton)
-    
-            local passButton = AceGUI:Create("Button")
-            passButton:SetText("Pass")
-            passButton:SetHeight(24)
-            passButton:SetCallback("OnClick", function()
-                VGT.dropTracker:NotifyPassing(item)
+            label:SetCallback("OnLeave",function()
+                GameTooltip:Hide()
             end)
-            group:AddChild(passButton)
+            group:AddChild(label)
+
+            if not item.won then
+                local interestedButton = AceGUI:Create("Button")
+                interestedButton:SetText("Interested")
+                interestedButton:SetHeight(24)
+                interestedButton:SetWidth(100)
+                interestedButton:SetCallback("OnClick", function()
+                    VGT.dropTracker:NotifyInterested(item)
+                end)
+                group:AddChild(interestedButton)
+        
+                local passButton = AceGUI:Create("Button")
+                passButton:SetText("Pass")
+                passButton:SetHeight(24)
+                passButton:SetWidth(100)
+                passButton:SetCallback("OnClick", function()
+                    VGT.dropTracker:NotifyPassing(item)
+                end)
+                group:AddChild(passButton)
+            end
         end
     end
+
+    local showRespondedToggle = AceGUI:Create("CheckBox")
+    showRespondedToggle:SetLabel("Show Responded Items")
+    showRespondedToggle:SetFullWidth(true)
+    showRespondedToggle:SetValue(VGT.db.profile.dropTracker.showResponded and true or false)
+    showRespondedToggle:SetCallback("OnValueChanged", function()
+        VGT.db.profile.dropTracker.showResponded = not VGT.db.profile.dropTracker.showResponded
+        VGT.dropTracker:Refresh()
+    end)
+    self.scroll:AddChild(showRespondedToggle)
+
+    local showWonToggle = AceGUI:Create("CheckBox")
+    showWonToggle:SetLabel("Show Won Items")
+    showWonToggle:SetFullWidth(true)
+    showWonToggle:SetValue(VGT.db.profile.dropTracker.showWon and true or false)
+    showWonToggle:SetCallback("OnValueChanged", function()
+        VGT.db.profile.dropTracker.showWon = not VGT.db.profile.dropTracker.showWon
+        VGT.dropTracker:Refresh()
+    end)
+    self.scroll:AddChild(showWonToggle)
 
     local resetButton = AceGUI:Create("Button")
     resetButton:SetFullWidth(true)

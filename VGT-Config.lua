@@ -113,6 +113,8 @@ function VGT:InitializeOptions()
         enabled = true,
         wonSound = "Tatl Listen",
         autoShow = true,
+        showResponded = false,
+        showWon = false,
         x = -900,
         y = 0,
         width = 512,
