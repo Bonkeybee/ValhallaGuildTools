@@ -292,3 +292,98 @@ function VGT:ShowInputDialog(title, text, callback)
 
   StaticPopup_Show(dialogId)
 end
+
+local classLookup = {
+  [1] = 1, -- Warrior
+  [2] = 2, -- Paladin
+  [3] = 4, -- Hunter
+  [4] = 8, -- Rogue
+  [5] = 16, -- Priest
+  [6] = 32, -- Death Knight
+  [7] = 64, -- Shaman
+  [8] = 128, -- Mage
+  [9] = 256, -- Warlock
+  [11] = 1024 -- Druid
+}
+
+local reverseClassLookup = {}
+
+for k,v in pairs(classLookup) do
+  reverseClassLookup[v] = k
+end
+
+local raceLookup = {
+  [1] = 0, -- Human
+  [3] = 1, -- Dwarf
+  [4] = 2, -- NightElf
+  [7] = 3, -- Gnome
+  [11] = 4 -- Draenei
+}
+
+function VGT:ColorizeCharacterName(character)
+  local _, _, _, color = GetClassColor(select(2, self:CharacterClassInfo(character)))
+  if not color then
+    return character.Name
+  else
+    return "|c" .. color .. character.Name .. "|r"
+  end
+end
+
+function VGT:CharacterClassInfo(character)
+  return GetClassInfo(reverseClassLookup[character.Class])
+end
+
+function VGT:GetCharacters()
+
+  local function insertCharacter(characters, id)
+    local name, _ = UnitName(id)
+    if (name) then
+      local _, _, raceId = UnitRace(id)
+      local gender = UnitSex(id)
+      local _, _, classId = UnitClass(id)
+
+      if (raceId and gender and classId) then
+        table.insert(
+          characters,
+          {
+            Name = name,
+            Gender = gender - 2,
+            Class = classLookup[classId],
+            Race = raceLookup[raceId]
+          }
+        )
+      end
+    end
+  end
+
+  local characters = {}
+  if UnitInRaid("player") then
+    for i = 1, 40 do
+      insertCharacter(characters, "raid" .. i)
+    end
+  else
+    insertCharacter(characters, "player")
+    if UnitInParty("player") then
+      for i = 1, 4 do
+        insertCharacter(characters, "party" .. i)
+      end
+    end
+  end
+  return characters
+end
+
+function VGT:ExportRaidStart()
+  return json.encode({ Characters = self:GetCharacters() })
+end
+
+function VGT:ShowRaidStartExport()
+  self:ShowInputDialog("Export Raid Start", VGT:ExportRaidStart())
+end
+
+function VGT:ExportKill(items, characters)
+  return json.encode({ Items = items, Characters = characters or self:GetCharacters() })
+end
+
+function VGT:ShowKillExport(items, characters)
+  self:ShowInputDialog("Export Kill", self:ExportKill(items, characters))
+end
