@@ -1,53 +1,3 @@
-local StaticPopupDialogs, StaticPopup_Show = StaticPopupDialogs, StaticPopup_Show
----@diagnostic disable-next-line: undefined-field
-local gfind = string.gfind
-
-do
-  local function NOP()
-    return
-  end
-
-  local PopupId = "VLL_EXPORT"
-
-  function VGT:ExportPopup(title, export)
-    if (StaticPopupDialogs[PopupId] == nil) then
-      local popup = {
-        button2 = "Close",
-        hasEditBox = 1,
-        hasWideEditBox = 1,
-        editBoxWidth = 350,
-        preferredIndex = 3,
-        OnHide = NOP,
-        OnAccept = NOP,
-        OnCancel = NOP,
-        EditBoxOnEscapePressed = function(this)
-          this:GetParent():Hide()
-        end,
-        timeout = 0,
-        whileDead = 1,
-        hideOnEscape = 1
-      }
-      function popup:OnShow()
-        self:SetWidth(420)
-        local editBox = _G[self:GetName() .. "WideEditBox"] or _G[self:GetName() .. "EditBox"]
-        editBox:SetText(StaticPopupDialogs[PopupId].export)
-        editBox:SetFocus()
-        editBox:HighlightText(false)
-        local button = _G[self:GetName() .. "Button2"]
-        button:ClearAllPoints()
-        button:SetWidth(200)
-        button:SetPoint("CENTER", editBox, "CENTER", 0, -30)
-      end
-
-      StaticPopupDialogs[PopupId] = popup
-    end
-
-    StaticPopupDialogs[PopupId].text = title
-    StaticPopupDialogs[PopupId].export = export
-    StaticPopup_Show(PopupId, export)
-  end
-end
-
 local classLookup = {
   [1] = 1, -- Warrior
   [2] = 2, -- Paladin
@@ -132,7 +82,7 @@ function VGT:ExportRaidStart()
 end
 
 function VGT:ShowRaidStartExport()
-  VGT:ExportPopup("Export Raid Start", VGT:ExportRaidStart())
+  self:ShowInputDialog("Export Raid Start", VGT:ExportRaidStart())
 end
 
 function VGT:ExportKill(items, characters)
@@ -140,7 +90,7 @@ function VGT:ExportKill(items, characters)
 end
 
 function VGT:ShowKillExport(items, characters)
-  self:ExportPopup("Export Kill", self:ExportKill(items, characters))
+  self:ShowInputDialog("Export Kill", self:ExportKill(items, characters))
 end
 
 local function ShouldIgnore(ignores, link)

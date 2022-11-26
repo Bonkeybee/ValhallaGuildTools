@@ -1,12 +1,12 @@
 VGT._creatures = {}
 
-function VGT:UnitNameFromGuid(creatureGuid, noUnknown)
+function VGT:UnitNameFromGuid(creatureGuid)
     if not creatureGuid then
-        return not noUnknown and "Unknown"
+        return "Unknown"
     end
     local unitType, _, _, _, _, unitId, spawnUID = strsplit("-", creatureGuid)
     unitId = tonumber(unitId)
-    return VGT._creatures[unitId] or (not noUnknown and ("Unknown " .. unitType or "" .. " " .. unitId or ""))
+    return VGT._creatures[unitId] or ("Unknown " .. unitType or "" .. " " .. unitId or "")
 end
 
 local function addCreature(id, name)

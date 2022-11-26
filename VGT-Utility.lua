@@ -211,3 +211,84 @@ function VGT:Equippable(item, playerClass)
     return classRestrictions[playerClass]
   end
 end
+
+function VGT:Confirm(func)
+  local dialogId = "VLL_CONFIRM_DIALOG"
+  local dlg = StaticPopupDialogs[dialogId]
+  if not dlg then
+    dlg = {
+      text = CONFIRM_CONTINUE,
+      button1 = ACCEPT,
+      button2 = CANCEL,
+      hideOnEscape = true
+    }
+    StaticPopupDialogs[dialogId] = dlg
+  end
+  dlg.OnAccept = func
+  StaticPopup_Show(dialogId)
+end
+
+function VGT:ShowInputDialog(title, text, callback)
+  local dialogId = "VLL_INPUT_DIALOG"
+  local dlg = StaticPopupDialogs[dialogId]
+  if not dlg then
+    local function NOP()
+      return
+    end
+    dlg = {
+      hasEditBox = 1,
+      hasWideEditBox = 1,
+      editBoxWidth = 350,
+      preferredIndex = 3,
+      OnHide = NOP,
+      OnAccept = NOP,
+      OnCancel = NOP,
+      timeout = 0,
+      whileDead = 1,
+      hideOnEscape = 1
+    }
+    function dlg:EditBoxOnEscapePressed()
+      self:GetParent():Hide()
+    end
+    function dlg:OnAccept()
+      local dlg = StaticPopupDialogs[dialogId]
+      if dlg.callback then
+        local editBox = _G[self:GetName() .. "WideEditBox"] or _G[self:GetName() .. "EditBox"]
+        dlg.callback(editBox:GetText())
+      end
+    end
+    function dlg:OnShow()
+      local dlg = StaticPopupDialogs[dialogId]
+
+      self:SetWidth(420)
+
+      local editBox = _G[self:GetName() .. "WideEditBox"] or _G[self:GetName() .. "EditBox"]
+      editBox:SetText(dlg.inputText or "")
+      editBox:SetFocus()
+      editBox:HighlightText(false)
+
+      if not dlg.callback then
+        local button = _G[self:GetName() .. "Button2"]
+        button:ClearAllPoints()
+        button:SetWidth(200)
+        button:SetPoint("CENTER", editBox, "CENTER", 0, -30)
+      end
+    end
+    StaticPopupDialogs[dialogId] = dlg
+  end
+  
+  dlg.text = title
+  dlg.inputText = text
+
+  if callback then
+    dlg.callback = callback
+    dlg.button1 = OKAY
+    dlg.button2 = CANCEL
+  else
+    dlg.callback = nil
+    dlg.button1 = nil
+    dlg.button2 = CLOSE
+  end
+
+  StaticPopup_Show(dialogId)
+end

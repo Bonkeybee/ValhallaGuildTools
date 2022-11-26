@@ -193,7 +193,7 @@ end
 
 local function configureEncounter(creatureGuid)
     local label = AceGUI:Create("InteractiveLabel")
-    label:SetText(VGT:UnitNameFromGuid(creatureGuid))
+    label:SetText("Unknown")
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
     root.scroll:AddChild(label)
@@ -206,6 +206,8 @@ local function configureEncounter(creatureGuid)
     local creatureData = readData(creatureGuid)
 
     if creatureData then
+        label:SetText(creatureData.name or VGT:UnitNameFromGuid(creatureGuid))
+
         local exportButton = AceGUI:Create("Button")
         exportButton:SetText("Export Items")
         exportButton:SetFullWidth(true)
@@ -232,6 +234,43 @@ local function configureEncounter(creatureGuid)
             VGT:ShowKillExport(items, creatureData.characters)
         end)
         root.scroll:AddChild(exportButton)
+
+        if strsplit("-", creatureData.id, 2) == "Unknown" then
+            local renameButton = AceGUI:Create("Button")
+            renameButton:SetText("Rename")
+            renameButton:SetFullWidth(true)
+            renameButton:SetCallback("OnClick", function()
+                VGT:ShowInputDialog("Rename", creatureData.name, function(name)
+                    creatureData.name = name
+                    if creatureData.id == "Unknown-0-0-0-0-0-0-0" then
+                        local i = 1
+                        local newId = "Unknown-0-0-0-0-0-0-" .. i
+                        while readData(newId) do
+                            i = i + 1
+                            newId = "Unknown-0-0-0-0-0-0-" .. i
+                        end
+                        creatureData.id = newId
+                        root.tree:Select("encounter+" .. newId)
+                    end
+                    VGT.masterLooter.Refresh()
+                end)
+            end)
+            root.scroll:AddChild(renameButton)
+            
+            local manualTrackButton = AceGUI:Create("Button")
+            manualTrackButton:SetText("Manual Track Item")
+            manualTrackButton:SetFullWidth(true)
+            manualTrackButton:SetCallback("OnClick", function()
+                local infoType, itemId, itemLink = GetCursorInfo()
+                ClearCursor()
+                if infoType == "item" then
+                    VGT.masterLooter:TrackUnknown(itemId, creatureData.id)
+                else
+                    VGT.LogSystem("Click this button while holding an item to add it to the tracker.")
+                end
+            end)
+            root.scroll:AddChild(manualTrackButton)
+        end
 
         local deleteButton = AceGUI:Create("Button")
         deleteButton:SetText("Delete")
@@ -540,7 +579,9 @@ end
 local function configureHome()
     local rsbutton = AceGUI:Create("Button")
     rsbutton:SetText("Raid Start")
-    rsbutton:SetCallback("OnClick", VGT.ShowRaidStartExport)
+    rsbutton:SetCallback("OnClick", function()
+        VGT:ShowRaidStartExport()
+    end)
     root.scroll:AddChild(rsbutton)
 
     local importStatus = AceGUI:Create("Label")
@@ -707,36 +748,24 @@ function VGT.masterLooter:RefreshWindowConfig()
 end
 
 function VGT.masterLooter.ClearAll()
-    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] = StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] or {
-        text = CONFIRM_CONTINUE,
-        button1 = ACCEPT,
-        button2 = CANCEL,
-        hideOnEscape = true,
-        OnAccept = function()
-            VGT_MasterLootData = {}
-            VGT.masterLooter.Refresh()
-        end
-    }
-    StaticPopup_Show("CONFIRM_VGTML_CLEAR")
+    VGT:Confirm(function()
+        VGT_MasterLootData = {}
+        root.tree:Select()
+        VGT.masterLooter.Refresh()
+    end)
 end
 
 function VGT.masterLooter.Delete(creatureGuid)
-    StaticPopupDialogs["CONFIRM_VGTML_DELETE"] = StaticPopupDialogs["CONFIRM_VGTML_DELETE"] or {
-        text = CONFIRM_CONTINUE,
-        button1 = ACCEPT,
-        button2 = CANCEL,
-        hideOnEscape = true
-    }
-    StaticPopupDialogs["CONFIRM_VGTML_DELETE"].OnAccept = function()
+    VGT:Confirm(function()
         for i, creature in ipairs(VGT_MasterLootData) do
             if creature.id == creatureGuid then
                 tremove(VGT_MasterLootData, i)
+                root.tree:Select()
                 VGT.masterLooter.Refresh()
                 return
             end
         end
-    end
-    StaticPopup_Show("CONFIRM_VGTML_DELETE")
+    end)
 end
 
 function VGT.masterLooter.Toggle()
@@ -801,7 +830,7 @@ function VGT.masterLooter.Refresh()
 
         if VGT_MasterLootData.expiration and GetTime() > VGT_MasterLootData.expiration then
             VGT_MasterLootData = {}
-            VGT.masterLooter.groupId = nil
+            root.tree:Select()
         end
 
         if VGT.db.profile.lootTracker.groupByWinner then
@@ -843,7 +872,7 @@ function VGT.masterLooter.Refresh()
             for _, creatureData in ipairs(VGT_MasterLootData) do
                 local creatureNode = {
                     value = "encounter+" .. creatureData.id,
-                    text = VGT:UnitNameFromGuid(creatureData.id)
+                    text = creatureData.name or VGT:UnitNameFromGuid(creatureData.id)
                 }
                 buildItemNodes(creatureNode, creatureData.items, creatureData.id)
                 tinsert(data, creatureNode)
@@ -856,6 +885,7 @@ function VGT.masterLooter.Refresh()
 end
 
 function VGT.masterLooter:TrackUnknown(itemId, creatureId)
+    creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
     VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId)
     local creatureData, itemData = self.Track(itemId, creatureId)
     local item = Item:CreateFromItemID(itemId)
@@ -865,6 +895,7 @@ function VGT.masterLooter:TrackUnknown(itemId, creatureId)
         itemData.icon = item:GetItemIcon()
         itemData.quality = item:GetItemQuality()
         itemData.class = select(6, GetItemInfoInstant(itemId))
+        root.tree:Select("encounter+" .. creatureId)
         VGT.masterLooter.Refresh()
     end)
     return creatureData, itemData
@@ -914,7 +945,7 @@ function VGT.masterLooter:TrackLoot()
 end
 
 function VGT.masterLooter.Track(itemId, creatureId)
-    creatureId = creatureId or "Creature-0-0-0-0-0-0-0"
+    creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
     local creatureData, newCreature
 
     for i, v in ipairs(VGT_MasterLootData) do
@@ -927,6 +958,7 @@ function VGT.masterLooter.Track(itemId, creatureId)
     if not creatureData then
         creatureData = {
             id = creatureId,
+            name = VGT:UnitNameFromGuid(creatureId),
             items = {},
             characters = VGT:GetCharacters()
         }

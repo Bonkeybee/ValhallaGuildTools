@@ -11,17 +11,10 @@ function VGT.dropTracker:ResetItems(force)
 end
 
 function VGT.dropTracker:ClearAll()
-    StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] = StaticPopupDialogs["CONFIRM_VGTML_CLEAR"] or {
-        text = CONFIRM_CONTINUE,
-        button1 = ACCEPT,
-        button2 = CANCEL,
-        hideOnEscape = true,
-        OnAccept = function()
-            VGT.dropTracker:ResetItems(true)
-            VGT.dropTracker:Refresh()
-        end
-    }
-    StaticPopup_Show("CONFIRM_VGTML_CLEAR")
+    VGT:Confirm(function()
+        VGT.dropTracker:ResetItems(true)
+        VGT.dropTracker:Refresh()
+    end)
 end
 
 function VGT.dropTracker:GetForItem(itemId)
