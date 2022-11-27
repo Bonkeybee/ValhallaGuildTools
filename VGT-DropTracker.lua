@@ -1,54 +1,53 @@
+local dropTracker = VGT:NewModule("dropTracker")
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
-VGT.dropTracker = {}
-
-function VGT.dropTracker:ResetItems(force)
-    if force or (VGT.db.char.dropTracker.expiration and GetTime() > VGT.db.char.dropTracker.expiration) then
-        VGT.db.char.dropTracker.expiration = nil
-        VGT.db.char.dropTracker.items = {}
+function dropTracker:ResetItems(force)
+    if force or (self.char.expiration and GetTime() > self.char.expiration) then
+        self.char.expiration = nil
+        self.char.items = {}
     end
 end
 
-function VGT.dropTracker:ClearAll()
+function dropTracker:ClearAll()
     VGT:Confirm(function()
-        VGT.dropTracker:ResetItems(true)
-        VGT.dropTracker:Refresh()
+        self:ResetItems(true)
+        self:Refresh()
     end)
 end
 
-function VGT.dropTracker:GetForItem(itemId)
-    for _,item in ipairs(VGT.db.char.dropTracker.items) do
+function dropTracker:GetForItem(itemId)
+    for _,item in ipairs(self.char.items) do
         if item.id == itemId then
             return item
         end
     end
 end
 
-function VGT.dropTracker:Track(itemId)
+function dropTracker:Track(itemId)
     if not VGT:Equippable(itemId) then
         return
     end
     self:ResetItems()
-    VGT.db.char.dropTracker.expiration = VGT.db.char.dropTracker.expiration or (GetTime() + 21600)
+    self.char.expiration = self.char.expiration or (GetTime() + 21600)
     local trackedItem = self:GetForItem(itemId)
     if not trackedItem then
         trackedItem = { id = itemId }
-        tinsert(VGT.db.char.dropTracker.items, trackedItem)
+        tinsert(self.char.items, trackedItem)
         local item = Item:CreateFromItemID(itemId)
         item:ContinueOnItemLoad(function()
             trackedItem.name = item:GetItemName()
             trackedItem.link = item:GetItemLink()
             trackedItem.icon = item:GetItemIcon()
-            VGT.dropTracker:Refresh()
+            self:Refresh()
         end)
         return true
     end
 end
 
-function VGT.dropTracker:SetWon(itemId, won)
-    if won and VGT.db.profile.dropTracker.wonSound then
-        local sound = LSM:Fetch("sound", VGT.db.profile.dropTracker.wonSound, true)
+function dropTracker:SetWon(itemId, won)
+    if won and self.profile.wonSound then
+        local sound = LSM:Fetch("sound", self.profile.wonSound, true)
         if sound then
             PlaySoundFile(sound, "Master")
         end
@@ -60,28 +59,28 @@ function VGT.dropTracker:SetWon(itemId, won)
     end
 end
 
-function VGT.dropTracker:NotifyInterested(item)
+function dropTracker:NotifyInterested(item)
     item.passed = nil
     item.interested = true
     VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_INTERESTED, item.id)
     self:Refresh()
 end
 
-function VGT.dropTracker:NotifyPassing(item)
+function dropTracker:NotifyPassing(item)
     item.passed = true
     item.interested = nil
     VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, item.id)
     self:Refresh()
 end
 
-function VGT.dropTracker:Refresh()
+function dropTracker:Refresh()
     if not self.frame then
         return
     end
     self:ResetItems()
     local currentScroll = self.scroll.localstatus.scrollvalue
     self.scroll:ReleaseChildren()
-    if not next(VGT.db.char.dropTracker.items) then
+    if not next(self.char.items) then
         local label  = AceGUI:Create("Label")
         label:SetText("No items have dropped yet.")
         label:SetFullWidth(true)
@@ -90,13 +89,13 @@ function VGT.dropTracker:Refresh()
         return
     end
 
-    for _, i in ipairs(VGT.db.char.dropTracker.items) do
+    for _, i in ipairs(self.char.items) do
         local item = i
         local shouldShow = true
         if item.won then
-            shouldShow = VGT.db.profile.dropTracker.showWon
+            shouldShow = self.profile.showWon
         elseif item.passed or item.interested then
-            shouldShow = VGT.db.profile.dropTracker.showResponded
+            shouldShow = self.profile.showResponded
         end
         if shouldShow then
             local group = AceGUI:Create("InlineGroup")
@@ -137,7 +136,7 @@ function VGT.dropTracker:Refresh()
                 interestedButton:SetHeight(24)
                 interestedButton:SetWidth(100)
                 interestedButton:SetCallback("OnClick", function()
-                    VGT.dropTracker:NotifyInterested(item)
+                    self:NotifyInterested(item)
                 end)
                 group:AddChild(interestedButton)
         
@@ -146,7 +145,7 @@ function VGT.dropTracker:Refresh()
                 passButton:SetHeight(24)
                 passButton:SetWidth(100)
                 passButton:SetCallback("OnClick", function()
-                    VGT.dropTracker:NotifyPassing(item)
+                    self:NotifyPassing(item)
                 end)
                 group:AddChild(passButton)
             end
@@ -156,20 +155,20 @@ function VGT.dropTracker:Refresh()
     local showRespondedToggle = AceGUI:Create("CheckBox")
     showRespondedToggle:SetLabel("Show Responded Items")
     showRespondedToggle:SetFullWidth(true)
-    showRespondedToggle:SetValue(VGT.db.profile.dropTracker.showResponded and true or false)
+    showRespondedToggle:SetValue(self.profile.showResponded and true or false)
     showRespondedToggle:SetCallback("OnValueChanged", function()
-        VGT.db.profile.dropTracker.showResponded = not VGT.db.profile.dropTracker.showResponded
-        VGT.dropTracker:Refresh()
+        self.profile.showResponded = not self.profile.showResponded
+        self:Refresh()
     end)
     self.scroll:AddChild(showRespondedToggle)
 
     local showWonToggle = AceGUI:Create("CheckBox")
     showWonToggle:SetLabel("Show Won Items")
     showWonToggle:SetFullWidth(true)
-    showWonToggle:SetValue(VGT.db.profile.dropTracker.showWon and true or false)
+    showWonToggle:SetValue(self.profile.showWon and true or false)
     showWonToggle:SetCallback("OnValueChanged", function()
-        VGT.db.profile.dropTracker.showWon = not VGT.db.profile.dropTracker.showWon
-        VGT.dropTracker:Refresh()
+        self.profile.showWon = not self.profile.showWon
+        self:Refresh()
     end)
     self.scroll:AddChild(showWonToggle)
 
@@ -177,14 +176,18 @@ function VGT.dropTracker:Refresh()
     resetButton:SetFullWidth(true)
     resetButton:SetText("Clear All")
     resetButton:SetCallback("OnClick", function()
-        VGT.dropTracker:ClearAll()
+        self:ClearAll()
     end)
     self.scroll:AddChild(resetButton)
     self.scroll:SetScroll(currentScroll)
     self.scroll:FixScroll()
 end
 
-function VGT.dropTracker:Toggle()
+function dropTracker:Toggle()
+    if not self.enabledState then
+        VGT.LogWarning("Drop tracker module is disabled.")
+        return
+    end
     if not self.frame then
         self:BuildWindow()
     elseif self.frame:IsShown() then
@@ -195,7 +198,7 @@ function VGT.dropTracker:Toggle()
     end
 end
 
-function VGT.dropTracker:Show()
+function dropTracker:Show()
     if self.frame then
         if not self.frame:IsShown() then
             self.frame:Show()
@@ -206,18 +209,18 @@ function VGT.dropTracker:Show()
     end
 end
 
-function VGT.dropTracker:BuildWindow()
+function dropTracker:BuildWindow()
     self.frame = AceGUI:Create("Window")
     self.frame:SetTitle("Valhalla Drop Tracker")
     self.frame:SetLayout("Fill")
-    self:RefreshWindowConfig() -- SetPoint, SetWidth, SetHeight
+    self:RefreshConfig() -- SetPoint, SetWidth, SetHeight
     self.frame:SetCallback("OnClose", function()
-        local point, _, _, x, y = VGT.dropTracker.frame.frame:GetPoint(1)
-        VGT.db.profile.dropTracker.x = x
-        VGT.db.profile.dropTracker.y = y
-        VGT.db.profile.dropTracker.point = point
-        VGT.db.profile.dropTracker.width = VGT.dropTracker.frame.frame:GetWidth()
-        VGT.db.profile.dropTracker.height = VGT.dropTracker.frame.frame:GetHeight()
+        local point, _, _, x, y = self.frame.frame:GetPoint(1)
+        self.profile.x = x
+        self.profile.y = y
+        self.profile.point = point
+        self.profile.width = self.frame.frame:GetWidth()
+        self.profile.height = self.frame.frame:GetHeight()
     end)
     local scrollcontainer = AceGUI:Create("SimpleGroup")
     scrollcontainer:SetFullWidth(true)
@@ -232,32 +235,38 @@ function VGT.dropTracker:BuildWindow()
     self:Refresh()
 end
 
-function VGT.dropTracker:RefreshWindowConfig()
+function dropTracker:RefreshConfig()
     if not self.frame then
         return
     end
     
-    self.frame:SetHeight(VGT.db.profile.dropTracker.height < 240 and 240 or VGT.db.profile.dropTracker.height)
-    self.frame:SetWidth(VGT.db.profile.dropTracker.width < 400 and 400 or VGT.db.profile.dropTracker.width)
+    self.frame:SetHeight(self.profile.height < 240 and 240 or self.profile.height)
+    self.frame:SetWidth(self.profile.width < 400 and 400 or self.profile.width)
     self.frame:SetPoint(
-        VGT.db.profile.dropTracker.point,
+        self.profile.point,
         UIParent,
-        VGT.db.profile.dropTracker.point,
-        VGT.db.profile.dropTracker.x,
-        VGT.db.profile.dropTracker.y
+        self.profile.point,
+        self.profile.x,
+        self.profile.y
     )
 end
 
-VGT:RegisterCommandHandler(VGT.Commands.ASSIGN_ITEM, function(sender, id)
-    VGT.dropTracker:SetWon(id, true)
-end)
+function dropTracker:ASSIGN_ITEM(_, sender, id)
+    self:SetWon(id, true)
+end
 
-VGT:RegisterCommandHandler(VGT.Commands.UNASSIGN_ITEM, function(sender, id)
-    VGT.dropTracker:SetWon(id, false)
-end)
+function dropTracker:UNASSIGN_ITEM(_, sender, id)
+    self:SetWon(id, false)
+end
 
-VGT:RegisterCommandHandler(VGT.Commands.ITEM_TRACKED, function(sender, itemId, creatureId)
-    if VGT.dropTracker:Track(itemId) and VGT.db.profile.dropTracker.autoShow then
-        VGT.dropTracker:Show()
+function dropTracker:ITEM_TRACKED(_, sender, id)
+    if self:Track(id) and self.profile.autoShow then
+        self:Show()
     end
-end)
+end
+
+function dropTracker:OnEnable()
+    self:RegisterCommand(VGT.Commands.ASSIGN_ITEM)
+    self:RegisterCommand(VGT.Commands.UNASSIGN_ITEM)
+    self:RegisterCommand(VGT.Commands.ITEM_TRACKED)
+end

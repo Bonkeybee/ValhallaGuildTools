@@ -5,15 +5,19 @@ function VGT:InitializeMinimapButton()
     type = "data source",
     text = "Valhalla Guild Tools",
     OnClick = function(_, button)
+      local m
       if button == "RightButton" then
-        VGT.masterLooter:Toggle()
+        m = self:GetModule("lootTracker")
       elseif button == "LeftButton" then
         if IsControlKeyDown() then
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
           InterfaceOptionsFrame_OpenToCategory(VGT.menu)
         else
-          VGT.dropTracker:Toggle()
+          m = self:GetModule("dropTracker")
         end
+      end
+      if m then
+        m:Toggle()
       end
     end,
     OnTooltipShow = function(tooltip)

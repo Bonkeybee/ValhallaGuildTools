@@ -157,6 +157,16 @@ function VGT:InitializeOptions()
     end
     sectionName = info[#info]
     section[sectionName] = value
+    if sectionName == "enabled" then
+      local m = VGT:GetModule(info[#info - 1], true)
+      if m then
+        if value then
+          m:Enable()
+        else
+          m:Disable()
+        end
+      end
+    end
     VGT.LogDebug("Set %s.%s to %s", path, sectionName, tostring(value))
   end
 
@@ -227,11 +237,7 @@ function VGT:InitializeOptions()
             order = 0,
             name = "Enable",
             desc = "Shows the positions of guild members on the map and minimap",
-            type = "toggle",
-            set = function(info, value)
-              SetProfileValue(info, value)
-              VGT:RefreshMapConfig()
-            end
+            type = "toggle"
           },
           sep = {
             order = 1,
@@ -259,7 +265,7 @@ function VGT:InitializeOptions()
             max = 32,
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:RefreshPinSizeAndColor()
+              VGT:GetModule("map"):RefreshPinSizeAndColor()
             end
           },
           sendMyLocation = {
@@ -281,7 +287,7 @@ function VGT:InitializeOptions()
             type = "toggle",
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:RefreshPinSizeAndColor()
+              VGT:GetModule("map"):RefreshPinSizeAndColor()
             end
           }
         }
@@ -436,8 +442,19 @@ function VGT:InitializeOptions()
         type = "group",
         order = 4,
         args = {
+          enabled = {
+            order = 0,
+            name = "Enable",
+            type = "toggle",
+            desc = "Enables the drop tracker window.",
+          },
+          sep = {
+            order = 1,
+            name = "",
+            type = "header"
+          },
           autoShow = {
-            order = 3,
+            order = 2,
             name = "Auto Show on New Loot",
             type = "toggle",
             desc = "When enabled, the drop tracker will pop up whenever new loot is tracked.",

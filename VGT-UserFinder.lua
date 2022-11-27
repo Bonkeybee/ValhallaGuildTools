@@ -1,29 +1,42 @@
+local userFinder = VGT:NewModule("userFinder")
+
 local REQUEST_VERSION_MESSAGE = "ReqV"
 local RESPOND_VERSION_MESSAGE = "ResV"
 
-VGT.userFinder = { results = {}, enumerating = false }
+userFinder.results = {}
+userFinder.enumerating = false
 
-function VGT.userFinder:EnumerateUsers(callback, wait)
+function userFinder:EnumerateUsers(callback, wait, group)
   if (self.enumerating) then
     return
   end
-  self.enumerating = true
 
   if (IsInGuild()) then
     VGT.LogSystem("Requesting addon user info...")
-    VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
+    self.enumerating = true
+    self:RegisterCommand(VGT.Commands.VERSION_RESPOND)
+
+    if group then
+      VGT:SendGroupAddonCommand(VGT.Commands.GET_VERSION)
+    else
+      VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
+    end
   
     C_Timer.After(wait or 3, function()
-      callback(VGT.userFinder.results)
-      VGT.userFinder.enumerating = false
-      VGT.userFinder.results = {}
+      callback(self.results)
+      self.enumerating = false
+      self.results = {}
+      self:UnregisterCommand(VGT.Commands.VERSION_RESPOND)
     end)
   else
     VGT.LogError("You are not in a guild.")
   end
 end
 
-function VGT.userFinder:PrintUserCount(by)
+function userFinder:PrintUserCount(by)
+  if not self.enabledState then
+    VGT.LogWarning("User Finder module is disabled.")
+  end
   self:EnumerateUsers(function(results)
     if (by == "version") then
       local versions = {}
@@ -93,9 +106,9 @@ function VGT.userFinder:PrintUserCount(by)
   end)
 end
 
-VGT:RegisterCommandHandler(VGT.Commands.VERSION_RESPOND, function(sender, version)
-  if VGT.userFinder.enumerating and version then
+function userFinder:VERSION_RESPOND(_, sender, version)
+  if self.enumerating and version then
     VGT.LogTrace("Gathered user finder version response from %s", sender)
-    VGT.userFinder.results[sender] = version
+    self.results[sender] = version
   end
-end)
+end

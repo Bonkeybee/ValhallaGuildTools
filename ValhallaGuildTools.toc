@@ -41,9 +41,8 @@ VGT-CreatureData.lua
 VGT-DungeonData.lua
 VGT-Map.lua
 VGT-SlashCommand.lua
-VGT-LootList.lua
+VGT-AutoMasterLoot.lua
 VGT-MinimapButton.lua
 VGT-MasterLooter.lua
-VGT-AutoTrade.lua
 VGT-RollWindow.lua
 VGT-DropTracker.lua

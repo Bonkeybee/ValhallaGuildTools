@@ -1,10 +1,13 @@
+local lootTracker = VGT:NewModule("lootTracker")
 local AceGUI = LibStub("AceGUI-3.0")
-local root = nil
-VGT.masterLooter = { responses = {} }
 VGT_MasterLootData = VGT_MasterLootData or {}
 
+lootTracker.currentTrades = {}
+lootTracker.activeSlots = {}
+lootTracker.responses = {}
+
 -- https://wowpedia.fandom.com/wiki/InstanceID
-local trackedInstances = {
+lootTracker.trackedInstances = {
     [624] = true, -- Vault of Archavon
 
     [533] = true, -- Naxxramas
@@ -21,7 +24,7 @@ local trackedInstances = {
     [724] = true -- Ruby Sanctum
 }
 
-local function GetOrCreatePreemtiveResponse(itemId)
+function lootTracker:GetOrCreatePreemtiveResponse(itemId)
     if not VGT_MasterLootData.PreemptiveResponses then
         VGT_MasterLootData.PreemptiveResponses = {}
     end
@@ -33,7 +36,7 @@ local function GetOrCreatePreemtiveResponse(itemId)
     return itemResponses
 end
 
-local function sendMLMessage(message, nowarn)
+function lootTracker:SendGroupMessage(message, nowarn)
     if UnitInRaid("player") then
         if nowarn then
             channel = "RAID"
@@ -61,7 +64,7 @@ local function sendMLMessage(message, nowarn)
     end
 end
 
-local function readData(creatureGuid, itemId, itemIndex)
+function lootTracker:ReadData(creatureGuid, itemId, itemIndex)
     if not creatureGuid then
         return
     end
@@ -82,11 +85,11 @@ local function readData(creatureGuid, itemId, itemIndex)
     end
 end
 
-local function getRollData()
-    return readData(VGT.masterLooter.rollCreature, VGT.masterLooter.rollItem, VGT.masterLooter.rollIndex)
+function lootTracker:GetRollData()
+    return self:ReadData(self.rollCreature, self.rollItem, self.rollIndex)
 end
 
-local function addPrioToStandings(itemId, name, prio)
+function lootTracker:AddPrioToStandings(itemId, name, prio)
     if VGT_MasterLootData.Standings then
         local itemStandings = VGT_MasterLootData.Standings[itemId]
         if itemStandings then
@@ -103,7 +106,7 @@ local function addPrioToStandings(itemId, name, prio)
     end
 end
 
-local function takePrioFromStandings(itemId, name)
+function lootTracker:TakePrioFromStandings(itemId, name)
     if VGT_MasterLootData.Standings then
         local itemStandings = VGT_MasterLootData.Standings[itemId]
         if itemStandings then
@@ -119,28 +122,13 @@ local function takePrioFromStandings(itemId, name)
     end
 end
 
-local function getPrio(name)
-    if VGT_MasterLootData.Standings then
-        local itemStandings = VGT_MasterLootData.Standings[itemId]
-        if itemStandings then
-            for _,standing in ipairs(itemStandings) do
-                for _,n in ipairs(standing.Names) do
-                    if n == name then
-                        return standing.Prio
-                    end
-                end
-            end
-        end
-    end
-end
-
-local function incrementStandings(itemId, characters)
+function lootTracker:IncrementStandings(itemId, characters)
     if VGT_MasterLootData.Standings then
         for _,character in ipairs(characters) do
             local prios = {}
 
             while true do
-                local prio = takePrioFromStandings(itemId, character.Name)
+                local prio = self:TakePrioFromStandings(itemId, character.Name)
                 if type(prio) == "number" then
                     tinsert(prios, prio)
                 else
@@ -150,26 +138,26 @@ local function incrementStandings(itemId, characters)
             
             if #prios > 0 then
                 for _,prio in ipairs(prios) do
-                    addPrioToStandings(itemId, character.Name, prio + 1)
+                    self:addPrioToStandings(itemId, character.Name, prio + 1)
                 end
             end
         end
     end
 end
 
-local function findExpiringItems()
+function lootTracker:FindExpiringItems()
     local items = {}
     for bag=0,4 do
         for slot=1,GetContainerNumSlots(bag) do
             local containerItemId = GetContainerItemID(bag, slot)
             if containerItemId then
                 local icon, _, _, _, _, _, itemLink = GetContainerItemInfo(bag, slot)
-                VGTAutoTradeScanningTooltip:ClearLines()
-                VGTAutoTradeScanningTooltip:SetBagItem(bag, slot)
+                VGTScanningTooltip:ClearLines()
+                VGTScanningTooltip:SetBagItem(bag, slot)
                 local isSoulbound = false
                 local tradableText
-                for i=1,VGTAutoTradeScanningTooltip:NumLines() do
-                    local line = _G["VGTAutoTradeScanningTooltipTextLeft"..i]
+                for i=1,VGTScanningTooltip:NumLines() do
+                    local line = _G["VGTScanningTooltipTextLeft"..i]
                     local text = line and line:GetText() or ""
                     if text == ITEM_SOULBOUND then
                         isSoulbound = true
@@ -191,19 +179,19 @@ local function findExpiringItems()
     return items
 end
 
-local function configureEncounter(creatureGuid)
+function lootTracker:ConfigureEncounter(creatureGuid)
     local label = AceGUI:Create("InteractiveLabel")
     label:SetText("Unknown")
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
-    root.scroll:AddChild(label)
+    self.scroll:AddChild(label)
 
     local spacer = AceGUI:Create("InteractiveLabel")
     spacer:SetFullWidth(true)
     spacer:SetText(" ")
-    root.scroll:AddChild(spacer)
+    self.scroll:AddChild(spacer)
 
-    local creatureData = readData(creatureGuid)
+    local creatureData = self:ReadData(creatureGuid)
 
     if creatureData then
         label:SetText(creatureData.name or VGT:UnitNameFromGuid(creatureGuid))
@@ -233,7 +221,7 @@ local function configureEncounter(creatureGuid)
             
             VGT:ShowKillExport(items, creatureData.characters)
         end)
-        root.scroll:AddChild(exportButton)
+        self.scroll:AddChild(exportButton)
 
         if strsplit("-", creatureData.id, 2) == "Unknown" then
             local renameButton = AceGUI:Create("Button")
@@ -245,17 +233,17 @@ local function configureEncounter(creatureGuid)
                     if creatureData.id == "Unknown-0-0-0-0-0-0-0" then
                         local i = 1
                         local newId = "Unknown-0-0-0-0-0-0-" .. i
-                        while readData(newId) do
+                        while self:ReadData(newId) do
                             i = i + 1
                             newId = "Unknown-0-0-0-0-0-0-" .. i
                         end
                         creatureData.id = newId
-                        root.tree:Select("encounter+" .. newId)
+                        self.tree:Select("encounter+" .. newId)
                     end
-                    VGT.masterLooter.Refresh()
+                    self:Refresh()
                 end)
             end)
-            root.scroll:AddChild(renameButton)
+            self.scroll:AddChild(renameButton)
             
             local manualTrackButton = AceGUI:Create("Button")
             manualTrackButton:SetText("Manual Track Item")
@@ -264,26 +252,26 @@ local function configureEncounter(creatureGuid)
                 local infoType, itemId, itemLink = GetCursorInfo()
                 ClearCursor()
                 if infoType == "item" then
-                    VGT.masterLooter:TrackUnknown(itemId, creatureData.id)
+                    self:TrackUnknown(itemId, creatureData.id)
                 else
                     VGT.LogSystem("Click this button while holding an item to add it to the tracker.")
                 end
             end)
-            root.scroll:AddChild(manualTrackButton)
+            self.scroll:AddChild(manualTrackButton)
         end
 
         local deleteButton = AceGUI:Create("Button")
         deleteButton:SetText("Delete")
         deleteButton:SetFullWidth(true)
         deleteButton:SetCallback("OnClick", function()
-            VGT.masterLooter.Delete(creatureGuid)
+            self:Delete(creatureGuid)
         end)
-        root.scroll:AddChild(deleteButton)
+        self.scroll:AddChild(deleteButton)
     end
 end
 
-local function configureItem(creatureId, itemId, itemIndex)
-    local creatureData, itemData = readData(creatureId, itemId, itemIndex)
+function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
+    local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
 
     local label = AceGUI:Create("InteractiveLabel")
     label:SetImage(itemData.icon)
@@ -305,7 +293,7 @@ local function configureItem(creatureId, itemId, itemIndex)
             GameTooltip:Hide()
         end
     )
-    root.scroll:AddChild(label)
+    self.scroll:AddChild(label)
 
     label = AceGUI:Create("InteractiveLabel")
     label:SetFullWidth(true)
@@ -314,12 +302,12 @@ local function configureItem(creatureId, itemId, itemIndex)
         itemData.winner and ((itemData.disenchanted and "|cff2196f3Disenchanted by " or "|cff00ff00Assigned to ") .. itemData.winner .. "|r")
         or "|cffff0000Unassigned|r"
     )
-    root.scroll:AddChild(label)
+    self.scroll:AddChild(label)
 
     local spacer = AceGUI:Create("InteractiveLabel")
     spacer:SetFullWidth(true)
     spacer:SetText(" ")
-    root.scroll:AddChild(spacer)
+    self.scroll:AddChild(spacer)
 
     if itemData.winner then
         local unassignButton = AceGUI:Create("Button")
@@ -334,63 +322,63 @@ local function configureItem(creatureId, itemId, itemIndex)
             itemData.disenchanted = nil
 
             if oldPrio then
-                addPrioToStandings(itemData.id, oldWinner, oldPrio)
+                self:addPrioToStandings(itemData.id, oldWinner, oldPrio)
             end
 
-            sendMLMessage(itemData.link .. " unassigned from " .. oldWinner)
+            self:SendGroupMessage(itemData.link .. " unassigned from " .. oldWinner)
             VGT:SendPlayerAddonCommand(oldWinner, VGT.Commands.UNASSIGN_ITEM, itemData.id)
-            VGT.masterLooter.Refresh()
+            self:Refresh()
         end)
-        root.scroll:AddChild(unassignButton)
+        self.scroll:AddChild(unassignButton)
         
         local toggleTradeButton = AceGUI:Create("CheckBox")
         toggleTradeButton:SetLabel("Traded")
         toggleTradeButton:SetValue(itemData.traded and true or false)
         toggleTradeButton:SetCallback("OnValueChanged", function()
             itemData.traded = not itemData.traded
-            VGT.masterLooter.Refresh()
+            self:Refresh()
         end)
-        root.scroll:AddChild(toggleTradeButton)
+        self.scroll:AddChild(toggleTradeButton)
     else
-        local rollCreature, rollItem = getRollData()
+        local rollCreature, rollItem = self:GetRollData()
         
         if rollItem then
             if rollItem == itemData then
                 local stopButton = AceGUI:Create("Button")
                 stopButton:SetText("End Rolling")
                 stopButton:SetCallback("OnClick", function()
-                    VGT.masterLooter:EndRoll()
+                    self:EndRoll()
                 end)
-                root.scroll:AddChild(stopButton)
+                self.scroll:AddChild(stopButton)
 
                 local countdownButton = AceGUI:Create("Button")
                 countdownButton:SetText("5-Second Countdown")
                 countdownButton:SetCallback("OnClick", function()
-                    VGT.masterLooter:CountdownRoll()
+                    self:CountdownRoll()
                 end)
-                root.scroll:AddChild(countdownButton)
+                self.scroll:AddChild(countdownButton)
 
                 local remindButton = AceGUI:Create("Button")
                 remindButton:SetText("Remind Rollers")
                 remindButton:SetCallback("OnClick", function()
-                    VGT.masterLooter:RemindRoll()
+                    self:RemindRoll()
                 end)
-                root.scroll:AddChild(remindButton)
+                self.scroll:AddChild(remindButton)
 
                 local cancelButton = AceGUI:Create("Button")
                 cancelButton:SetText("Cancel Rolling")
                 cancelButton:SetCallback("OnClick", function()
-                    VGT.masterLooter:CancelRoll()
+                    self:CancelRoll()
                 end)
-                root.scroll:AddChild(cancelButton)
+                self.scroll:AddChild(cancelButton)
 
                 local orderedResponses = {}
                 local responseCount, totalCount = 0, 0
 
-                if VGT.masterLooter.rollWhitelist then
-                    for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
+                if self.rollWhitelist then
+                    for _, name in ipairs(self.rollWhitelist) do
                         totalCount = totalCount + 1
-                        local response = VGT.masterLooter.responses[name]
+                        local response = self.responses[name]
                         if response then
                             responseCount = responseCount + 1
                             tinsert(orderedResponses, response)
@@ -401,7 +389,7 @@ local function configureItem(creatureId, itemId, itemIndex)
                 else
                     for _,character in ipairs(rollCreature.characters) do
                         totalCount = totalCount + 1
-                        local response = VGT.masterLooter.responses[character.Name]
+                        local response = self.responses[character.Name]
                         if response then
                             responseCount = responseCount + 1
                             tinsert(orderedResponses, response)
@@ -423,7 +411,7 @@ local function configureItem(creatureId, itemId, itemIndex)
 
                 local label = AceGUI:Create("Label")
                 label:SetText(responseCount .. " of " .. totalCount .. " responded.")
-                root.scroll:AddChild(label)
+                self.scroll:AddChild(label)
 
                 for i,v in ipairs(orderedResponses) do
                     local text = v.name
@@ -438,19 +426,19 @@ local function configureItem(creatureId, itemId, itemIndex)
 
                     local label = AceGUI:Create("Label")
                     label:SetText(text)
-                    root.scroll:AddChild(label)
+                    self.scroll:AddChild(label)
                 end
             else
                 local label = AceGUI:Create("Label")
                 label:SetFullWidth(true)
                 label:SetFont(GameFontHighlight:GetFont(), 16)
                 label:SetText("|cffff0000Currently rolling on "..rollItem.name.."|r")
-                root.scroll:AddChild(label)
+                self.scroll:AddChild(label)
             
                 local spacer = AceGUI:Create("Label")
                 spacer:SetFullWidth(true)
                 spacer:SetText(" ")
-                root.scroll:AddChild(spacer)
+                self.scroll:AddChild(spacer)
             end
         else
             if VGT_MasterLootData.Standings then
@@ -489,17 +477,17 @@ local function configureItem(creatureId, itemId, itemIndex)
                             standingButton:SetCallback("OnClick", function()
                                 if #whitelist == 1 then
                                     itemData.winner = whitelist[1]
-                                    itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
+                                    itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
                                     itemData.traded = UnitIsUnit(itemData.winner, "player")
                                     VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
-                                    sendMLMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
-                                    VGT.masterLooter.Refresh()
+                                    self:SendGroupMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
+                                    self:Refresh()
                                 else
-                                    VGT.masterLooter:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
+                                    self:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
                                 end
                             end)
 
-                            root.scroll:AddChild(standingButton)
+                            self.scroll:AddChild(standingButton)
                         end
                     end
                 end
@@ -509,43 +497,43 @@ local function configureItem(creatureId, itemId, itemIndex)
             rollButton:SetText("Open Roll")
             rollButton:SetFullWidth(true)
             rollButton:SetCallback("OnClick", function()
-                VGT.masterLooter:OpenRoll(creatureId, itemId, itemIndex)
+                self:OpenRoll(creatureId, itemId, itemIndex)
             end)
-            root.scroll:AddChild(rollButton)
+            self.scroll:AddChild(rollButton)
 
             local manualAssign = AceGUI:Create("Dropdown")
             manualAssign:SetLabel("Manual Assign")
-            root.scroll:AddChild(manualAssign)
+            self.scroll:AddChild(manualAssign)
             local characters = {}
             for i, character in ipairs(creatureData.characters) do
                 characters[character.Name] = VGT:ColorizeCharacterName(character)
             end
             table.sort(characters)
             manualAssign:SetList(characters)
-            manualAssign:SetCallback("OnValueChanged", function(self, e, value)
+            manualAssign:SetCallback("OnValueChanged", function(s, e, value)
                 itemData.winner = value
-                itemData.winningPrio = takePrioFromStandings(itemData.id, value)
+                itemData.winningPrio = self:TakePrioFromStandings(itemData.id, value)
                 itemData.traded = UnitIsUnit(value, "player")
                 VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id)
-                sendMLMessage(itemData.link .. " assigned to " .. value)
-                VGT.masterLooter.Refresh()
+                self:SendGroupMessage(itemData.link .. " assigned to " .. value)
+                self:Refresh()
             end)
 
             local deAssign = AceGUI:Create("Dropdown")
             deAssign:SetLabel("Disenchant Assign")
             deAssign:SetList(characters)
-            deAssign:SetCallback("OnValueChanged", function(self, e, value)
+            deAssign:SetCallback("OnValueChanged", function(s, e, value)
                 itemData.winner = value
-                itemData.winningPrio = takePrioFromStandings(itemData.id, value)
+                itemData.winningPrio = self:TakePrioFromStandings(itemData.id, value)
                 itemData.traded = UnitIsUnit(value, "player")
                 itemData.disenchanted = true
                 VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id, true)
-                sendMLMessage(itemData.link .. " will be disenchanted by " .. value)
-                VGT.masterLooter.Refresh()
+                self:SendGroupMessage(itemData.link .. " will be disenchanted by " .. value)
+                self:Refresh()
             end)
-            root.scroll:AddChild(deAssign)
+            self.scroll:AddChild(deAssign)
 
-            local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
+            local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
 
             if next(preemptiveResponses) then
                 local interested = {}
@@ -563,26 +551,26 @@ local function configureItem(creatureId, itemId, itemIndex)
                     table.sort(interested)
                     local label = AceGUI:Create("Label")
                     label:SetText("Wanted by: " .. strjoin(", ", unpack(interested)))
-                    root.scroll:AddChild(label)
+                    self.scroll:AddChild(label)
                 end
 
                 if passCount > 0 then
                     local label = AceGUI:Create("Label")
                     label:SetText("Passed by " .. passCount .. " of " .. #creatureData.characters .. " people.")
-                    root.scroll:AddChild(label)
+                    self.scroll:AddChild(label)
                 end
             end
         end
     end
 end
 
-local function configureHome()
+function lootTracker:ConfigureHome()
     local rsbutton = AceGUI:Create("Button")
     rsbutton:SetText("Raid Start")
     rsbutton:SetCallback("OnClick", function()
         VGT:ShowRaidStartExport()
     end)
-    root.scroll:AddChild(rsbutton)
+    self.scroll:AddChild(rsbutton)
 
     local importStatus = AceGUI:Create("Label")
     importStatus:SetText(" ")
@@ -606,13 +594,13 @@ local function configureHome()
             importStatus:SetText("|cffff0000Import failed.|r")
             VGT_MasterLootData.Standings = nil
         else
-            VGT.masterLooter.Refresh()
+            self:Refresh()
             importStatus:SetText("|cff00ff00Import Succeeded.|r")
         end
     end)
 
-    root.scroll:AddChild(importText)
-    root.scroll:AddChild(importStatus)
+    self.scroll:AddChild(importText)
+    self.scroll:AddChild(importStatus)
 
     local manualTrackButton = AceGUI:Create("Button")
     manualTrackButton:SetText("Manual Track Item")
@@ -620,33 +608,33 @@ local function configureHome()
         local infoType, itemId, itemLink = GetCursorInfo()
         ClearCursor()
         if infoType == "item" then
-            VGT.masterLooter:TrackUnknown(itemId)
+            self:TrackUnknown(itemId)
         else
             VGT.LogSystem("Click this button while holding an item to add it to the tracker.")
         end
     end)
-    root.scroll:AddChild(manualTrackButton)
+    self.scroll:AddChild(manualTrackButton)
 
     local clearButton = AceGUI:Create("Button")
     clearButton:SetText("Clear All")
-    clearButton:SetCallback("OnClick", VGT.masterLooter.ClearAll)
-    root.scroll:AddChild(clearButton)
+    clearButton:SetCallback("OnClick", function() self:ClearAll() end)
+    self.scroll:AddChild(clearButton)
 
     local treeToggle = AceGUI:Create("CheckBox")
     treeToggle:SetLabel("Group By Winner")
-    treeToggle:SetValue(VGT.db.profile.lootTracker.groupByWinner and true or false)
+    treeToggle:SetValue(self.profile.groupByWinner and true or false)
     treeToggle:SetCallback("OnValueChanged", function()
-        VGT.db.profile.lootTracker.groupByWinner = not VGT.db.profile.lootTracker.groupByWinner
-        VGT.masterLooter.Refresh()
+        self.profile.groupByWinner = not self.profile.groupByWinner
+        self:Refresh()
     end)
-    root.scroll:AddChild(treeToggle)
+    self.scroll:AddChild(treeToggle)
 
-    --local expiringItems = findExpiringItems()
+    --local expiringItems = self:FindExpiringItems()
     --
     --if #expiringItems > 0 then
     --    local expiringLabel = AceGUI:Create("Label")
     --    expiringLabel:SetText("Expiring Items:")
-    --    root.scroll:AddChild(expiringLabel)
+    --    self.scroll:AddChild(expiringLabel)
     --    for _,v in ipairs(expiringItems) do
     --        if v.expiration > 1800 then
     --            --break
@@ -656,61 +644,60 @@ local function configureHome()
     --        itemLabel:SetImageSize(16, 16)
     --        itemLabel:SetText("(|cff" .. VGT.RGBToHex(VGT.ColorGradient(v.expiration / 7200, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.TimeToString(v.expiration) .. "|r) " .. v.link)
     --        itemLabel:SetFullWidth(true)
-    --        root.scroll:AddChild(itemLabel)
+    --        self.scroll:AddChild(itemLabel)
     --    end
     --end
 end
 
-local function configureCharacter(characterName)
+function lootTracker:ConfigureCharacter(characterName)
     local label = AceGUI:Create("InteractiveLabel")
     label:SetText(characterName or "Unassigned")
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16)
-    root.scroll:AddChild(label)
+    self.scroll:AddChild(label)
 end
 
-local function configureSelection(groupId)
-    local currentScroll = root.scroll.localstatus.scrollvalue
+function lootTracker:ConfigureSelection(groupId)
+    local currentScroll = self.scroll.localstatus.scrollvalue
 
-    local lastId = VGT.masterLooter.groupId
-    VGT.masterLooter.groupId = groupId
+    local lastId = self.groupId
+    self.groupId = groupId
 
-    root.scroll:ReleaseChildren()
+    self.scroll:ReleaseChildren()
 
     if groupId then
         local parentKey, childKey = strsplit("\001", groupId)
         if childKey then
             local creatureId, itemId, itemIndex = strsplit("+", childKey)
-            configureItem(creatureId, tonumber(itemId), tonumber(itemIndex) or 1)
+            self:ConfigureItem(creatureId, tonumber(itemId), tonumber(itemIndex) or 1)
         else
             local nodeType, nodeId = strsplit("+", parentKey)
             if nodeType == "character" then
-                configureCharacter(nodeId)
+                self:ConfigureCharacter(nodeId)
             elseif nodeType == "encounter" then
-                configureEncounter(nodeId)
+                self:ConfigureEncounter(nodeId)
             end
         end
     else
-        configureHome()
+        self:ConfigureHome()
     end
 
-    root.scroll:SetScroll(lastId == groupId and currentScroll or 0)
-    root.scroll:FixScroll()
+    self.scroll:SetScroll(lastId == groupId and currentScroll or 0)
+    self.scroll:FixScroll()
 end
 
-local function createRoot()
-    root = AceGUI:Create("Window")
-    VGT.masterLooter.root = root
-    root:SetTitle("Valhalla Master Looter")
-    root:SetLayout("Fill")
-    VGT.masterLooter:RefreshWindowConfig() -- SetPoint, SetWidth, SetHeight
-    root:SetCallback("OnClose", function()
-        local point, _, _, x, y = root.frame:GetPoint(1)
-        VGT.db.profile.lootTracker.x = x
-        VGT.db.profile.lootTracker.y = y
-        VGT.db.profile.lootTracker.point = point
-        VGT.db.profile.lootTracker.width = root.frame:GetWidth()
-        VGT.db.profile.lootTracker.height = root.frame:GetHeight()
+function lootTracker:CreateRoot()
+    self.root = AceGUI:Create("Window")
+    self.root:SetTitle("Valhalla Master Looter")
+    self.root:SetLayout("Fill")
+    self:RefreshWindowConfig() -- SetPoint, SetWidth, SetHeight
+    self.root:SetCallback("OnClose", function()
+        local point, _, _, x, y = self.root.frame:GetPoint(1)
+        self.profile.x = x
+        self.profile.y = y
+        self.profile.point = point
+        self.profile.width = self.root.frame:GetWidth()
+        self.profile.height = self.root.frame:GetHeight()
     end)
 
     local tree = AceGUI:Create("TreeGroup")
@@ -719,70 +706,73 @@ local function createRoot()
     tree:SetFullHeight(true)
     tree:SetLayout("Fill")
     tree:SetAutoAdjustHeight(false)
-    tree:SetCallback("OnGroupSelected", function(self, e, groupId)
-        configureSelection(groupId)
+    tree:SetCallback("OnGroupSelected", function(s, e, groupId)
+        self:ConfigureSelection(groupId)
     end)
-    root:AddChild(tree)
-    root.tree = tree
+    self.root:AddChild(tree)
+    self.tree = tree
 
     local scroll = AceGUI:Create("ScrollFrame")
     scroll:SetLayout("Flow")
-    root.tree:AddChild(scroll)
-    root.scroll = scroll
+    self.tree:AddChild(scroll)
+    self.scroll = scroll
 
-    VGT.masterLooter.Refresh()
+    self:Refresh()
 end
 
-function VGT.masterLooter:RefreshWindowConfig()
-    if root then
-        root:SetHeight(VGT.db.profile.lootTracker.height < 240 and 240 or VGT.db.profile.lootTracker.height)
-        root:SetWidth(VGT.db.profile.lootTracker.width < 400 and 400 or VGT.db.profile.lootTracker.width)
-        root:SetPoint(
-            VGT.db.profile.lootTracker.point,
-            UIParent,
-            VGT.db.profile.lootTracker.point,
-            VGT.db.profile.lootTracker.x,
-            VGT.db.profile.lootTracker.y
-        )
+function lootTracker:RefreshWindowConfig()
+    if self.root then
+        self.root:SetHeight(self.profile.height < 240 and 240 or self.profile.height)
+        self.root:SetWidth(self.profile.width < 400 and 400 or self.profile.width)
+        self.root:SetPoint(self.profile.point, UIParent, self.profile.point, self.profile.x, self.profile.y)
     end
 end
 
-function VGT.masterLooter.ClearAll()
+function lootTracker:RefreshConfig()
+    self:RefreshWindowConfig()
+    self:Refresh()
+end
+
+function lootTracker:ClearAll()
     VGT:Confirm(function()
         VGT_MasterLootData = {}
-        root.tree:Select()
-        VGT.masterLooter.Refresh()
+        self.tree:Select()
+        self:Refresh()
     end)
 end
 
-function VGT.masterLooter.Delete(creatureGuid)
+function lootTracker:Delete(creatureGuid)
     VGT:Confirm(function()
         for i, creature in ipairs(VGT_MasterLootData) do
             if creature.id == creatureGuid then
                 tremove(VGT_MasterLootData, i)
-                root.tree:Select()
-                VGT.masterLooter.Refresh()
+                self.tree:Select()
+                self:Refresh()
                 return
             end
         end
     end)
 end
 
-function VGT.masterLooter.Toggle()
-    if not root then
-        createRoot()
+function lootTracker:Toggle()
+    if not self.enabledState then
+        VGT.LogWarning("Master loot tracker module is disabled.")
+        return
+    end
+    if not self.root then
+        self:CreateRoot()
     else
-        if root:IsShown() then
-            root.frame:Hide()
+        if self.root:IsShown() then
+            self.root.frame:Hide()
         else
-            VGT.masterLooter:Refresh()
-            root.frame:Show()
+            self:Refresh()
+            self.root.frame:Show()
         end
     end
 end
 
-function VGT.masterLooter.Refresh()
-    if root then
+function lootTracker:Refresh()
+    if self.root then
         local function buildItemNodes(node, items, creatureId)
             local allAssigned, allTraded = true, true
             local anyAssigned, anyUnassigned
@@ -830,10 +820,10 @@ function VGT.masterLooter.Refresh()
 
         if VGT_MasterLootData.expiration and GetTime() > VGT_MasterLootData.expiration then
             VGT_MasterLootData = {}
-            root.tree:Select()
+            self.tree:Select()
         end
 
-        if VGT.db.profile.lootTracker.groupByWinner then
+        if self.profile.groupByWinner then
             local characters = {}
             local unassigned = {}
             for _,creatureData in ipairs(VGT_MasterLootData) do
@@ -879,15 +869,15 @@ function VGT.masterLooter.Refresh()
             end
         end
 
-        root.tree:SetTree(data)
-        configureSelection(VGT.masterLooter.groupId)
+        self.tree:SetTree(data)
+        self:ConfigureSelection(self.groupId)
     end
 end
 
-function VGT.masterLooter:TrackUnknown(itemId, creatureId)
+function lootTracker:TrackUnknown(itemId, creatureId)
     creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
     VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId)
-    local creatureData, itemData = self.Track(itemId, creatureId)
+    local creatureData, itemData = self:Track(itemId, creatureId)
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
         itemData.name = item:GetItemName()
@@ -895,19 +885,19 @@ function VGT.masterLooter:TrackUnknown(itemId, creatureId)
         itemData.icon = item:GetItemIcon()
         itemData.quality = item:GetItemQuality()
         itemData.class = select(6, GetItemInfoInstant(itemId))
-        root.tree:Select("encounter+" .. creatureId)
-        VGT.masterLooter.Refresh()
+        self.tree:Select("encounter+" .. creatureId)
+        self:Refresh()
     end)
     return creatureData, itemData
 end
 
-function VGT.masterLooter:TrackLoot()
+function lootTracker:TrackLoot()
     local guid = GetLootSourceInfo(1)
     VGT.LogTrace("Tracking loot for %s", guid)
     local instanceId = select(4, strsplit("-", guid or ""))
     instanceId = tonumber(instanceId)
 
-    if (instanceId and (trackedInstances[instanceId] or VGT.db.profile.lootTracker.trackAllInstances)) then
+    if (instanceId and (self.trackedInstances[instanceId] or self.profile.trackAllInstances)) then
         for _, v in ipairs(VGT_MasterLootData) do
             if v.id == guid then
                 return
@@ -923,9 +913,9 @@ function VGT.masterLooter:TrackLoot()
                     local itemId, _, _, _, _, classId = GetItemInfoInstant(link)
                     if classId ~= 10 then -- 10 = Money (currency)
                         local icon, name, _, currencyId, quality = GetLootSlotInfo(i)
-                        if not currencyId and (quality == 4 or (VGT.db.profile.lootTracker.trackUncommon and quality > 1)) then
+                        if not currencyId and (quality == 4 or (self.profile.trackUncommon and quality > 1)) then
                             VGT.LogTrace("Tracking $s", link)
-                            local creatureData, itemData = self.Track(itemId, guid)
+                            local creatureData, itemData = self:Track(itemId, guid)
                             itemData.name = name
                             itemData.link = link
                             itemData.icon = icon
@@ -939,12 +929,12 @@ function VGT.masterLooter:TrackLoot()
         end
 
         if anyAdded then
-            self.Refresh()
+            self:Refresh()
         end
     end
 end
 
-function VGT.masterLooter.Track(itemId, creatureId)
+function lootTracker:Track(itemId, creatureId)
     creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
     local creatureData, newCreature
 
@@ -983,9 +973,9 @@ function VGT.masterLooter.Track(itemId, creatureId)
     end
     tinsert(creatureData.items, itemData)
 
-    incrementStandings(itemId, creatureData.characters)
+    self:IncrementStandings(itemId, creatureData.characters)
 
-    local preemptiveResponses = GetOrCreatePreemtiveResponse(itemId)
+    local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemId)
 
     for _, character in ipairs(creatureData.characters) do
         if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
@@ -995,15 +985,15 @@ function VGT.masterLooter.Track(itemId, creatureId)
 
     VGT_MasterLootData.expiration = (GetTime() + 21600)
 
-    VGT.masterLooter.Refresh()
+    self:Refresh()
 
     VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, creatureData.id)
 
     return creatureData, itemData
 end
 
-function VGT.masterLooter:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
-    local creatureData, itemData = readData(creatureId, itemId, itemIndex)
+function lootTracker:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
+    local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
 
     if (creatureData and itemData) then
         self.rollCreature = creatureId
@@ -1013,10 +1003,10 @@ function VGT.masterLooter:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
 
         local text = "Roll on " .. itemData.link .. " for "
         local addComma = false
-        local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
+        local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
         for _,name in ipairs(whitelist) do
             if preemptiveResponses[name] == false then
-                local ended = VGT.masterLooter:RecordPassResponse(name)
+                local ended = self:RecordPassResponse(name)
                 if ended then
                     return
                 end
@@ -1032,14 +1022,14 @@ function VGT.masterLooter:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
             end
         end
 
-        self.Refresh()
-        sendMLMessage(text)
-        sendMLMessage("/roll or type \"pass\" in chat", true)
+        self:Refresh()
+        self:SendGroupMessage(text)
+        self:SendGroupMessage("/roll or type \"pass\" in chat", true)
     end
 end
 
-function VGT.masterLooter:OpenRoll(creatureId, itemId, itemIndex)
-    local creatureData, itemData = readData(creatureId, itemId, itemIndex)
+function lootTracker:OpenRoll(creatureId, itemId, itemIndex)
+    local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
 
     if (creatureData and itemData) then
         self.rollCreature = creatureId
@@ -1047,31 +1037,31 @@ function VGT.masterLooter:OpenRoll(creatureId, itemId, itemIndex)
         self.rollIndex = itemIndex
         self.rollWhitelist = nil
 
-        local preemptiveResponses = GetOrCreatePreemtiveResponse(itemData.id)
+        local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
         for _,character in ipairs(creatureData.characters) do
             if preemptiveResponses[character.Name] == false then
-                local ended = VGT.masterLooter:RecordPassResponse(character.Name)
+                local ended = self:RecordPassResponse(character.Name)
                 if ended then
                     return
                 end
             end
         end
 
-        self.Refresh()
-        sendMLMessage("Open Roll on " .. itemData.link)
-        sendMLMessage("/roll or type \"pass\" in chat", true)
+        self:Refresh()
+        self:SendGroupMessage("Open Roll on " .. itemData.link)
+        self:SendGroupMessage("/roll or type \"pass\" in chat", true)
         VGT:SendGroupAddonCommand(VGT.Commands.START_ROLL, itemId)
     end
 end
 
-function VGT.masterLooter:CountdownRoll()
+function lootTracker:CountdownRoll()
     local t = 5
     local function tick()
-        if not VGT.masterLooter.rollItem then
+        if not self.rollItem then
             return -- stop if rolls were manually ended during the countdown
         end
         if t > 0 then
-            sendMLMessage(t)
+            self:SendGroupMessage(t)
             C_Timer.After(1, tick)
         else
             self:EndRoll()
@@ -1081,8 +1071,8 @@ function VGT.masterLooter:CountdownRoll()
     C_Timer.After(1, tick)
 end
 
-function VGT.masterLooter:EndRoll()
-    local creatureData, itemData = getRollData()
+function lootTracker:EndRoll()
+    local creatureData, itemData = self:GetRollData()
 
     if not itemData then
         return
@@ -1116,7 +1106,7 @@ function VGT.masterLooter:EndRoll()
 
         if #winners == 1 then
             itemData.winner = winners[1]
-            itemData.winningPrio = takePrioFromStandings(itemData.id, itemData.winner)
+            itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
             itemData.traded = UnitIsUnit(itemData.winner, "player")
             VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
             local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. topRoll
@@ -1126,7 +1116,7 @@ function VGT.masterLooter:EndRoll()
                 msg = msg .. " rolled)"
             end
 
-            sendMLMessage(msg)
+            self:SendGroupMessage(msg)
         else
             self.responses = {}
             self.rollWhitelist = winners
@@ -1140,12 +1130,12 @@ function VGT.masterLooter:EndRoll()
                 msg = msg .. v
             end
             
-            sendMLMessage(msg)
-            VGT.masterLooter.Refresh()
+            self:SendGroupMessage(msg)
+            self:Refresh()
             return
         end
     else
-        sendMLMessage(itemData.link .. " passed by all.")
+        self:SendGroupMessage(itemData.link .. " passed by all.")
     end
 
     self.rollCreature = nil
@@ -1153,12 +1143,12 @@ function VGT.masterLooter:EndRoll()
     self.rollIndex = nil
     self.responses = {}
     self.rollWhitelist = nil
-    self.Refresh()
+    self:Refresh()
     VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
 end
 
-function VGT.masterLooter:RemindRoll()
-    local creatureData, itemData = getRollData()
+function lootTracker:RemindRoll()
+    local creatureData, itemData = self:GetRollData()
 
     if itemData then
         local msg = "Rolling on " .. itemData.link .. "."
@@ -1193,15 +1183,15 @@ function VGT.masterLooter:RemindRoll()
                 msg = msg .. " (" .. topRoll .. " rolled)"
             end
         end
-        sendMLMessage(msg, true)
+        self:SendGroupMessage(msg, true)
 
         msg = "Missing rolls from: "
 
         local needsComma
 
-        if VGT.masterLooter.rollWhitelist then
-            for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
-                if not VGT.masterLooter.responses[name] then
+        if self.rollWhitelist then
+            for _, name in ipairs(self.rollWhitelist) do
+                if not self.responses[name] then
                     if needsComma then
                         msg = msg .. ", "
                     end
@@ -1211,7 +1201,7 @@ function VGT.masterLooter:RemindRoll()
             end
         else
             for _,character in ipairs(creatureData.characters) do
-                if not VGT.masterLooter.responses[character.Name] then
+                if not self.responses[character.Name] then
                     if needsComma then
                         msg = msg .. ", "
                     end
@@ -1221,13 +1211,13 @@ function VGT.masterLooter:RemindRoll()
             end
         end
 
-        sendMLMessage(msg, true)
-        sendMLMessage("/roll or type \"pass\" in chat.", true)
+        self:SendGroupMessage(msg, true)
+        self:SendGroupMessage("/roll or type \"pass\" in chat.", true)
     end
 end
 
-function VGT.masterLooter:CancelRoll()
-    local creatureData, itemData = getRollData()
+function lootTracker:CancelRoll()
+    local creatureData, itemData = self:GetRollData()
 
     if (creatureData and itemData) then
         self.rollCreature = nil
@@ -1235,79 +1225,131 @@ function VGT.masterLooter:CancelRoll()
         self.rollIndex = nil
         self.responses = {}
         self.rollWhitelist = nil
-        self.Refresh()
+        self:Refresh()
         VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
-        sendMLMessage("Roll for " .. itemData.link .. " cancelled.")
+        self:SendGroupMessage("Roll for " .. itemData.link .. " cancelled.")
     end
 end
 
-function VGT.masterLooter:AddDummyData()
-    VGT.masterLooter:TrackUnknown(39272)
-    VGT.masterLooter:TrackUnknown(39270)
-    VGT.masterLooter:TrackUnknown(39276)
-    VGT.masterLooter:TrackUnknown(39280)
+function lootTracker:AddDummyData()
+    self:TrackUnknown(39272)
+    self:TrackUnknown(39270)
+    self:TrackUnknown(39276)
+    self:TrackUnknown(39280)
 end
 
-local function Whitelisted(name)
-    if not VGT.masterLooter.rollWhitelist then
+function lootTracker:Whitelisted(name)
+    if not self.rollWhitelist then
         return true
     end
 
-    for _,name2 in ipairs(VGT.masterLooter.rollWhitelist) do
+    for _,name2 in ipairs(self.rollWhitelist) do
         if name == name2 then
             return true
         end
     end
 end
 
-local function GetOrCreateResponse(name)
-    if Whitelisted(name) then
-        local response = VGT.masterLooter.responses[name]
+function lootTracker:GetOrCreateResponse(name)
+    if self:Whitelisted(name) then
+        local response = self.responses[name]
         if not response then
             response = { name = name }
-            VGT.masterLooter.responses[name] = response
+            self.responses[name] = response
         end
         return response
     end
 end
 
-local function TryEndRoll()
-    if VGT.db.profile.lootTracker.autoEndRoll then
-        local creatureData, itemData = getRollData()
+function lootTracker:TryEndRoll()
+    if self.profile.autoEndRoll then
+        local creatureData, itemData = self:GetRollData()
 
         if creatureData and itemData then
-            if VGT.masterLooter.rollWhitelist then
-                for _, name in ipairs(VGT.masterLooter.rollWhitelist) do
-                    if not VGT.masterLooter.responses[name] then
+            if self.rollWhitelist then
+                for _, name in ipairs(self.rollWhitelist) do
+                    if not self.responses[name] then
                         return
                     end
                 end
             else
                 for _,character in ipairs(creatureData.characters) do
-                    if not VGT.masterLooter.responses[character.Name] then
+                    if not self.responses[character.Name] then
                         return
                     end
                 end
             end
-            VGT.masterLooter:EndRoll()
+            self:EndRoll()
             return true
         end
     end
 end
 
-function VGT.masterLooter:RecordPassResponse(name)
-    local response = GetOrCreateResponse(name)
+function lootTracker:RecordPassResponse(name)
+    local response = self:GetOrCreateResponse(name)
     if response then
         VGT.LogTrace("Recorded %s's pass message", name)
         response.pass = true
-        local ended = TryEndRoll()
-        VGT.masterLooter.Refresh()
+        local ended = self:TryEndRoll()
+        self:Refresh()
         return ended
     end
 end
 
-VGT:RegisterEvent("CHAT_MSG_SYSTEM", function(channel, text)
-    if VGT.masterLooter.rollItem then
+function lootTracker:BagSlotActive(bag, slot)
+    local v = bag..","..slot
+    for i=1,6 do
+        if self.activeSlots[i] == v then
+            return true
+        end
+    end
+end
+
+function lootTracker:FindEligibleItemLoc(itemId)
+    for bag=0,4 do
+        for slot=1,GetContainerNumSlots(bag) do
+            if not self:BagSlotActive(bag, slot) then
+                local containerItemId = GetContainerItemID(bag, slot)
+                if containerItemId == itemId then
+                    VGTScanningTooltip:ClearLines()
+                    VGTScanningTooltip:SetBagItem(bag, slot)
+                    local isSoulbound = false
+                    local hasTradableText = false
+                    for i=1,VGTScanningTooltip:NumLines() do
+                        local line = _G["VGTScanningTooltipTextLeft"..i]
+                        local text = line and line:GetText() or ""
+                        if text == ITEM_SOULBOUND then
+                            isSoulbound = true
+                        elseif string.find(text, "You may trade this item with players") then
+                            hasTradableText = true
+                        end
+                    end
+                    if not isSoulbound or hasTradableText then
+                        return bag, slot
+                    end
+                end
+            end
+        end
+    end
+end
+
+function lootTracker:ClearTable(t)
+    for i = 1, 6 do
+        t[i] = nil
+    end
+end
+
+function lootTracker:HandleChatCommand(_, channel, text, playerName)
+    if self.rollItem then
+        if (text == "pass" or text == "Pass" or text == "PASS") then
+            VGT.LogTrace("Received pass message from %s", playerName)
+            self:RecordPassResponse(playerName)
+        end
+    end
+end
+
+function lootTracker:CHAT_MSG_SYSTEM(_, text)
+    if self.rollItem then
         local name, roll, minRoll, maxRoll = text:match("^(.+) rolls (%d+) %((%d+)%-(%d+)%)$")
         if name and roll and minRoll and maxRoll then
             VGT.LogTrace("Found roll message from %s of %s (%s-%s)", name, roll, minRoll, maxRoll)
@@ -1316,61 +1358,122 @@ VGT:RegisterEvent("CHAT_MSG_SYSTEM", function(channel, text)
             maxRoll = tonumber(maxRoll)
             if minRoll == 1 and maxRoll == 100 then
                 VGT.LogTrace("%s's roll message is valid", name)
-                local response = GetOrCreateResponse(name)
+                local response = self:GetOrCreateResponse(name)
                 if response then
                     VGT.LogTrace("Recorded %s's roll message", name)
-                    local preemptiveResponses = GetOrCreatePreemtiveResponse(VGT.masterLooter.rollItem)
+                    local preemptiveResponses = self:GetOrCreatePreemtiveResponse(self.rollItem)
                     preemptiveResponses[name] = nil
                     response.pass = false
                     response.roll = response.roll or roll
-                    TryEndRoll()
-                    VGT.masterLooter.Refresh()
+                    self:TryEndRoll()
+                    self:Refresh()
                 end
-                --table.sort(VGT.masterLooter.rolls, function(a,b) return a.roll > b.roll end)
             end
-        end
-    end
-end)
-
-VGT:RegisterCommandHandler(VGT.Commands.NOTIFY_INTERESTED, function(sender, id)
-    local lootmethod, masterlooterPartyID = GetLootMethod()
-    if lootmethod == "master" and masterlooterPartyID == 0 then
-        VGT.LogTrace("Received interested message from %s for %s", sender, id)
-        local itemResponses = GetOrCreatePreemtiveResponse(id)
-        itemResponses[sender] = true
-        VGT.masterLooter.Refresh()
-    end
-end)
-
-VGT:RegisterCommandHandler(VGT.Commands.NOTIFY_PASSING, function(sender, id)
-    local lootmethod, masterlooterPartyID = GetLootMethod()
-    if lootmethod == "master" and masterlooterPartyID == 0 then
-        VGT.LogTrace("Received preemptive pass message from %s for %s", sender, id)
-        local itemResponses = GetOrCreatePreemtiveResponse(id)
-        itemResponses[sender] = false
-        VGT.masterLooter.Refresh()
-    end
-end)
-
-VGT:RegisterCommandHandler(VGT.Commands.ROLL_PASS, function(sender, id)
-    VGT.LogTrace("Received pass message from %s for %s", sender, id)
-    if VGT.masterLooter.rollItem and VGT.masterLooter.rollItem == tonumber(id) then
-        VGT.LogTrace("%s's pass message is valid for %s", sender, id)
-        VGT.masterLooter:RecordPassResponse(sender)
-    end
-end)
-
-local function handleChatCommand(channel, text, playerName)
-    if VGT.masterLooter.rollItem then
-        if (text == "pass" or text == "Pass" or text == "PASS") then
-            VGT.LogTrace("Received pass message from %s", playerName)
-            VGT.masterLooter:RecordPassResponse(playerName)
         end
     end
 end
 
-VGT:RegisterEvent("CHAT_MSG_RAID", handleChatCommand)
-VGT:RegisterEvent("CHAT_MSG_RAID_LEADER", handleChatCommand)
-VGT:RegisterEvent("CHAT_MSG_PARTY", handleChatCommand)
-VGT:RegisterEvent("CHAT_MSG_PARTY_LEADER", handleChatCommand)
-VGT:RegisterEvent("CHAT_MSG_WHISPER", handleChatCommand)
+function lootTracker:TRADE_SHOW()
+    if self.profile.autoTrade then
+        self:ClearTable(self.currentTrades)
+        self:ClearTable(self.activeSlots)
+        local name = UnitName("npc")
+        local targetSlot = 1
+        VGT.LogTrace("Checking autotrades for %s", name)
+        for _,creatureData in ipairs(VGT_MasterLootData) do
+            for _,itemData in ipairs(creatureData.items) do
+                if targetSlot > 6 then
+                    VGT.LogTrace("Reached autotrade limit")
+                    return
+                end
+                if itemData.winner and name == itemData.winner and not itemData.traded then
+                    VGT.LogTrace("%s needs to be traded %s", name, itemData.link)
+                    local bagId, slotId = self:FindEligibleItemLoc(itemData.id)
+                    if bagId ~= nil and slotId ~= nil then
+                        local thisSlot = targetSlot
+                        C_Timer.After(thisSlot / 10, function()
+                            VGT.LogTrace("Assigning %s (bag %s, slot %s) to trade slot %s", itemData.link, bagId, slotId, targetSlot)
+                            ClearCursor()
+                            PickupContainerItem(bagId, slotId)
+                            ClickTradeButton(thisSlot)
+                            self.currentTrades[thisSlot] = itemData
+                            self.activeSlots[thisSlot] = bagId..","..slotId
+                        end)
+                        targetSlot = targetSlot + 1
+                    end
+                end
+            end
+        end
+        VGT.LogTrace("Autotrade complete")
+    end
+end
+
+function lootTracker:TRADE_PLAYER_ITEM_CHANGED(_, slot)
+    if self.profile.autoTrade then
+        local data = self.currentTrades[slot]
+        if data then
+            VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
+            self.currentTrades[slot] = nil
+        end
+        self.activeSlots[slot] = nil
+    end
+end
+
+function lootTracker:UI_INFO_MESSAGE(_, arg1, arg2)
+    if arg2 == ERR_TRADE_COMPLETE and self.profile.autoTrade then
+        for i=1,6 do
+            local itemData = self.currentTrades[i]
+            self.currentTrades[i] = nil
+            self.activeSlots[i] = nil
+            if itemData then
+                VGT.LogTrace("Auto trade in slot %s for %s complete.", i, itemData.link)
+                itemData.traded = true
+            end
+        end
+        self:Refresh()
+    end
+end
+
+function lootTracker:NOTIFY_INTERESTED(_, sender, id)
+    local lootmethod, masterlooterPartyID = GetLootMethod()
+    if lootmethod == "master" and masterlooterPartyID == 0 then
+        VGT.LogTrace("Received interested message from %s for %s", sender, id)
+        local itemResponses = self:GetOrCreatePreemtiveResponse(id)
+        itemResponses[sender] = true
+        self:Refresh()
+    end
+end
+
+function lootTracker:NOTIFY_PASSING(_, sender, id)
+    local lootmethod, masterlooterPartyID = GetLootMethod()
+    if lootmethod == "master" and masterlooterPartyID == 0 then
+        VGT.LogTrace("Received preemptive pass message from %s for %s", sender, id)
+        local itemResponses = self:GetOrCreatePreemtiveResponse(id)
+        itemResponses[sender] = false
+        self:Refresh()
+    end
+end
+
+function lootTracker:ROLL_PASS(_, sender, id)
+    VGT.LogTrace("Received pass message from %s for %s", sender, id)
+    if self.rollItem and self.rollItem == tonumber(id) then
+        VGT.LogTrace("%s's pass message is valid for %s", sender, id)
+        self:RecordPassResponse(sender)
+    end
+end
+
+function lootTracker:OnEnable()
+    self:RegisterEvent("CHAT_MSG_SYSTEM")
+    self:RegisterEvent("CHAT_MSG_RAID", "HandleChatCommand")
+    self:RegisterEvent("CHAT_MSG_RAID_LEADER", "HandleChatCommand")
+    self:RegisterEvent("CHAT_MSG_PARTY", "HandleChatCommand")
+    self:RegisterEvent("CHAT_MSG_PARTY_LEADER", "HandleChatCommand")
+    self:RegisterEvent("CHAT_MSG_WHISPER", "HandleChatCommand")
+    self:RegisterEvent("TRADE_SHOW")
+    self:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED")
+    self:RegisterEvent("UI_INFO_MESSAGE")
+    self:RegisterMessage("VGT_MASTER_LOOT_READY", "TrackLoot")
+    self:RegisterCommand(VGT.Commands.NOTIFY_INTERESTED)
+    self:RegisterCommand(VGT.Commands.NOTIFY_PASSING)
+    self:RegisterCommand(VGT.Commands.ROLL_PASS)
+end

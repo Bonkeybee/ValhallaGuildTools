@@ -1,35 +1,30 @@
+local roller = VGT:NewModule("roller")
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
-VGT:RegisterCommandHandler(VGT.Commands.START_ROLL, function(sender, id)
-    id = tonumber(id)
-    if id and VGT.db.profile.roller.enabled then
-        VGT:ShowRollWindow(id, true)
+function roller:Show(itemId, auto)
+    if not self.enabledState then
+        VGT.LogWarning("Roll Window module is disabled.")
+        return
     end
-end)
-
-VGT:RegisterCommandHandler(VGT.Commands.CANCEL_ROLL, function(sender)
-    if VGT.rollWindow then
-        VGT.rollWindow:Hide()
-    end
-end)
-
-function VGT:ShowRollWindow(itemId, auto)
     if auto then
-        if not self:Equippable(itemId) then
+        if not VGT:Equippable(itemId) then
             return
         end
 
-        if not self.db.profile.roller.showPasses then
-            self.dropTracker:ResetItems()
-            local item = self.dropTracker:GetForItem(itemId)
-            if item and item.passed then
-                return
+        if not self.profile.showPasses then
+            local dropTracker = VGT:GetModule("dropTracker")
+            if dropTracker.enabledState then
+                dropTracker:ResetItems()
+                local item = dropTracker:GetForItem(itemId)
+                if item and item.passed then
+                    return
+                end
             end
         end
     
-        if self.db.profile.roller.sound then
-            local sound = LSM:Fetch("sound", self.db.profile.roller.sound, true)
+        if self.profile.sound then
+            local sound = LSM:Fetch("sound", self.profile.sound, true)
             if sound then
                 PlaySoundFile(sound, "Master")
             end
@@ -37,19 +32,19 @@ function VGT:ShowRollWindow(itemId, auto)
     end
 
     if not self.rollWindow then
-        self:BuildRollWindow()
+        self:Build()
     end
 
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
-        VGT.rollWindow.item = item
-        VGT.rollWindow.Title:SetText(item:GetItemLink())
-        VGT.rollWindow.Picture.Texture:SetTexture(item:GetItemIcon())
-        VGT.rollWindow:Show()
+        self.rollWindow.item = item
+        self.rollWindow.Title:SetText(item:GetItemLink())
+        self.rollWindow.Picture.Texture:SetTexture(item:GetItemIcon())
+        self.rollWindow:Show()
     end)
 end
 
-function VGT:BuildRollWindow()
+function roller:Build()
     self.rollWindow = CreateFrame("Frame", "VgtRollFrame", UIParent, "BackdropTemplate")
     self.rollWindow:SetFrameStrata("DIALOG")
     self.rollWindow:SetBackdrop({
@@ -57,7 +52,7 @@ function VGT:BuildRollWindow()
         tile = true,
         tileSize = 16
     })
-    self:RefreshRollWindowConfig() -- SetPoint
+    self:RefreshConfig() -- SetPoint
     self.rollWindow:SetSize(400, 24)
     self.rollWindow:SetClampedToScreen(true)
     self.rollWindow:EnableMouse(true)
@@ -70,9 +65,9 @@ function VGT:BuildRollWindow()
     self.rollWindow:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, _, x, y = self:GetPoint(1)
-        VGT.db.profile.roller.x = x
-        VGT.db.profile.roller.y = y
-        VGT.db.profile.roller.point = point
+        roller.profile.x = x
+        roller.profile.y = y
+        roller.profile.point = point
     end)
 
     local title = self.rollWindow:CreateFontString(nil, "OVERLAY", "GameTooltipText")
@@ -91,19 +86,19 @@ function VGT:BuildRollWindow()
     pictureFrame:EnableMouse(true)
     pictureFrame:RegisterForDrag("LeftButton")
     pictureFrame:SetScript("OnDragStart", function()
-        VGT.rollWindow:StartMoving()
+        self.rollWindow:StartMoving()
     end)
     pictureFrame:SetScript("OnDragStop", function()
-        VGT.rollWindow:StopMovingOrSizing()
-        local point, _, _, x, y = VGT.rollWindow:GetPoint(1)
-        VGT.db.profile.roller.x = x
-        VGT.db.profile.roller.y = y
-        VGT.db.profile.roller.point = point
+        self.rollWindow:StopMovingOrSizing()
+        local point, _, _, x, y = roller.rollWindow:GetPoint(1)
+        roller.profile.x = x
+        roller.profile.y = y
+        roller.profile.point = point
     end)
     pictureFrame:SetScript("OnEnter", function(self)
-        if VGT.rollWindow.item then
+        if roller.rollWindow.item then
             GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
-            GameTooltip:SetHyperlink(VGT.rollWindow.item:GetItemLink())
+            GameTooltip:SetHyperlink(roller.rollWindow.item:GetItemLink())
             GameTooltip:Show()
         end
     end)
@@ -111,8 +106,8 @@ function VGT:BuildRollWindow()
         GameTooltip:Hide()
     end)
     pictureFrame:SetScript("OnMouseUp", function()
-        if VGT.rollWindow.item and IsControlKeyDown() then
-            DressUpItemLink(VGT.rollWindow.item:GetItemLink())
+        if self.rollWindow.item and IsControlKeyDown() then
+            DressUpItemLink(self.rollWindow.item:GetItemLink())
         end
     end)
     local pictureTexture = pictureFrame:CreateTexture(nil, "BACKGROUND")
@@ -130,7 +125,7 @@ function VGT:BuildRollWindow()
     rollButton:Show()
     rollButton:SetScript("OnClick", function()
         RandomRoll(1, 100)
-        VGT.rollWindow:Hide()
+        self.rollWindow:Hide()
     end)
     rollButton:SetScript("OnMouseDown", function(self)
         self.texture:SetTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Highlight.blp")
@@ -158,8 +153,8 @@ function VGT:BuildRollWindow()
     passButton:SetSize(24, 24)
     passButton:Show()
     passButton:SetScript("OnClick", function()
-        VGT:SendGroupAddonCommand(VGT.Commands.ROLL_PASS, VGT.rollWindow.item:GetItemID())
-        VGT.rollWindow:Hide()
+        VGT:SendGroupAddonCommand(VGT.Commands.ROLL_PASS, self.rollWindow.item:GetItemID())
+        self.rollWindow:Hide()
     end)
     passButton:SetScript("OnMouseDown", function(self)
         self.texture:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Down.blp")
@@ -179,14 +174,26 @@ function VGT:BuildRollWindow()
     passButton:SetPoint("BOTTOMRIGHT", self.rollWindow, "BOTTOMRIGHT")
 end
 
-function VGT:RefreshRollWindowConfig()
+function roller:RefreshConfig()
     if self.rollWindow then
-        self.rollWindow:SetPoint(
-            VGT.db.profile.roller.point,
-            UIParent,
-            VGT.db.profile.roller.point,
-            VGT.db.profile.roller.x,
-            VGT.db.profile.roller.y
-        )
+        self.rollWindow:SetPoint(self.profile.point, UIParent, self.profile.point, self.profile.x, self.profile.y)
     end
+end
+
+function roller:START_ROLL(_, sender, id)
+    id = tonumber(id)
+    if id then
+        self:Show(id, true)
+    end
+end
+
+function roller:CANCEL_ROLL(_, sender, id)
+    if self.rollWindow then
+        self.rollWindow:Hide()
+    end
+end
+
+function roller:OnEnable()
+    self:RegisterCommand(VGT.Commands.START_ROLL)
+    self:RegisterCommand(VGT.Commands.CANCEL_ROLL)
 end

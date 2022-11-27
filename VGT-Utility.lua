@@ -33,10 +33,10 @@ VGT.overrideEquipTable = {}
 local classesPrefix = ITEM_CLASSES_ALLOWED:gsub("%%s", "(.*)")
 
 local function BuildRestrictions(itemId)
-  VGTAutoTradeScanningTooltip:ClearLines()
-  VGTAutoTradeScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
-  for i=1,VGTAutoTradeScanningTooltip:NumLines() do
-      local line = _G["VGTAutoTradeScanningTooltipTextLeft"..i]
+  VGTScanningTooltip:ClearLines()
+  VGTScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
+  for i=1,VGTScanningTooltip:NumLines() do
+      local line = _G["VGTScanningTooltipTextLeft"..i]
       local text = line and line:GetText() or ""
       text = string.match(text, classesPrefix)
       if text then

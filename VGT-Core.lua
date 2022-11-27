@@ -1,8 +1,42 @@
 local VGT_ADDON_NAME, ValhallaGuildTools = ...
 local COMMAND_MODULE = "VGT-CMD"
 
-VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceTimer-3.0", "AceEvent-3.0")
+VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceEvent-3.0")
 VGT.version = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
+VGT:SetDefaultModuleState(true)
+VGT:SetDefaultModuleLibraries("AceEvent-3.0")
+
+-- Module proto
+local Module = {}
+
+function Module:OnInitialize()
+  VGT.LogTrace("Initialized module %q", self.moduleName)
+  self.profile = VGT.db.profile[self.moduleName]
+  self.char = VGT.db.char[self.moduleName]
+  if self.profile and self.profile.enabled ~= nil then
+    self:SetEnabledState(self.profile.enabled)
+  end
+end
+
+function Module:RegisterCommand(command, handler)
+  local commandName = VGT.CommandNames[command]
+  if not commandName then
+    VGT.LogError("Unknown command %q", command)
+    return
+  end
+  self:RegisterMessage("VGT_CMD_" .. commandName, handler or commandName)
+end
+
+function Module:UnregisterCommand(command)
+  local commandName = VGT.CommandNames[command]
+  if not commandName then
+    VGT.LogError("Unknown command %q", command)
+    return
+  end
+  self:UnregisterMessage("VGT_CMD_" .. commandName)
+end
+
+VGT:SetDefaultModulePrototype(Module)
 
 -- Define enums
 
@@ -34,6 +68,15 @@ VGT.Commands = {
   ITEM_TRACKED = "IT"
 }
 
+VGT.CommandNames = {}
+
+for name, id in pairs(VGT.Commands) do
+  VGT.CommandNames[id] = name
+end
+
+CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate")
+VGTScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+
 local function serializeArg(arg)
   local t = type(arg)
   if t == "nil" or t == "string" or t == "number" or t == "boolean" then
@@ -63,12 +106,16 @@ function VGT:OnInitialize()
 
   self.LogTrace("Initializing addon version %s", self.version)
 
-  self:InitializeMinimapButton()
+  self:RegisterComm(COMMAND_MODULE, "HandleCommand")
+  self:RegisterEvent("LOOT_READY")
 
-  self:InitializeMap()
+  self:InitializeMinimapButton()
   
-  GuildRoster()
-  self:CheckVersion()
+  if IsInGuild() then
+    GuildRoster()
+    self.LogTrace("Requesting addon version from guild")
+    self:SendGuildAddonCommand(VGT.Commands.GET_VERSION, self.version)
+  end
 end
 
 function VGT:RefreshConfig()
@@ -76,12 +123,17 @@ function VGT:RefreshConfig()
 
   self:RefreshMinimapButtonConfig()
 
-  self:RefreshRollWindowConfig()
+  for name, module in self:IterateModules() do
+    if module.enabledState and not module.profile.enabled then
+      module:Disable()
+    elseif not module.enabledState and module.profile.enabled then
+      module:Enable()
+    end
 
-  self.masterLooter.Refresh()
-  self.masterLooter:RefreshWindowConfig()
-
-  self:RefreshMapConfig()
+    if module.enabledState and module.RefreshConfig then
+      module:RefreshConfig()
+    end
+  end
 end
 
 function VGT:SendGuildAddonCommand(command, ...)
@@ -122,54 +174,27 @@ function VGT:SendAddonCommand(channel, target, command, ...)
   self:SendCommMessage(COMMAND_MODULE, message, channel, target)
 end
 
-VGT._commands = {}
-
 function VGT:HandleCommand(module, message, channel, sender)
   local command, rest = strsplit("\001", message, 2)
   if not command then
     return
   end
-  local handler = self._commands[command]
-  if handler then
+  local commandName = self.CommandNames[command]
+  if commandName then
     if type(rest) == "string" then
-      handler:Execute(sender, deserializeArgs(strsplit("\001", rest)))
+      self:SendMessage("VGT_CMD_" .. commandName, sender, deserializeArgs(strsplit("\001", rest)))
     else
-      handler:Execute(sender)
+      self:SendMessage("VGT_CMD_" .. commandName, sender)
     end
   end
 end
 
-function VGT:RegisterCommandHandler(command, handler)
-  local handlers = self._commands[command]
-  if not handlers then
-    handlers = {}
-    self._commands[command] = handlers
-    function handlers:Execute(sender, ...)
-      for _, handler in ipairs(self) do
-        handler(sender, ...)
-      end
+function VGT:LOOT_READY(_, autoLoot)
+  self.LogTrace("Loot ready. Auto-Loot is %s", autoLoot)
+  local lootmethod, masterlooterPartyID, _ = GetLootMethod()
+  if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
+    if strsplit("-", GetLootSourceInfo(1) or "", 2) ~= "Item" then
+      self:SendMessage("VGT_MASTER_LOOT_READY", autoLoot)
     end
-  end
-  tinsert(handlers, handler)
-  self:RegisterComm(COMMAND_MODULE, "HandleCommand")
-end
-
-do
-  local registerEvent = VGT.RegisterEvent
-  VGT._events = {}
-
-  function VGT:RegisterEvent(event, callback)
-    local eventList = self._events[event]
-    if (not eventList) then
-      eventList = {}
-      self._events[event] = eventList
-      self[event] = function(s, ...)
-        for _, c in ipairs(s._events[event]) do
-          c(...)
-        end
-      end
-      registerEvent(self, event)
-    end
-    table.insert(eventList, callback)
   end
 end
