@@ -74,7 +74,7 @@ for name, id in pairs(VGT.Commands) do
   VGT.CommandNames[id] = name
 end
 
-CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate")
+VGTScanningTooltip = CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate")
 VGTScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
 
 local function serializeArg(arg)
