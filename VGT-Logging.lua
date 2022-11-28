@@ -27,7 +27,7 @@ local function Sanitize(param)
   elseif t == "boolean" then
     return param and "true" or "false"
   elseif t == "table" then
-    return strjoin(", ", table.unpack(param))
+    return strjoin(", ", unpack(param))
   else
     return tostring(param)
   end
