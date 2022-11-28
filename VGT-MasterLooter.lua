@@ -634,6 +634,34 @@ function lootTracker:ConfigureHome()
     end)
     self.scroll:AddChild(treeToggle)
 
+    local pendingTrades = {}
+
+    for _, creatureData in ipairs(VGT_MasterLootData) do
+        for _, itemData in ipairs(creatureData.items) do
+            if itemData.winner and not itemData.traded then
+                pendingTrades[itemData.winner] = true
+            end
+        end
+    end
+
+    if next(pendingTrades) then
+        local pendingTradeText = "Pending Trade: "
+        local sep
+    
+        for name in pairs(pendingTrades) do
+            if sep then
+                pendingTradeText = pendingTradeText .. ", "
+            else
+                sep = true
+            end
+            pendingTradeText = pendingTradeText .. name
+        end
+
+        local label = AceGUI:Create("Label")
+        label:SetText(pendingTradeText)
+        self.scroll:AddChild(label)
+    end
+
     --local expiringItems = self:FindExpiringItems()
     --
     --if #expiringItems > 0 then
