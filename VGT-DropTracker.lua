@@ -94,8 +94,10 @@ function dropTracker:Refresh()
         local shouldShow = true
         if item.won then
             shouldShow = self.profile.showWon
-        elseif item.passed or item.interested then
-            shouldShow = self.profile.showResponded
+        elseif item.interested then
+            shouldShow = self.profile.showInterested
+        elseif item.passed then
+            shouldShow = self.profile.showPassed
         end
         if shouldShow then
             local group = AceGUI:Create("InlineGroup")
@@ -152,19 +154,26 @@ function dropTracker:Refresh()
         end
     end
 
-    local showRespondedToggle = AceGUI:Create("CheckBox")
-    showRespondedToggle:SetLabel("Show Responded Items")
-    showRespondedToggle:SetFullWidth(true)
-    showRespondedToggle:SetValue(self.profile.showResponded and true or false)
-    showRespondedToggle:SetCallback("OnValueChanged", function()
-        self.profile.showResponded = not self.profile.showResponded
+    local showPassedToggle = AceGUI:Create("CheckBox")
+    showPassedToggle:SetLabel("Show Passed Items")
+    showPassedToggle:SetValue(self.profile.showPassed and true or false)
+    showPassedToggle:SetCallback("OnValueChanged", function()
+        self.profile.showPassed = not self.profile.showPassed
         self:Refresh()
     end)
-    self.scroll:AddChild(showRespondedToggle)
+    self.scroll:AddChild(showPassedToggle)
+
+    local showInterestedToggle = AceGUI:Create("CheckBox")
+    showInterestedToggle:SetLabel("Show Interested Items")
+    showInterestedToggle:SetValue(self.profile.showInterested and true or false)
+    showInterestedToggle:SetCallback("OnValueChanged", function()
+        self.profile.showInterested = not self.profile.showInterested
+        self:Refresh()
+    end)
+    self.scroll:AddChild(showInterestedToggle)
 
     local showWonToggle = AceGUI:Create("CheckBox")
     showWonToggle:SetLabel("Show Won Items")
-    showWonToggle:SetFullWidth(true)
     showWonToggle:SetValue(self.profile.showWon and true or false)
     showWonToggle:SetCallback("OnValueChanged", function()
         self.profile.showWon = not self.profile.showWon
