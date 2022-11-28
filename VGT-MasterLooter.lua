@@ -569,33 +569,26 @@ function lootTracker:ConfigureHome()
   end)
   self.scroll:AddChild(rsbutton)
 
-  local importStatus = AceGUI:Create("Label")
-  importStatus:SetText(" ")
-
-  local importText = AceGUI:Create("EditBox")
-  importText:SetMaxLetters(0)
-  importText:SetLabel("Import Standings")
-  importText:SetCallback("OnEnterPressed", function()
-    local text = importText:GetText()
-    importText:SetText("")
-    self.char.standings = {}
-
-    local success = pcall(function()
-      local items = json.decode(text)
-      for _, item in ipairs(items) do
-        self.char.standings[item.Id] = item.Standings
+  local importButton = AceGUI:Create("Button")
+  importButton:SetText("Import Standings")
+  importButton:SetCallback("OnClick", function()
+    VGT:ShowInputDialog("Import Standings", "", function(text)
+      local success = pcall(function()
+        local standings = {}
+        local items = json.decode(text)
+        for _, item in ipairs(items) do
+          standings[item.Id] = item.Standings
+        end
+        self.char.standings = standings
+        VGT.LogSystem("Imported standings for %s items.", #items)
+        self:Refresh()
+      end)
+      if not success then
+        VGT.LogError("Import failed.")
       end
     end)
-    if not success then
-      importStatus:SetText("|cffff0000Import failed.|r")
-    else
-      self:Refresh()
-      importStatus:SetText("|cff00ff00Import Succeeded.|r")
-    end
   end)
-
-  self.scroll:AddChild(importText)
-  self.scroll:AddChild(importStatus)
+  self.scroll:AddChild(importButton)
 
   local manualTrackButton = AceGUI:Create("Button")
   manualTrackButton:SetText("Manual Track Item")
