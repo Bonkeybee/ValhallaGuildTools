@@ -260,8 +260,10 @@ function dropTracker:RefreshConfig()
     )
 end
 
-function dropTracker:ASSIGN_ITEM(_, sender, id)
-    self:SetWon(id, true)
+function dropTracker:ASSIGN_ITEM(_, sender, id, disenchant)
+    if not disenchant then
+        self:SetWon(id, true)
+    end
 end
 
 function dropTracker:UNASSIGN_ITEM(_, sender, id)
