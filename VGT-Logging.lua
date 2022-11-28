@@ -55,6 +55,10 @@ local function SanitizeParams(...)
   end
 end
 
+function VGT.Format(message, ...)
+  return string.format(message, SanitizeParams(...))
+end
+
 -- Logs (prints) a given message at the specified log level
 --  level: the log level to print at
 --  message: the unformatted message
@@ -62,7 +66,7 @@ end
 function VGT.Log(level, message, ...)
   if ShouldLog(level) then
     if select("#", ...) > 0 then
-      message = format(message, SanitizeParams(...))
+      message = VGT.Format(message, ...)
     end
     local color = logColors[level] or NORMAL_FONT_COLOR_CODE
     print(color .. "[" .. VGT.name .. "]", message)
