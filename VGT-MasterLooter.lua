@@ -620,6 +620,11 @@ function lootTracker:ConfigureHome()
     clearButton:SetCallback("OnClick", function() self:ClearAll() end)
     self.scroll:AddChild(clearButton)
 
+    local vCheckButton = AceGUI:Create("Button")
+    vCheckButton:SetText("Check Group for Addon")
+    vCheckButton:SetCallback("OnClick", function() self:GroupVersionCheck() end)
+    self.scroll:AddChild(vCheckButton)
+
     local treeToggle = AceGUI:Create("CheckBox")
     treeToggle:SetLabel("Group By Winner")
     treeToggle:SetValue(self.profile.groupByWinner and true or false)
@@ -731,6 +736,56 @@ end
 function lootTracker:RefreshConfig()
     self:RefreshWindowConfig()
     self:Refresh()
+end
+
+function lootTracker:GroupVersionCheck()
+    local unitType, maxUnits
+    if IsInRaid() then
+        unitType, maxUnits = "raid", 40
+    elseif IsInGroup() then
+        unitType, maxUnits = "party", 4
+    else
+        VGT.LogError("You are not in a group.")
+        return
+    end
+    
+    VGT:GetModule("userFinder"):EnumerateUsers(function(results)
+        local versions = {}
+        for i = 1, maxUnits do
+            local unitName = unitType .. i
+            if UnitExists(unitName) then
+                local name = UnitName(unitName)
+                local version = results[name]
+                if version ~= VGT.version then
+                    local versionUsers = versions[version or "Not installed"]
+                    if versionUsers then
+                        tinsert(versionUsers, name)
+                    else
+                        versions[version or "Not installed"] = { name }
+                    end
+                end
+            end
+        end
+        VGT.LogSystem("Your version: " .. VGT.version)
+        if not next(versions) then
+            VGT.LogSystem("All players are using your version.")
+        else
+            for version, users in pairs(versions) do
+                table.sort(users)
+                local text = version .. ": "
+                local sep
+                for _, name in ipairs(users) do
+                    if sep then
+                        text = text .. ", "
+                    else
+                        sep = true
+                    end
+                    text = text .. name
+                end
+                VGT.LogSystem(text)
+            end
+        end
+    end, 2, true)
 end
 
 function lootTracker:ClearAll()
