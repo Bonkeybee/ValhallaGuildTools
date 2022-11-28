@@ -16,7 +16,7 @@ function versionChecker:VERSION_RESPOND(_, sender, version)
   if not UnitIsUnit(sender, "player") then
     VGT.LogTrace("Recieved addon version response from %s (%s)", sender, version)
     if not self.warned and version and tonumber(VGT.version) < tonumber(version) then
-      VGT.LogWarning("there is a newer version of this addon (%s < %s)", myVersion, theirVersion)
+      VGT.LogWarning("there is a newer version of this addon (%s < %s)", VGT.version, version)
       self.warned = true
     end
   end
