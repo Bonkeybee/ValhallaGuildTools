@@ -104,14 +104,14 @@ function VGT:InitializeOptions()
       roller = {
         enabled = true,
         showPasses = false,
-        sound = "Tatl Hey",
+        sound = "What Are You Buyin",
         x = 0,
         y = 0,
         point = "CENTER"
       },
       dropTracker = {
         enabled = true,
-        wonSound = "Tatl Listen",
+        wonSound = "An Awesome Choice",
         autoShow = true,
         showPassed = false,
         showInterested = false,
