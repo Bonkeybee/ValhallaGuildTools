@@ -37,6 +37,7 @@ function lootTracker:GetOrCreatePreemtiveResponse(itemId)
 end
 
 function lootTracker:SendGroupMessage(message, nowarn)
+  local channel
   if UnitInRaid("player") then
     if nowarn then
       channel = "RAID"
