@@ -124,10 +124,14 @@ function VGT:RefreshConfig()
   self:RefreshMinimapButtonConfig()
 
   for name, module in self:IterateModules() do
-    if module.enabledState and not module.profile.enabled then
-      module:Disable()
-    elseif not module.enabledState and module.profile.enabled then
-      module:Enable()
+    module.profile = VGT.db.profile[module.moduleName]
+    module.char = VGT.db.char[module.moduleName]
+    if module.profile then
+      if module.enabledState and not module.profile.enabled then
+        module:Disable()
+      elseif not module.enabledState and module.profile.enabled then
+        module:Enable()
+      end
     end
 
     if module.enabledState and module.RefreshConfig then
