@@ -282,6 +282,11 @@ end
 function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
 
+  if not itemData or not creatureData then
+    VGT.LogDebug("Tried to configure an untracked item %q", itemId)
+    return
+  end
+
   local label = AceGUI:Create("InteractiveLabel")
   label:SetImage(itemData.icon)
   label:SetImageSize(24, 24)
@@ -342,7 +347,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   else
     local rollCreature, rollItem = self:GetRollData()
 
-    if rollItem then
+    if rollCreature and rollItem then
       if rollItem == itemData then
         local stopButton = AceGUI:Create("Button")
         stopButton:SetText("End Rolling")
@@ -1239,7 +1244,7 @@ end
 function lootTracker:RemindRoll()
   local creatureData, itemData = self:GetRollData()
 
-  if itemData then
+  if creatureData and itemData then
     local msg = "Rolling on " .. itemData.link .. "."
 
     if #self.responses > 0 then
