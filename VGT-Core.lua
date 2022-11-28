@@ -2,7 +2,7 @@ local VGT_ADDON_NAME, ValhallaGuildTools = ...
 local COMMAND_MODULE = "VGT-CMD"
 
 VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceEvent-3.0")
-VGT.version = GetAddOnMetadata(VGT_ADDON_NAME, "Version")
+VGT.version = tonumber(GetAddOnMetadata(VGT_ADDON_NAME, "Version"))
 VGT:SetDefaultModuleState(true)
 VGT:SetDefaultModuleLibraries("AceEvent-3.0")
 
@@ -114,7 +114,7 @@ function VGT:OnInitialize()
   if IsInGuild() then
     GuildRoster()
     self.LogTrace("Requesting addon version from guild")
-    self:SendGuildAddonCommand(VGT.Commands.GET_VERSION, self.version)
+    self:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
   end
 end
 

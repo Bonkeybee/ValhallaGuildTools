@@ -1,8 +1,5 @@
 local userFinder = VGT:NewModule("userFinder")
 
-local REQUEST_VERSION_MESSAGE = "ReqV"
-local RESPOND_VERSION_MESSAGE = "ResV"
-
 userFinder.results = {}
 userFinder.enumerating = false
 
@@ -11,26 +8,30 @@ function userFinder:EnumerateUsers(callback, wait, group)
     return
   end
 
-  if (IsInGuild()) then
-    VGT.LogSystem("Requesting addon user info...")
-    self.enumerating = true
-    self:RegisterCommand(VGT.Commands.VERSION_RESPOND)
+  VGT.LogSystem("Requesting addon user info...")
+  self.enumerating = true
+  self:RegisterCommand(VGT.Commands.VERSION_RESPOND)
 
-    if group then
-      VGT:SendGroupAddonCommand(VGT.Commands.GET_VERSION)
-    else
-      VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
+  if group then
+    if not IsInGroup() then
+      VGT.LogError("You are not in a group.")
+      return
     end
-
-    C_Timer.After(wait or 3, function()
-      callback(self.results)
-      self.enumerating = false
-      self.results = {}
-      self:UnregisterCommand(VGT.Commands.VERSION_RESPOND)
-    end)
+    VGT:SendGroupAddonCommand(VGT.Commands.GET_VERSION)
   else
-    VGT.LogError("You are not in a guild.")
+    if not IsInGuild() then
+      VGT.LogError("You are not in a guild.")
+      return
+    end
+    VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
   end
+
+  C_Timer.After(wait or 3, function()
+    callback(self.results)
+    self.enumerating = false
+    self.results = {}
+    self:UnregisterCommand(VGT.Commands.VERSION_RESPOND)
+  end)
 end
 
 function userFinder:PrintUserCount(by)
@@ -54,18 +55,7 @@ function userFinder:PrintUserCount(by)
 
       for version, versionUsers in pairs(versions) do
         table.sort(versionUsers)
-
-        local report = string.format("Version %s: ", version)
-
-        for i, player in ipairs(versionUsers) do
-          if (i > 1) then
-            report = string.format("%s, %s", report, player)
-          else
-            report = report .. player
-          end
-        end
-
-        VGT.LogSystem(report)
+        VGT.LogSystem("Version %s: %s", version, versionUsers)
       end
     elseif (by == "name") then
       local players = {}
@@ -75,17 +65,7 @@ function userFinder:PrintUserCount(by)
       end
 
       table.sort(players)
-      local report = "Players using VGT: "
-
-      for i, player in ipairs(players) do
-        if (i > 1) then
-          report = string.format("%s, %s", report, player)
-        else
-          report = report .. player
-        end
-      end
-
-      VGT.LogSystem(report)
+      VGT.LogSystem("Players using VGT: %s", players)
     else
       local usersCount = 0
       local usingThisVersionCount = 0

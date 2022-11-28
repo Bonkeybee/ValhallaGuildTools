@@ -793,23 +793,13 @@ function lootTracker:GroupVersionCheck()
         end
       end
     end
-    VGT.LogSystem("Your version: " .. VGT.version)
+    VGT.LogSystem("Your version: %s", VGT.version)
     if not next(versions) then
       VGT.LogSystem("All players are using your version.")
     else
       for version, users in pairs(versions) do
         table.sort(users)
-        local text = version .. ": "
-        local sep
-        for _, name in ipairs(users) do
-          if sep then
-            text = text .. ", "
-          else
-            sep = true
-          end
-          text = text .. name
-        end
-        VGT.LogSystem(text)
+        VGT.LogSystem("%s: %s", version, users)
       end
     end
   end, 2, true)
