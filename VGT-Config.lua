@@ -116,11 +116,11 @@ function VGT:InitializeOptions()
         showPassed = false,
         showInterested = false,
         showWon = false,
-        x = -900,
+        x = 100,
         y = 0,
         width = 512,
         height = 240,
-        point = "CENTER"
+        point = "LEFT"
       }
     }
   }
