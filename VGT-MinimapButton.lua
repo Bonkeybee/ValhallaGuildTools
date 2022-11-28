@@ -31,11 +31,9 @@ function VGT:InitializeMinimapButton()
       tooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Ctrl + Left Click:|r Show Options")
     end
   })
-  
+
   function self.minimapButton:UpdateIcon()
-    self.icon = VGT.db.profile.minimapButton.oldIcon and
-      "Interface\\Addons\\ValhallaGuildTools\\Valhalla.classic.tga" or
-      "Interface\\Addons\\ValhallaGuildTools\\Valhalla.wotlk.tga"
+    self.icon = VGT.db.profile.minimapButton.oldIcon and "Interface\\Addons\\ValhallaGuildTools\\Valhalla.classic.tga" or "Interface\\Addons\\ValhallaGuildTools\\Valhalla.wotlk.tga"
   end
 
   self.minimapButton:UpdateIcon()

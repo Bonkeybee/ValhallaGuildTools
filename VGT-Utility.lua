@@ -35,24 +35,24 @@ local classesPrefix = ITEM_CLASSES_ALLOWED:gsub("%%s", "(.*)")
 local function BuildRestrictions(itemId)
   VGTScanningTooltip:ClearLines()
   VGTScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
-  for i=1,VGTScanningTooltip:NumLines() do
-      local line = _G["VGTScanningTooltipTextLeft"..i]
-      local text = line and line:GetText() or ""
-      text = string.match(text, classesPrefix)
-      if text then
-        local overrides = {}
-        local classes = {}
-        for i=1,GetNumClasses() do
-          local name, fileName = GetClassInfo(i)
-          if name and fileName then
-            classes[name] = fileName
-          end
+  for i = 1, VGTScanningTooltip:NumLines() do
+    local line = _G["VGTScanningTooltipTextLeft" .. i]
+    local text = line and line:GetText() or ""
+    text = string.match(text, classesPrefix)
+    if text then
+      local overrides = {}
+      local classes = {}
+      for i = 1, GetNumClasses() do
+        local name, fileName = GetClassInfo(i)
+        if name and fileName then
+          classes[name] = fileName
         end
-        for class in string.gmatch(text, "([%a]+[ ]?[%a]*)[, ]?") do
-          overrides[classes[class]] = true
-        end
-        return overrides
       end
+      for class in string.gmatch(text, "([%a]+[ ]?[%a]*)[, ]?") do
+        overrides[classes[class]] = true
+      end
+      return overrides
+    end
   end
   return true
 end
@@ -70,7 +70,9 @@ VGT.equipTable = {
   [Enum.ItemClass.Consumable] = true,
   [Enum.ItemClass.Container] = {
     [0] = true, -- Bag
-    [1] = { WARLOCK = true }, -- Soul Bag
+    [1] = {
+      WARLOCK = true
+    }, -- Soul Bag
     [2] = true, -- Herb Bag
     [3] = true, -- Enchanting Bag
     [4] = true, -- Engineering Bag
@@ -83,84 +85,262 @@ VGT.equipTable = {
   },
   [Enum.ItemClass.Weapon] = {
     [Enum.ItemWeaponSubclass.Axe1H] = {
-      ["*"] = { DEATHKNIGHT = true, HUNTER = true, PALADIN = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- 1h axe
-      INVTYPE_WEAPONOFFHAND = { DEATHKNIGHT = true, HUNTER = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- oh axe
+      ["*"] = {
+        DEATHKNIGHT = true,
+        HUNTER = true,
+        PALADIN = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      }, -- 1h axe
+      INVTYPE_WEAPONOFFHAND = {
+        DEATHKNIGHT = true,
+        HUNTER = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      } -- oh axe
     },
-    [Enum.ItemWeaponSubclass.Axe2H] = { DEATHKNIGHT = true, HUNTER = true, PALADIN = true, SHAMAN = true, WARRIOR = true }, -- 2h axe
-    [Enum.ItemWeaponSubclass.Bows] = { HUNTER = true, ROGUE = true, WARRIOR = true }, -- bow
-    [Enum.ItemWeaponSubclass.Guns] = { HUNTER = true, ROGUE = true, WARRIOR = true }, -- gun
+    [Enum.ItemWeaponSubclass.Axe2H] = {
+      DEATHKNIGHT = true,
+      HUNTER = true,
+      PALADIN = true,
+      SHAMAN = true,
+      WARRIOR = true
+    }, -- 2h axe
+    [Enum.ItemWeaponSubclass.Bows] = {
+      HUNTER = true,
+      ROGUE = true,
+      WARRIOR = true
+    }, -- bow
+    [Enum.ItemWeaponSubclass.Guns] = {
+      HUNTER = true,
+      ROGUE = true,
+      WARRIOR = true
+    }, -- gun
     [Enum.ItemWeaponSubclass.Mace1H] = {
-      ["*"] = { DEATHKNIGHT = true, DRUID = true, PALADIN = true, PRIEST = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- 1h mace
-      INVTYPE_WEAPONOFFHAND = { DEATHKNIGHT = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- oh mace
+      ["*"] = {
+        DEATHKNIGHT = true,
+        DRUID = true,
+        PALADIN = true,
+        PRIEST = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      }, -- 1h mace
+      INVTYPE_WEAPONOFFHAND = {
+        DEATHKNIGHT = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      } -- oh mace
     },
-    [Enum.ItemWeaponSubclass.Mace2H] = { DEATHKNIGHT = true, DRUID = true, PALADIN = true, SHAMAN = true, WARRIOR = true }, -- 2h mace
-    [Enum.ItemWeaponSubclass.Polearm] = { DEATHKNIGHT = true, DRUID = true, HUNTER = true, PALADIN = true, WARRIOR = true }, -- polearm
+    [Enum.ItemWeaponSubclass.Mace2H] = {
+      DEATHKNIGHT = true,
+      DRUID = true,
+      PALADIN = true,
+      SHAMAN = true,
+      WARRIOR = true
+    }, -- 2h mace
+    [Enum.ItemWeaponSubclass.Polearm] = {
+      DEATHKNIGHT = true,
+      DRUID = true,
+      HUNTER = true,
+      PALADIN = true,
+      WARRIOR = true
+    }, -- polearm
     [Enum.ItemWeaponSubclass.Sword1H] = {
-      ["*"] = { DEATHKNIGHT = true, HUNTER = true, MAGE = true, PALADIN = true, ROGUE = true, WARLOCK = true, WARRIOR = true }, -- 1h sword
-      INVTYPE_WEAPONOFFHAND = { DEATHKNIGHT = true, HUNTER = true, ROGUE = true, WARRIOR = true }, -- oh sword
+      ["*"] = {
+        DEATHKNIGHT = true,
+        HUNTER = true,
+        MAGE = true,
+        PALADIN = true,
+        ROGUE = true,
+        WARLOCK = true,
+        WARRIOR = true
+      }, -- 1h sword
+      INVTYPE_WEAPONOFFHAND = {
+        DEATHKNIGHT = true,
+        HUNTER = true,
+        ROGUE = true,
+        WARRIOR = true
+      } -- oh sword
     },
-    [Enum.ItemWeaponSubclass.Sword2H] = { DEATHKNIGHT = true, HUNTER = true, PALADIN = true, WARRIOR = true }, -- 2h sword
+    [Enum.ItemWeaponSubclass.Sword2H] = {
+      DEATHKNIGHT = true,
+      HUNTER = true,
+      PALADIN = true,
+      WARRIOR = true
+    }, -- 2h sword
     [Enum.ItemWeaponSubclass.Warglaive] = false,
-    [Enum.ItemWeaponSubclass.Staff] = { DRUID = true, HUNTER = true, MAGE = true, PRIEST = true, SHAMAN = true, WARLOCK = true, WARRIOR = true }, -- staff
+    [Enum.ItemWeaponSubclass.Staff] = {
+      DRUID = true,
+      HUNTER = true,
+      MAGE = true,
+      PRIEST = true,
+      SHAMAN = true,
+      WARLOCK = true,
+      WARRIOR = true
+    }, -- staff
     [Enum.ItemWeaponSubclass.Bearclaw] = false, -- bearclaw
     [Enum.ItemWeaponSubclass.Catclaw] = false, -- catclaw
     [Enum.ItemWeaponSubclass.Unarmed] = {
-      ["*"] = { DRUID = true, HUNTER = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- 1h unarmed
-      INVTYPE_WEAPONOFFHAND = { HUNTER = true, ROGUE = true, SHAMAN = true, WARRIOR = true } -- oh unarmed
+      ["*"] = {
+        DRUID = true,
+        HUNTER = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      }, -- 1h unarmed
+      INVTYPE_WEAPONOFFHAND = {
+        HUNTER = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      } -- oh unarmed
     },
     [Enum.ItemWeaponSubclass.Generic] = true, -- generic
     [Enum.ItemWeaponSubclass.Dagger] = {
-      ["*"] = { DRUID = true, HUNTER = true, MAGE = true, PRIEST = true, ROGUE = true, SHAMAN = true, WARLOCK = true, WARRIOR = true }, -- 1h dagger
-      INVTYPE_WEAPONOFFHAND = { HUNTER = true, ROGUE = true, SHAMAN = true, WARRIOR = true }, -- oh dagger
+      ["*"] = {
+        DRUID = true,
+        HUNTER = true,
+        MAGE = true,
+        PRIEST = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARLOCK = true,
+        WARRIOR = true
+      }, -- 1h dagger
+      INVTYPE_WEAPONOFFHAND = {
+        HUNTER = true,
+        ROGUE = true,
+        SHAMAN = true,
+        WARRIOR = true
+      } -- oh dagger
     },
-    [Enum.ItemWeaponSubclass.Thrown] = { HUNTER = true, ROGUE = true, WARRIOR = true }, -- thrown
+    [Enum.ItemWeaponSubclass.Thrown] = {
+      HUNTER = true,
+      ROGUE = true,
+      WARRIOR = true
+    }, -- thrown
     [Enum.ItemWeaponSubclass.Obsolete3] = false, -- spear
-    [Enum.ItemWeaponSubclass.Crossbow] = { HUNTER = true, ROGUE = true, WARRIOR = true }, -- crossbow
-    [Enum.ItemWeaponSubclass.Wand] = { MAGE = true, PRIEST = true, WARLOCK = true }, -- wand
+    [Enum.ItemWeaponSubclass.Crossbow] = {
+      HUNTER = true,
+      ROGUE = true,
+      WARRIOR = true
+    }, -- crossbow
+    [Enum.ItemWeaponSubclass.Wand] = {
+      MAGE = true,
+      PRIEST = true,
+      WARLOCK = true
+    }, -- wand
     [Enum.ItemWeaponSubclass.Fishingpole] = true -- fishing pole
   },
   [Enum.ItemClass.Gem] = true,
   [Enum.ItemClass.Armor] = {
     [Enum.ItemArmorSubclass.Generic] = true,
     [Enum.ItemArmorSubclass.Cloth] = true,
-    [Enum.ItemArmorSubclass.Leather] = { DEATHKNIGHT = true, DRUID = true, HUNTER = true, PALADIN = true, ROGUE = true, SHAMAN = true, WARRIOR = true },
-    [Enum.ItemArmorSubclass.Mail] = { DEATHKNIGHT = true, HUNTER = true, PALADIN = true, SHAMAN = true, WARRIOR = true },
-    [Enum.ItemArmorSubclass.Plate] = { DEATHKNIGHT = true, PALADIN = true, WARRIOR = true },
+    [Enum.ItemArmorSubclass.Leather] = {
+      DEATHKNIGHT = true,
+      DRUID = true,
+      HUNTER = true,
+      PALADIN = true,
+      ROGUE = true,
+      SHAMAN = true,
+      WARRIOR = true
+    },
+    [Enum.ItemArmorSubclass.Mail] = {
+      DEATHKNIGHT = true,
+      HUNTER = true,
+      PALADIN = true,
+      SHAMAN = true,
+      WARRIOR = true
+    },
+    [Enum.ItemArmorSubclass.Plate] = {
+      DEATHKNIGHT = true,
+      PALADIN = true,
+      WARRIOR = true
+    },
     [Enum.ItemArmorSubclass.Cosmetic] = true,
-    [Enum.ItemArmorSubclass.Shield] = { PALADIN = true, SHAMAN = true, WARRIOR = true },
-    [Enum.ItemArmorSubclass.Libram] = { PALADIN = true },
-    [Enum.ItemArmorSubclass.Idol] = { DRUID = true },
-    [Enum.ItemArmorSubclass.Totem] = { SHAMAN = true },
-    [Enum.ItemArmorSubclass.Sigil] = { DEATHKNIGHT = true },
-    [Enum.ItemArmorSubclass.Relic] = { DEATHKNIGHT = true, DRUID = true, PALADIN = true, SHAMAN = true }
+    [Enum.ItemArmorSubclass.Shield] = {
+      PALADIN = true,
+      SHAMAN = true,
+      WARRIOR = true
+    },
+    [Enum.ItemArmorSubclass.Libram] = {
+      PALADIN = true
+    },
+    [Enum.ItemArmorSubclass.Idol] = {
+      DRUID = true
+    },
+    [Enum.ItemArmorSubclass.Totem] = {
+      SHAMAN = true
+    },
+    [Enum.ItemArmorSubclass.Sigil] = {
+      DEATHKNIGHT = true
+    },
+    [Enum.ItemArmorSubclass.Relic] = {
+      DEATHKNIGHT = true,
+      DRUID = true,
+      PALADIN = true,
+      SHAMAN = true
+    }
   },
   [Enum.ItemClass.Reagent] = true,
-  [Enum.ItemClass.Projectile] = { HUNTER = true, ROGUE = true, WARRIOR = true },
+  [Enum.ItemClass.Projectile] = {
+    HUNTER = true,
+    ROGUE = true,
+    WARRIOR = true
+  },
   [Enum.ItemClass.Tradegoods] = true,
   [Enum.ItemClass.ItemEnhancement] = true,
   [Enum.ItemClass.Recipe] = true,
   [Enum.ItemClass.Gem] = true,
   [Enum.ItemClass.CurrencyTokenObsolete] = false,
-  [Enum.ItemClass.Quiver] = { HUNTER = true, ROGUE = true, WARRIOR = true },
+  [Enum.ItemClass.Quiver] = {
+    HUNTER = true,
+    ROGUE = true,
+    WARRIOR = true
+  },
   [Enum.ItemClass.Questitem] = true,
   [Enum.ItemClass.Key] = true,
   [Enum.ItemClass.Gem] = true,
   [Enum.ItemClass.PermanentObsolete] = false,
   [Enum.ItemClass.Miscellaneous] = true,
   [Enum.ItemClass.Glyph] = {
-    [1] = { WARRIOR = true },
-    [2] = { PALADIN = true },
-    [3] = { HUNTER = true },
-    [4] = { ROGUE = true },
-    [5] = { PRIEST = true },
-    [6] = { DEATHKNIGHT = true },
-    [7] = { SHAMAN = true },
-    [8] = { MAGE = true },
-    [9] = { WARLOCK = true },
-    [11] = { DRUID = true }
+    [1] = {
+      WARRIOR = true
+    },
+    [2] = {
+      PALADIN = true
+    },
+    [3] = {
+      HUNTER = true
+    },
+    [4] = {
+      ROGUE = true
+    },
+    [5] = {
+      PRIEST = true
+    },
+    [6] = {
+      DEATHKNIGHT = true
+    },
+    [7] = {
+      SHAMAN = true
+    },
+    [8] = {
+      MAGE = true
+    },
+    [9] = {
+      WARLOCK = true
+    },
+    [11] = {
+      DRUID = true
+    }
   },
   [Enum.ItemClass.Battlepet] = true,
-  [Enum.ItemClass.WoWToken] = true,
+  [Enum.ItemClass.WoWToken] = true
 }
 
 local function GetNextLevel(source, levels, level, playerClass)
@@ -173,7 +353,7 @@ local function GetNextLevel(source, levels, level, playerClass)
     VGT.LogTrace("Level %s had %q class override; returning true", level, playerClass)
     return true
   end
-  
+
   if level > #levels then
     VGT.LogTrace("Level %s exceeds the maximum; returning false", level)
     return false
@@ -205,7 +385,7 @@ function VGT:Equippable(item, playerClass)
 
   local classRestrictions = GetClassRestrictions(itemId)
   if classRestrictions == true then
-    return GetNextLevel(self.equipTable, { classId, subclassId, equipLocId }, 1, playerClass)
+    return GetNextLevel(self.equipTable, {classId, subclassId, equipLocId}, 1, playerClass)
   else
     VGT.LogTrace("Found class restrictions for item #%s", itemId)
     return classRestrictions[playerClass]
@@ -276,7 +456,7 @@ function VGT:ShowInputDialog(title, text, callback)
     end
     StaticPopupDialogs[dialogId] = dlg
   end
-  
+
   dlg.text = title
   dlg.inputText = text
 
@@ -308,7 +488,7 @@ local classLookup = {
 
 local reverseClassLookup = {}
 
-for k,v in pairs(classLookup) do
+for k, v in pairs(classLookup) do
   reverseClassLookup[v] = k
 end
 
@@ -343,15 +523,12 @@ function VGT:GetCharacters()
       local _, _, classId = UnitClass(id)
 
       if (raceId and gender and classId) then
-        table.insert(
-          characters,
-          {
-            Name = name,
-            Gender = gender - 2,
-            Class = classLookup[classId],
-            Race = raceLookup[raceId]
-          }
-        )
+        table.insert(characters, {
+          Name = name,
+          Gender = gender - 2,
+          Class = classLookup[classId],
+          Race = raceLookup[raceId]
+        })
       end
     end
   end
@@ -373,7 +550,9 @@ function VGT:GetCharacters()
 end
 
 function VGT:ExportRaidStart()
-  return json.encode({ Characters = self:GetCharacters() })
+  return json.encode({
+    Characters = self:GetCharacters()
+  })
 end
 
 function VGT:ShowRaidStartExport()
@@ -381,7 +560,10 @@ function VGT:ShowRaidStartExport()
 end
 
 function VGT:ExportKill(items, characters)
-  return json.encode({ Items = items, Characters = characters or self:GetCharacters() })
+  return json.encode({
+    Items = items,
+    Characters = characters or self:GetCharacters()
+  })
 end
 
 function VGT:ShowKillExport(items, characters)

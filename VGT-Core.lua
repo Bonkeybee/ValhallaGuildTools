@@ -110,7 +110,7 @@ function VGT:OnInitialize()
   self:RegisterEvent("LOOT_READY")
 
   self:InitializeMinimapButton()
-  
+
   if IsInGuild() then
     GuildRoster()
     self.LogTrace("Requesting addon version from guild")

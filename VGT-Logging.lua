@@ -4,7 +4,7 @@ local logColors = {
   [VGT.LogLevel.INFO] = YELLOW_FONT_COLOR_CODE,
   [VGT.LogLevel.WARN] = ORANGE_FONT_COLOR_CODE,
   [VGT.LogLevel.ERROR] = RED_FONT_COLOR_CODE,
-  [VGT.LogLevel.SYSTEM] = NORMAL_FONT_COLOR_CODE,
+  [VGT.LogLevel.SYSTEM] = NORMAL_FONT_COLOR_CODE
 }
 
 local function ShouldLog(level)

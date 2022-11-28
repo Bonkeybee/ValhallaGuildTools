@@ -21,7 +21,7 @@ function userFinder:EnumerateUsers(callback, wait, group)
     else
       VGT:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
     end
-  
+
     C_Timer.After(wait or 3, function()
       callback(self.results)
       self.enumerating = false
@@ -40,7 +40,7 @@ function userFinder:PrintUserCount(by)
   self:EnumerateUsers(function(results)
     if (by == "version") then
       local versions = {}
-  
+
       for player, version in pairs(results) do
         local versionPlayers = versions[version]
         if (not versionPlayers) then
@@ -49,14 +49,14 @@ function userFinder:PrintUserCount(by)
         end
         versionPlayers[#versionPlayers + 1] = player
       end
-  
+
       table.sort(versions)
-  
+
       for version, versionUsers in pairs(versions) do
         table.sort(versionUsers)
-  
+
         local report = string.format("Version %s: ", version)
-  
+
         for i, player in ipairs(versionUsers) do
           if (i > 1) then
             report = string.format("%s, %s", report, player)
@@ -64,19 +64,19 @@ function userFinder:PrintUserCount(by)
             report = report .. player
           end
         end
-  
+
         VGT.LogSystem(report)
       end
     elseif (by == "name") then
       local players = {}
-  
+
       for player, _ in pairs(results) do
         players[#players + 1] = player
       end
-  
+
       table.sort(players)
       local report = "Players using VGT: "
-  
+
       for i, player in ipairs(players) do
         if (i > 1) then
           report = string.format("%s, %s", report, player)
@@ -84,24 +84,20 @@ function userFinder:PrintUserCount(by)
           report = report .. player
         end
       end
-  
+
       VGT.LogSystem(report)
     else
       local usersCount = 0
       local usingThisVersionCount = 0
-  
+
       for _, value in pairs(results) do
         usersCount = usersCount + 1
-  
+
         if (value == VGT.version) then
           usingThisVersionCount = usingThisVersionCount + 1
         end
       end
-      VGT.LogSystem(
-        "%d players are using the addon, and %d are using the same version as you.",
-        usersCount,
-        usingThisVersionCount
-      )
+      VGT.LogSystem("%d players are using the addon, and %d are using the same version as you.", usersCount, usingThisVersionCount)
     end
   end)
 end

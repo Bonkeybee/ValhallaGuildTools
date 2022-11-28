@@ -3,7 +3,7 @@ local autoMasterLoot = VGT:NewModule("autoMasterLoot")
 function autoMasterLoot:ShouldIgnore(ignores, link)
   if not link then
     return true
-   end
+  end
   local itemName, _ = GetItemInfo(link)
   for _, value in pairs(ignores) do
     local ignoreName, _ = GetItemInfo(value)
@@ -41,7 +41,7 @@ end
 
 function autoMasterLoot:Run()
   VGT.LogTrace("Auto masterlooting")
-  local ignores = { strsplit(";", self.profile.ignoredItems or "") }
+  local ignores = {strsplit(";", self.profile.ignoredItems or "")}
   for lootIndex = 1, GetNumLootItems() do
     local target = self:GetAutoMasterLootTarget(ignores, lootIndex)
     if target then

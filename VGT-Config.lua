@@ -149,7 +149,7 @@ function VGT:InitializeOptions()
 
   local function SetValue(db, info, value)
     local section = VGT.db[db]
-    local path = "VGT.db." ..db
+    local path = "VGT.db." .. db
     local sectionName
     for i = 1, #info - 1 do
       sectionName = info[i]
@@ -178,8 +178,8 @@ function VGT:InitializeOptions()
   local function SetCharValue(info, value)
     SetValue("char", info, value)
   end
-  
-  --https://www.wowace.com/projects/ace3/pages/ace-config-3-0-options-tables
+
+  -- https://www.wowace.com/projects/ace3/pages/ace-config-3-0-options-tables
   local options = {
     type = "group",
     disabled = function(info)
@@ -344,7 +344,7 @@ function VGT:InitializeOptions()
             order = 0,
             name = "Enable",
             type = "toggle",
-            desc = "Enables automatic tracking of looted items while master looting.",
+            desc = "Enables automatic tracking of looted items while master looting."
           },
           sep = {
             order = 1,
@@ -447,7 +447,7 @@ function VGT:InitializeOptions()
             order = 0,
             name = "Enable",
             type = "toggle",
-            desc = "Enables the drop tracker window.",
+            desc = "Enables the drop tracker window."
           },
           sep = {
             order = 1,

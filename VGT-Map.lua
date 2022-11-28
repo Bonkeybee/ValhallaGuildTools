@@ -10,7 +10,10 @@ local HereBeDragons = LibStub("HereBeDragons-2.0")
 local HereBeDragonsPins = LibStub("HereBeDragons-Pins-2.0")
 
 map.bufferPins = {}
-map.extendedGuildRoster = { members = {}, memberNames = {} }
+map.extendedGuildRoster = {
+  members = {},
+  memberNames = {}
+}
 
 function map.extendedGuildRoster:GetMember(nameOrGuid)
   local member = self.members[nameOrGuid]
@@ -26,7 +29,11 @@ function map.extendedGuildRoster:GetMember(nameOrGuid)
         thisMember.class = class
         thisMember.guid = guid
       else
-        thisMember = { name = name, class = class, guid = guid }
+        thisMember = {
+          name = name,
+          class = class,
+          guid = guid
+        }
         self.members[name] = thisMember
         self.members[guid] = thisMember
       end
@@ -61,7 +68,9 @@ function map:TakePin()
     texture:SetVertexColor(0.14, 0.67, 0.02) -- Green
     pin:EnableMouse(true)
     pin.texture = texture
-    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    pin:SetScript("OnLeave", function()
+      GameTooltip:Hide()
+    end)
     return pin
   end
   return table.remove(self.bufferPins)
@@ -88,10 +97,7 @@ function map:FormatTooltip(player, distance)
   text = text .. self:FormatPlayerTooltip(player)
 
   for otherPlayer in self.extendedGuildRoster:EnumerateMembers() do
-    if otherPlayer ~= player and otherPlayer.x ~= nil and otherPlayer.y ~= nil and player.x ~= nil and player.y ~= nil
-    and otherPlayer.lastUpdate and (timeNow - otherPlayer.lastUpdate) < 180
-    and math.sqrt(math.pow(player.x - otherPlayer.x, 2) + math.pow(player.y - otherPlayer.y, 2)) < distance
-    then
+    if otherPlayer ~= player and otherPlayer.x ~= nil and otherPlayer.y ~= nil and player.x ~= nil and player.y ~= nil and otherPlayer.lastUpdate and (timeNow - otherPlayer.lastUpdate) < 180 and math.sqrt(math.pow(player.x - otherPlayer.x, 2) + math.pow(player.y - otherPlayer.y, 2)) < distance then
       text = text .. "\n" .. self:FormatPlayerTooltip(otherPlayer)
     end
   end
@@ -157,14 +163,14 @@ function map:UpdatePins(timeNow)
           if (mapId) then
             local mapData = HereBeDragons.mapData[mapId]
             if (mapData and mapData.mapType) then
-              --todo: these are just my best guesses of distances. Probably should be tweaked.
-              if (mapData.mapType == 1) then --world
+              -- todo: these are just my best guesses of distances. Probably should be tweaked.
+              if (mapData.mapType == 1) then -- world
                 distance = 300
               end
-              if (mapData.mapType == 2) then --continent
+              if (mapData.mapType == 2) then -- continent
                 distance = 100
               end
-              if (mapData.mapType == 3) then --zone or city
+              if (mapData.mapType == 3) then -- zone or city
                 distance = 25
               end
             end
@@ -189,7 +195,7 @@ function map:UpdatePins(timeNow)
         player.minimapPin:SetScript("OnEnter", function(self)
           GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
           local distance = 15
-          --todo set distance for minimap based on zoom level
+          -- todo set distance for minimap based on zoom level
           GameTooltip:SetText(map:FormatTooltip(self.player, distance))
           GameTooltip:Show()
         end)
@@ -303,54 +309,50 @@ end
 
 map.originalUpdateUnitTooltips = UnitPositionFrameMixin.UpdateUnitTooltips
 function map.newUpdateUnitTooltips(self, tooltipFrame)
-	local tooltipText = ""
-	local prefix = ""
-	local timeNow = GetTime()
+  local tooltipText = ""
+  local prefix = ""
+  local timeNow = GetTime()
 
-	for unit in pairs(self.currentMouseOverUnits) do
-		local unitName = UnitName(unit)
-		if not self:IsMouseOverUnitExcluded(unit) then
-			local formattedUnitName = 
-        GetIsPVPInactive(unit, timeNow) and format(PLAYER_IS_PVP_AFK, unitName) or
-        ("|c" .. select(4, GetClassColor(select(2, UnitClass(unit)))) .. unitName .. "|r")
-      
-			tooltipText = tooltipText .. prefix .. formattedUnitName
-      
+  for unit in pairs(self.currentMouseOverUnits) do
+    local unitName = UnitName(unit)
+    if not self:IsMouseOverUnitExcluded(unit) then
+      local formattedUnitName = GetIsPVPInactive(unit, timeNow) and format(PLAYER_IS_PVP_AFK, unitName) or ("|c" .. select(4, GetClassColor(select(2, UnitClass(unit)))) .. unitName .. "|r")
+
+      tooltipText = tooltipText .. prefix .. formattedUnitName
+
       local unitHp = UnitHealth(unitName)
       if type(unitHp) == "number" then
         unitHp = unitHp / UnitHealthMax(unitName)
-        tooltipText = tooltipText .. " |cffffffff-|r |cff" ..
-          VGT.RGBToHex(VGT.ColorGradient(unitHp, 1, 0, 0, 1, 1, 0, 0, 1, 0)) ..
-          VGT.Round(unitHp * 100, 0) .. "%|r"
+        tooltipText = tooltipText .. " |cffffffff-|r |cff" .. VGT.RGBToHex(VGT.ColorGradient(unitHp, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.Round(unitHp * 100, 0) .. "%|r"
       end
 
-			prefix = "\n"
-		end
-	end
+      prefix = "\n"
+    end
+  end
 
-	if tooltipText ~= "" then
-		self.previousOwner = tooltipFrame:GetOwner()
-		tooltipFrame:SetOwner(self, "ANCHOR_CURSOR_RIGHT")
-		tooltipFrame:SetText(tooltipText)
-	elseif tooltipFrame:GetOwner() == self then
-		tooltipFrame:ClearLines()
-		tooltipFrame:Hide()
-		if self.previousOwner and self.previousOwner ~= self and self.previousOwner:IsVisible() and self.previousOwner:IsMouseOver() then
-			local func = self.previousOwner:HasScript("OnEnter") and self.previousOwner:GetScript("OnEnter")
-			if func then
-				func(self.previousOwner)
-			end
-		end
-		self.previousOwner = nil
-	end
+  if tooltipText ~= "" then
+    self.previousOwner = tooltipFrame:GetOwner()
+    tooltipFrame:SetOwner(self, "ANCHOR_CURSOR_RIGHT")
+    tooltipFrame:SetText(tooltipText)
+  elseif tooltipFrame:GetOwner() == self then
+    tooltipFrame:ClearLines()
+    tooltipFrame:Hide()
+    if self.previousOwner and self.previousOwner ~= self and self.previousOwner:IsVisible() and self.previousOwner:IsMouseOver() then
+      local func = self.previousOwner:HasScript("OnEnter") and self.previousOwner:GetScript("OnEnter")
+      if func then
+        func(self.previousOwner)
+      end
+    end
+    self.previousOwner = nil
+  end
 end
 
 map.originalGetUnitColor = UnitPositionFrameMixin.GetUnitColor
 function map.newGetUnitColor(self, timeNow, unit, appearanceData)
-	if appearanceData.shouldShow then
-		local r, g, b  = 1, 1, 1
+  if appearanceData.shouldShow then
+    local r, g, b = 1, 1, 1
 
-		if not UnitIsUnit(unit, "player") then
+    if not UnitIsUnit(unit, "player") then
       if UnitIsUnit(unit, "target") then
         r, g, b = 0.59, 0.01, 0.01 -- Red
       elseif VGT.db.profile.map.useClassColor then
@@ -362,12 +364,12 @@ function map.newGetUnitColor(self, timeNow, unit, appearanceData)
         local class = select(2, UnitClass(unit))
         r, g, b = GetClassColor(class)
       end
-		end
+    end
 
-		return true, CheckColorOverrideForPVPInactive(unit, timeNow, r, g, b)
-	end
+    return true, CheckColorOverrideForPVPInactive(unit, timeNow, r, g, b)
+  end
 
-	return false
+  return false
 end
 
 function map:UpdateBlizzardPins()
