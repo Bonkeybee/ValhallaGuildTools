@@ -2,7 +2,6 @@
 ## Title: ValhallaGuildTools
 ## Notes: Valhalla Guild Tools
 ## SavedVariables: VGT_OPTIONS, VGT_DB
-## SavedVariablesPerCharacter: VGT_MasterLootData
 ## LoadOnDemand: 0
 ## DefaultState: enabled
 ## Author: Bonkeybee

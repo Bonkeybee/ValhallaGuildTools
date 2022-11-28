@@ -65,6 +65,12 @@ function VGT:InitializeOptions()
       },
       dropTracker = {
         items = {}
+      },
+      lootTracker = {
+        creatures = {},
+        preemptiveResponses = {},
+        standings = {},
+        expiration = nil
       }
     },
     profile = {

@@ -1,6 +1,5 @@
 local lootTracker = VGT:NewModule("lootTracker")
 local AceGUI = LibStub("AceGUI-3.0")
-VGT_MasterLootData = VGT_MasterLootData or {}
 
 lootTracker.currentTrades = {}
 lootTracker.activeSlots = {}
@@ -25,13 +24,10 @@ lootTracker.trackedInstances = {
 }
 
 function lootTracker:GetOrCreatePreemtiveResponse(itemId)
-  if not VGT_MasterLootData.PreemptiveResponses then
-    VGT_MasterLootData.PreemptiveResponses = {}
-  end
-  local itemResponses = VGT_MasterLootData.PreemptiveResponses[itemId]
+  local itemResponses = self.char.preemptiveResponses[itemId]
   if not itemResponses then
     itemResponses = {}
-    VGT_MasterLootData.PreemptiveResponses[itemId] = itemResponses
+    self.char.preemptiveResponses[itemId] = itemResponses
   end
   return itemResponses
 end
@@ -70,7 +66,7 @@ function lootTracker:ReadData(creatureGuid, itemId, itemIndex)
     return
   end
 
-  for _, creatureData in ipairs(VGT_MasterLootData) do
+  for _, creatureData in ipairs(self.char.creatures) do
     if creatureData.id == creatureGuid then
       if itemId then
         itemId = tonumber(itemId)
@@ -91,35 +87,31 @@ function lootTracker:GetRollData()
 end
 
 function lootTracker:AddPrioToStandings(itemId, name, prio)
-  if VGT_MasterLootData.Standings then
-    local itemStandings = VGT_MasterLootData.Standings[itemId]
-    if itemStandings then
-      for i, standing in ipairs(itemStandings) do
-        if standing.Prio == prio then
-          tinsert(standing.Names, name)
-          return
-        elseif standing.Prio < prio then
-          tinsert(itemStandings, i, {
-            Prio = prio,
-            Names = {name}
-          })
-          return
-        end
+  local itemStandings = self.char.standings[itemId]
+  if itemStandings then
+    for i, standing in ipairs(itemStandings) do
+      if standing.Prio == prio then
+        tinsert(standing.Names, name)
+        return
+      elseif standing.Prio < prio then
+        tinsert(itemStandings, i, {
+          Prio = prio,
+          Names = {name}
+        })
+        return
       end
     end
   end
 end
 
 function lootTracker:TakePrioFromStandings(itemId, name)
-  if VGT_MasterLootData.Standings then
-    local itemStandings = VGT_MasterLootData.Standings[itemId]
-    if itemStandings then
-      for _, standing in ipairs(itemStandings) do
-        for i, n in ipairs(standing.Names) do
-          if n == name then
-            tremove(standing.Names, i)
-            return standing.Prio
-          end
+  local itemStandings = self.char.standings[itemId]
+  if itemStandings then
+    for _, standing in ipairs(itemStandings) do
+      for i, n in ipairs(standing.Names) do
+        if n == name then
+          tremove(standing.Names, i)
+          return standing.Prio
         end
       end
     end
@@ -127,23 +119,21 @@ function lootTracker:TakePrioFromStandings(itemId, name)
 end
 
 function lootTracker:IncrementStandings(itemId, characters)
-  if VGT_MasterLootData.Standings then
-    for _, character in ipairs(characters) do
-      local prios = {}
+  for _, character in ipairs(characters) do
+    local prios = {}
 
-      while true do
-        local prio = self:TakePrioFromStandings(itemId, character.Name)
-        if type(prio) == "number" then
-          tinsert(prios, prio)
-        else
-          break
-        end
+    while true do
+      local prio = self:TakePrioFromStandings(itemId, character.Name)
+      if type(prio) == "number" then
+        tinsert(prios, prio)
+      else
+        break
       end
+    end
 
-      if #prios > 0 then
-        for _, prio in ipairs(prios) do
-          self:AddPrioToStandings(itemId, character.Name, prio + 1)
-        end
+    if #prios > 0 then
+      for _, prio in ipairs(prios) do
+        self:AddPrioToStandings(itemId, character.Name, prio + 1)
       end
     end
   end
@@ -450,54 +440,52 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         self.scroll:AddChild(spacer)
       end
     else
-      if VGT_MasterLootData.Standings then
-        local itemStandings = VGT_MasterLootData.Standings[itemData.id]
-        if itemStandings then
-          for _, s in ipairs(itemStandings) do
-            local standing = s
-            local whitelist = {}
-            local lookup = {}
+      local itemStandings = self.char.standings[itemData.id]
+      if itemStandings then
+        for _, s in ipairs(itemStandings) do
+          local standing = s
+          local whitelist = {}
+          local lookup = {}
 
-            for _, name in ipairs(standing.Names) do
-              lookup[name] = true
+          for _, name in ipairs(standing.Names) do
+            lookup[name] = true
+          end
+
+          for _, character in ipairs(creatureData.characters) do
+            if lookup[character.Name] then
+              tinsert(whitelist, character.Name)
             end
+          end
 
-            for _, character in ipairs(creatureData.characters) do
-              if lookup[character.Name] then
-                tinsert(whitelist, character.Name)
+          if #whitelist > 0 then
+            local standingButton = AceGUI:Create("Button")
+            standingButton:SetFullWidth(true)
+            local sText = "(" .. standing.Prio .. ") "
+            local addComma = false
+
+            for _, name in ipairs(whitelist) do
+              if addComma then
+                sText = sText .. ", "
               end
+              addComma = true
+              sText = sText .. name
             end
 
-            if #whitelist > 0 then
-              local standingButton = AceGUI:Create("Button")
-              standingButton:SetFullWidth(true)
-              local sText = "(" .. standing.Prio .. ") "
-              local addComma = false
-
-              for _, name in ipairs(whitelist) do
-                if addComma then
-                  sText = sText .. ", "
-                end
-                addComma = true
-                sText = sText .. name
+            standingButton:SetText(sText)
+            standingButton:SetCallback("OnClick", function()
+              if #whitelist == 1 then
+                itemData.winner = whitelist[1]
+                itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
+                itemData.traded = UnitIsUnit(itemData.winner, "player")
+                VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
+                self:SendGroupMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
+                self:Refresh()
+              else
+                self:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
               end
+            end)
 
-              standingButton:SetText(sText)
-              standingButton:SetCallback("OnClick", function()
-                if #whitelist == 1 then
-                  itemData.winner = whitelist[1]
-                  itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
-                  itemData.traded = UnitIsUnit(itemData.winner, "player")
-                  VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
-                  self:SendGroupMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
-                  self:Refresh()
-                else
-                  self:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
-                end
-              end)
-
-              self.scroll:AddChild(standingButton)
-            end
+            self.scroll:AddChild(standingButton)
           end
         end
       end
@@ -590,18 +578,16 @@ function lootTracker:ConfigureHome()
   importText:SetCallback("OnEnterPressed", function()
     local text = importText:GetText()
     importText:SetText("")
+    self.char.standings = {}
 
     local success = pcall(function()
       local items = json.decode(text)
-      VGT_MasterLootData.Standings = {}
-
       for _, item in ipairs(items) do
-        VGT_MasterLootData.Standings[item.Id] = item.Standings
+        self.char.standings[item.Id] = item.Standings
       end
     end)
     if not success then
       importStatus:SetText("|cffff0000Import failed.|r")
-      VGT_MasterLootData.Standings = nil
     else
       self:Refresh()
       importStatus:SetText("|cff00ff00Import Succeeded.|r")
@@ -649,7 +635,7 @@ function lootTracker:ConfigureHome()
 
   local pendingTrades = {}
 
-  for _, creatureData in ipairs(VGT_MasterLootData) do
+  for _, creatureData in ipairs(self.char.creatures) do
     for _, itemData in ipairs(creatureData.items) do
       if itemData.winner and not itemData.traded then
         pendingTrades[itemData.winner] = true
@@ -829,19 +815,26 @@ function lootTracker:GroupVersionCheck()
   end, 2, true)
 end
 
+function lootTracker:ForceClear()
+  self.char.expiration = nil
+  self.char.creatures = {}
+  self.char.preemptiveResponses = {}
+  self.char.standings = {}
+  self.tree:Select()
+end
+
 function lootTracker:ClearAll()
   VGT:Confirm(function()
-    VGT_MasterLootData = {}
-    self.tree:Select()
+    self:ForceClear()
     self:Refresh()
   end)
 end
 
 function lootTracker:Delete(creatureGuid)
   VGT:Confirm(function()
-    for i, creature in ipairs(VGT_MasterLootData) do
+    for i, creature in ipairs(self.char.creatures) do
       if creature.id == creatureGuid then
-        tremove(VGT_MasterLootData, i)
+        tremove(self.char.creatures, i)
         self.tree:Select()
         self:Refresh()
         return
@@ -912,15 +905,14 @@ function lootTracker:Refresh()
       icon = "Interface\\Buttons\\UI-HomeButton.blp"
     }}
 
-    if VGT_MasterLootData.expiration and GetTime() > VGT_MasterLootData.expiration then
-      VGT_MasterLootData = {}
-      self.tree:Select()
+    if self.char.expiration and GetTime() > self.char.expiration then
+      self:ForceClear()
     end
 
     if self.profile.groupByWinner then
       local characters = {}
       local unassigned = {}
-      for _, creatureData in ipairs(VGT_MasterLootData) do
+      for _, creatureData in ipairs(self.char.creatures) do
         for _, itemData in ipairs(creatureData.items) do
           itemData.creatureId = creatureData.id
           if itemData.winner then
@@ -953,7 +945,7 @@ function lootTracker:Refresh()
       buildItemNodes(unassignedNode, unassigned)
       tinsert(data, unassignedNode)
     else
-      for _, creatureData in ipairs(VGT_MasterLootData) do
+      for _, creatureData in ipairs(self.char.creatures) do
         local creatureNode = {
           value = "encounter+" .. creatureData.id,
           text = creatureData.name or VGT:UnitNameFromGuid(creatureData.id)
@@ -992,7 +984,7 @@ function lootTracker:TrackLoot()
   instanceId = tonumber(instanceId)
 
   if (instanceId and (self.trackedInstances[instanceId] or self.profile.trackAllInstances)) then
-    for _, v in ipairs(VGT_MasterLootData) do
+    for _, v in ipairs(self.char.creatures) do
       if v.id == guid then
         return
       end
@@ -1032,7 +1024,7 @@ function lootTracker:Track(itemId, creatureId)
   creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
   local creatureData, newCreature
 
-  for i, v in ipairs(VGT_MasterLootData) do
+  for i, v in ipairs(self.char.creatures) do
     if v.id == creatureId then
       creatureData = v
       break
@@ -1063,7 +1055,7 @@ function lootTracker:Track(itemId, creatureId)
   }
 
   if newCreature then
-    tinsert(VGT_MasterLootData, creatureData)
+    tinsert(self.char.creatures, creatureData)
   end
   tinsert(creatureData.items, itemData)
 
@@ -1077,7 +1069,7 @@ function lootTracker:Track(itemId, creatureId)
     end
   end
 
-  VGT_MasterLootData.expiration = (GetTime() + 21600)
+  self.char.expiration = (GetTime() + 21600)
 
   self:Refresh()
 
@@ -1476,7 +1468,7 @@ function lootTracker:TRADE_SHOW()
     local name = UnitName("npc")
     local targetSlot = 1
     VGT.LogTrace("Checking autotrades for %s", name)
-    for _, creatureData in ipairs(VGT_MasterLootData) do
+    for _, creatureData in ipairs(self.char.creatures) do
       for _, itemData in ipairs(creatureData.items) do
         if targetSlot > 6 then
           VGT.LogTrace("Reached autotrade limit")
