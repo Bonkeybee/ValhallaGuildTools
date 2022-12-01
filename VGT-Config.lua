@@ -101,6 +101,7 @@ function VGT:InitializeOptions()
         trackUncommon = false,
         groupByWinner = false,
         autoEndRoll = true,
+        countdownTimer = 5,
         x = 0,
         y = 0,
         width = 400,

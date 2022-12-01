@@ -1,4 +1,4 @@
-local lootTracker = VGT:NewModule("lootTracker")
+local lootTracker = VGT:NewModule("lootTracker", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
 lootTracker.currentTrades = {}
@@ -346,10 +346,19 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         end)
         self.scroll:AddChild(stopButton)
 
+        local countdownSlider = AceGUI:Create("Slider")
+        countdownSlider:SetLabel("Countdown Time")
+        countdownSlider:SetValue(self.profile.countdownTimer)
+        countdownSlider:SetSliderValues(5, 30, 5)
+        countdownSlider:SetCallback("OnValueChanged", function(s, e, value)
+          self.profile.countdownTimer = value
+        end)
+        self.scroll:AddChild(countdownSlider)
+
         local countdownButton = AceGUI:Create("Button")
-        countdownButton:SetText("5-Second Countdown")
+        countdownButton:SetText("Start Countdown")
         countdownButton:SetCallback("OnClick", function()
-          self:CountdownRoll()
+          self:CountdownRoll(self.profile.countdownTimer)
         end)
         self.scroll:AddChild(countdownButton)
 
@@ -1123,21 +1132,40 @@ function lootTracker:OpenRoll(creatureId, itemId, itemIndex)
   end
 end
 
-function lootTracker:CountdownRoll()
-  local t = 5
-  local function tick()
-    if not self.rollItem then
-      return -- stop if rolls were manually ended during the countdown
-    end
-    if t > 0 then
-      self:SendGroupMessage(t)
-      C_Timer.After(1, tick)
-    else
-      self:EndRoll()
-    end
-    t = t - 1
+function lootTracker:CountdownRoll(t)
+  if t <= 0 then
+    self:EndRoll()
+    return
   end
-  C_Timer.After(1, tick)
+  local creatureData, itemData = self:GetRollData()
+  if not creatureData or not itemData then
+    return
+  end
+
+  self.countdownRemaining = t
+  self.countdownTimer = self:ScheduleRepeatingTimer("CountdownTick", 1)
+  self:SendGroupMessage("Ending rolls on " .. itemData.link .. " in " .. t)
+end
+
+function lootTracker:CountdownTick()
+  if not self.rollItem then
+    self.countdownRemaining = nil
+    self:CancelTimer(self.countdownTimer)
+    self.countdownTimer = nil
+    return -- stop if rolls were manually ended during the countdown
+  end
+
+  local t = self.countdownRemaining - 1
+  self.countdownRemaining = t
+
+  if t <= 0 then
+    self.countdownRemaining = nil
+    self:CancelTimer(self.countdownTimer)
+    self.countdownTimer = nil
+    self:EndRoll()
+  elseif t <= 5 then
+    self:SendGroupMessage("Ending rolls in " .. t, true)
+  end
 end
 
 function lootTracker:EndRoll()
