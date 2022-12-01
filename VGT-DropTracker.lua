@@ -267,9 +267,11 @@ function dropTracker:UNASSIGN_ITEM(_, sender, id)
 end
 
 function dropTracker:ITEM_TRACKED(_, sender, id)
-  if self:Track(id) and self.profile.autoShow then
-    self:Show()
-  end
+  Item:CreateFromItemID(id):ContinueOnItemLoad(function()
+    if self:Track(id) and self.profile.autoShow then
+      self:Show()
+    end
+  end)
 end
 
 function dropTracker:OnEnable()

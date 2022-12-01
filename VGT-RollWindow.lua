@@ -7,36 +7,37 @@ function roller:Show(itemId, auto)
     VGT.LogWarning("Roll Window module is disabled.")
     return
   end
-  if auto then
-    if not VGT:Equippable(itemId) then
-      return
-    end
 
-    if not self.profile.showPasses then
-      local dropTracker = VGT:GetModule("dropTracker")
-      if dropTracker.enabledState then
-        dropTracker:ResetItems()
-        local item = dropTracker:GetForItem(itemId)
-        if item and item.passed then
-          return
+  local item = Item:CreateFromItemID(itemId)
+  item:ContinueOnItemLoad(function()
+    if auto then
+      if not VGT:Equippable(itemId) then
+        return
+      end
+
+      if not self.profile.showPasses then
+        local dropTracker = VGT:GetModule("dropTracker")
+        if dropTracker.enabledState then
+          dropTracker:ResetItems()
+          local existingItem = dropTracker:GetForItem(itemId)
+          if existingItem and existingItem.passed then
+            return
+          end
+        end
+      end
+
+      if self.profile.sound then
+        local sound = LSM:Fetch("sound", self.profile.sound, true)
+        if sound then
+          PlaySoundFile(sound, "Master")
         end
       end
     end
 
-    if self.profile.sound then
-      local sound = LSM:Fetch("sound", self.profile.sound, true)
-      if sound then
-        PlaySoundFile(sound, "Master")
-      end
+    if not self.rollWindow then
+      self:Build()
     end
-  end
 
-  if not self.rollWindow then
-    self:Build()
-  end
-
-  local item = Item:CreateFromItemID(itemId)
-  item:ContinueOnItemLoad(function()
     self.rollWindow.item = item
     self.rollWindow.Title:SetText(item:GetItemLink())
     self.rollWindow.Picture.Texture:SetTexture(item:GetItemIcon())

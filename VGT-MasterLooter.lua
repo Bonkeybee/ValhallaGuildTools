@@ -1044,17 +1044,17 @@ function lootTracker:Track(itemId, creatureId)
 
   self:IncrementStandings(itemId, creatureData.characters)
 
-  local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemId)
-
-  for _, character in ipairs(creatureData.characters) do
-    if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
-      preemptiveResponses[character.Name] = false
-    end
-  end
-
   self.char.expiration = (GetTime() + 21600)
 
-  self:Refresh()
+  Item:CreateFromItemID(itemId):ContinueOnItemLoad(function()
+    local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemId)
+    for _, character in ipairs(creatureData.characters) do
+      if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
+        preemptiveResponses[character.Name] = false
+      end
+    end
+    self:Refresh()
+  end)
 
   VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, creatureData.id)
 

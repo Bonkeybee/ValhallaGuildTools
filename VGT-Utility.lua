@@ -32,7 +32,7 @@ end
 VGT.overrideEquipTable = {}
 local classesPrefix = ITEM_CLASSES_ALLOWED:gsub("%%s", "(.*)")
 
-local function BuildRestrictions(itemId)
+function VGT:BuildRestrictions(itemId)
   VGTScanningTooltip:ClearLines()
   VGTScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
   for i = 1, VGTScanningTooltip:NumLines() do
@@ -57,10 +57,10 @@ local function BuildRestrictions(itemId)
   return true
 end
 
-local function GetClassRestrictions(itemId)
+function VGT:GetClassRestrictions(itemId)
   local overrideResult = VGT.overrideEquipTable[itemId]
   if not overrideResult then
-    overrideResult = BuildRestrictions(itemId)
+    overrideResult = self:BuildRestrictions(itemId)
     VGT.overrideEquipTable[itemId] = overrideResult
   end
   return overrideResult
@@ -383,7 +383,7 @@ function VGT:Equippable(item, playerClass)
   playerClass = playerClass or UnitClassBase("player")
   VGT.LogTrace("Equippable invoked. equipLocId = %s; classId = %s; subclassId = %s; playerClass = %s", equipLocId, classId, subclassId, playerClass)
 
-  local classRestrictions = GetClassRestrictions(itemId)
+  local classRestrictions = self:GetClassRestrictions(itemId)
   if classRestrictions == true then
     return GetNextLevel(self.equipTable, {classId, subclassId, equipLocId}, 1, playerClass)
   else
