@@ -1410,11 +1410,11 @@ function lootTracker:ClearTable(t)
   end
 end
 
-function lootTracker:HandleChatCommand(_, channel, text, playerName)
+function lootTracker:HandleChatCommand(channel, text, playerName)
   if self.rollItem then
     if (text == "pass" or text == "Pass" or text == "PASS") then
       VGT.LogTrace("Received pass message from %s", playerName)
-      self:RecordPassResponse(playerName)
+      self:RecordPassResponse(strsplit("-", playerName, 2))
     end
   end
 end
