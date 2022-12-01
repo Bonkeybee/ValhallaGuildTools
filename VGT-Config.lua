@@ -120,6 +120,7 @@ function VGT:InitializeOptions()
         enabled = true,
         wonSound = "An Awesome Choice",
         autoShow = true,
+        autoClose = true,
         showPassed = false,
         showInterested = false,
         showWon = false,
@@ -466,6 +467,13 @@ function VGT:InitializeOptions()
             name = "Auto Show on New Loot",
             type = "toggle",
             desc = "When enabled, the drop tracker will pop up whenever new loot is tracked.",
+            width = "full"
+          },
+          autoHide = {
+            order = 3,
+            name = "Auto Hide on All Responded",
+            type = "toggle",
+            desc = "When enabled, the drop tracker will hide when you have responded to all iems.",
             width = "full"
           }
         }

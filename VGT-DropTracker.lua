@@ -24,6 +24,15 @@ function dropTracker:GetForItem(itemId)
   end
 end
 
+function dropTracker:AllResponded()
+  for _, item in ipairs(self.char.items) do
+    if not item.won and not item.passed and not item.interested then
+      return false
+    end
+  end
+  return true
+end
+
 function dropTracker:Track(itemId)
   if not VGT:Equippable(itemId) then
     return
@@ -62,17 +71,27 @@ function dropTracker:SetWon(itemId, won)
 end
 
 function dropTracker:NotifyInterested(item)
+  local previouslyResponded = item.passed or item.interested
   item.passed = nil
   item.interested = true
   VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_INTERESTED, item.id)
-  self:Refresh()
+  if self.profile.autoClose and not previouslyResponded and self:AllResponded() then
+    self.frame:Hide()
+  else
+    self:Refresh()
+  end
 end
 
 function dropTracker:NotifyPassing(item)
+  local previouslyResponded = item.passed or item.interested
   item.passed = true
   item.interested = nil
   VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, item.id)
-  self:Refresh()
+  if self.profile.autoClose and not previouslyResponded and self:AllResponded() then
+    self.frame:Hide()
+  else
+    self:Refresh()
+  end
 end
 
 function dropTracker:Refresh()
