@@ -2,7 +2,7 @@ local roller = VGT:NewModule("roller")
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
-function roller:Show(itemId, auto)
+function roller:Show(itemId, auto, forceShow)
   if not self.enabledState then
     VGT.LogWarning("Roll Window module is disabled.")
     return
@@ -11,17 +11,19 @@ function roller:Show(itemId, auto)
   local item = Item:CreateFromItemID(itemId)
   item:ContinueOnItemLoad(function()
     if auto then
-      if not VGT:Equippable(itemId) then
-        return
-      end
+      if not forceShow then
+        if not VGT:Equippable(itemId) then
+          return
+        end
 
-      if not self.profile.showPasses then
-        local dropTracker = VGT:GetModule("dropTracker")
-        if dropTracker.enabledState then
-          dropTracker:ResetItems()
-          local existingItem = dropTracker:GetForItem(itemId)
-          if existingItem and existingItem.passed then
-            return
+        if not self.profile.showPasses then
+          local dropTracker = VGT:GetModule("dropTracker")
+          if dropTracker.enabledState then
+            dropTracker:ResetItems()
+            local existingItem = dropTracker:GetForItem(itemId)
+            if existingItem and existingItem.passed then
+              return
+            end
           end
         end
       end
@@ -181,10 +183,10 @@ function roller:RefreshConfig()
   end
 end
 
-function roller:START_ROLL(_, sender, id)
+function roller:START_ROLL(_, sender, id, forceShow)
   id = tonumber(id)
   if id then
-    self:Show(id, true)
+    self:Show(id, true, forceShow)
   end
 end
 

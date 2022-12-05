@@ -506,7 +506,9 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         self.scroll:AddChild(spacer)
       end
     else
+      local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
       local itemStandings = self.char.standings[itemData.id]
+
       if itemStandings then
         for _, s in ipairs(itemStandings) do
           local standing = s
@@ -526,7 +528,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           if #whitelist > 0 then
             local standingButton = AceGUI:Create("Button")
             standingButton:SetFullWidth(true)
-            local sText = "(" .. standing.Prio .. ") "
+            local sText = standing.Prio .. ": "
             local addComma = false
 
             for _, name in ipairs(whitelist) do
@@ -534,7 +536,14 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
                 sText = sText .. ", "
               end
               addComma = true
-              sText = sText .. name
+              local pr = preemptiveResponses[name]
+              if pr == true then
+                sText = sText .. "|cff00ff00" .. name .. "|r"
+              elseif pr == false then
+                sText = sText .. "|cffff0000" .. name .. "|r"
+              else
+                sText = sText .. name
+              end
             end
 
             standingButton:SetText(sText)
@@ -616,8 +625,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       destroyAssign:SetCallback("OnValueChanged", function(s, e, value)
         self:AssignItem(itemData, value, "destroy")
       end)
-
-      local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
 
       if next(preemptiveResponses) then
         local interested = {}
@@ -1189,22 +1196,14 @@ function lootTracker:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
 
     local text = "Roll on " .. itemData.link .. " for "
     local addComma = false
-    local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
     for _, name in ipairs(whitelist) do
-      if preemptiveResponses[name] == false then
-        local ended = self:RecordPassResponse(name)
-        if ended then
-          return
-        end
-      else
-        if addComma then
-          text = text .. ", "
-        end
-        addComma = true
-        text = text .. name
-        if UnitInRaid(name) then
-          VGT:SendPlayerAddonCommand(name, VGT.Commands.START_ROLL, itemData.id)
-        end
+      if addComma then
+        text = text .. ", "
+      end
+      addComma = true
+      text = text .. name
+      if UnitInRaid(name) then
+        VGT:SendPlayerAddonCommand(name, VGT.Commands.START_ROLL, itemData.id, true)
       end
     end
 
