@@ -363,7 +363,16 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   end)
   self.scroll:AddChild(label)
 
-  label = AceGUI:Create("InteractiveLabel")
+  if itemData.unbound then
+    label = AceGUI:Create("Label")
+    label:SetFullWidth(true)
+    label:SetFont(GameFontHighlight:GetFont(), 16)
+    label:SetColor(1, 1, 0)
+    label:SetText(ITEM_BIND_ON_EQUIP)
+    self.scroll:AddChild(label)
+  end
+
+  label = AceGUI:Create("Label")
   label:SetFullWidth(true)
   label:SetFont(GameFontHighlight:GetFont(), 16)
   label:SetText(self:BuildItemStatusText(itemData))
@@ -1171,6 +1180,8 @@ function lootTracker:Track(itemId, creatureId)
   self.char.expiration = (GetTime() + 21600)
 
   Item:CreateFromItemID(itemId):ContinueOnItemLoad(function()
+    local bindType = select(14, GetItemInfo(itemId))
+    itemData.unbound = bindType ~= LE_ITEM_BIND_ON_ACQUIRE and bindType ~= LE_ITEM_BIND_QUEST
     local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemId)
     for _, character in ipairs(creatureData.characters) do
       if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
