@@ -596,7 +596,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 
       local manualAssign = AceGUI:Create("Dropdown")
       manualAssign:SetLabel("Manual Assign")
-      manualAssign:SetFullWidth(true)
       local characters = {}
       for i, character in ipairs(creatureData.characters) do
         characters[character.Name] = VGT:ColorizeCharacterName(character)
@@ -622,7 +621,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         for char in pairs(self.char.disenchanters) do
           if characters[char] then
             local deButton = AceGUI:Create("Button")
-            deButton:SetText("Disenchant By " .. char)
+            deButton:SetText("Disenchant - " .. char)
             deButton:SetFullWidth(true)
             deButton:SetCallback("OnClick", function()
               self:AssignItem(itemData, char, "disenchant")
@@ -635,7 +634,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         local deAssign = AceGUI:Create("Dropdown")
         deAssign:SetLabel("Disenchant Assign")
         deAssign:SetList(characters)
-        deAssign:SetFullWidth(true)
         deAssign:SetCallback("OnValueChanged", function(s, e, value)
           self:AssignItem(itemData, value, "disenchant")
         end)
@@ -645,7 +643,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 
       local destroyAssign = AceGUI:Create("Dropdown")
       destroyAssign:SetLabel("Destroy Assign")
-      destroyAssign:SetFullWidth(true)
       self.scroll:AddChild(destroyAssign)
       destroyAssign:SetList(characters)
       destroyAssign:SetCallback("OnValueChanged", function(s, e, value)
