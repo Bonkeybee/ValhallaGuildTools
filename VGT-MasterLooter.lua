@@ -180,6 +180,61 @@ function lootTracker:FindExpiringItems()
   return items
 end
 
+function lootTracker:AssignItem(itemData, winner, mode, roll)
+  itemData.winner = winner
+  itemData.winningPrio = self:TakePrioFromStandings(itemData.id, winner)
+  itemData.traded = UnitIsUnit(winner, "player")
+  itemData.disenchanted = nil
+  itemData.destroyed = nil
+
+  local fmt
+  if mode == "standard" then
+    if roll then
+      if itemData.winningPrio ~= nil then
+        fmt = "%1$s won by %2$s (Rolled %3$s, %4$s Prio)"
+      else
+        fmt = "%1$s won by %2$s (Rolled %3$s)"
+      end
+    elseif itemData.winningPrio ~= nil then
+      fmt = "%1$s assigned to %2$s (%4$s Prio)"
+    else
+      fmt = "%1$s assigned to %2$s"
+    end
+  elseif mode == "manual" then
+    fmt = "%1$s assigned to %2$s"
+  elseif mode == "disenchant" then
+    fmt = "%1$s will be disenchanted by %2$s"
+    itemData.disenchanted = true
+  elseif mode == "destroy" then
+    fmt = "%1$s will be destroyed by %2$s"
+    itemData.destroyed = true
+  else
+    error("Unknown value for mode")
+  end
+
+  VGT:SendPlayerAddonCommand(winner, VGT.Commands.ASSIGN_ITEM, itemData.id, itemData.disenchanted or itemData.destroyed)
+  self:SendGroupMessage(VGT.Format(fmt, itemData.link, winner, roll, itemData.winningPrio))
+  self:Refresh()
+end
+
+function lootTracker:UnassignItem(itemData)
+  local oldWinner = itemData.winner
+  local oldPrio = itemData.winningPrio
+  itemData.winner = nil
+  itemData.traded = nil
+  itemData.winningPrio = nil
+  itemData.disenchanted = nil
+  itemData.destroyed = nil
+
+  if oldPrio then
+    self:AddPrioToStandings(itemData.id, oldWinner, oldPrio)
+  end
+
+  self:SendGroupMessage(itemData.link .. " unassigned from " .. oldWinner)
+  VGT:SendPlayerAddonCommand(oldWinner, VGT.Commands.UNASSIGN_ITEM, itemData.id)
+  self:Refresh()
+end
+
 function lootTracker:ConfigureEncounter(creatureGuid)
   local label = AceGUI:Create("InteractiveLabel")
   label:SetText("Unknown")
@@ -269,6 +324,21 @@ function lootTracker:ConfigureEncounter(creatureGuid)
   end
 end
 
+function lootTracker:BuildItemStatusText(itemData)
+  if not itemData.winner then
+    return "|cffff0000Unassigned|r"
+  end
+  local text
+  if itemData.disenchanted then
+    text = "|cff2196f3Disenchanted by "
+  elseif itemData.destroyed then
+    text = "|cff2196f3Destroyed by "
+  else
+    text = "|cff00ff00Assigned to "
+  end
+  return text .. itemData.winner .. "|r"
+end
+
 function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
 
@@ -296,7 +366,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   label = AceGUI:Create("InteractiveLabel")
   label:SetFullWidth(true)
   label:SetFont(GameFontHighlight:GetFont(), 16)
-  label:SetText(itemData.winner and ((itemData.disenchanted and "|cff2196f3Disenchanted by " or "|cff00ff00Assigned to ") .. itemData.winner .. "|r") or "|cffff0000Unassigned|r")
+  label:SetText(self:BuildItemStatusText(itemData))
   self.scroll:AddChild(label)
 
   local spacer = AceGUI:Create("InteractiveLabel")
@@ -309,20 +379,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
     unassignButton:SetText("Unassign Item")
     unassignButton:SetFullWidth(true)
     unassignButton:SetCallback("OnClick", function()
-      local oldWinner = itemData.winner
-      local oldPrio = itemData.winningPrio
-      itemData.winner = nil
-      itemData.traded = nil
-      itemData.winningPrio = nil
-      itemData.disenchanted = nil
-
-      if oldPrio then
-        self:AddPrioToStandings(itemData.id, oldWinner, oldPrio)
-      end
-
-      self:SendGroupMessage(itemData.link .. " unassigned from " .. oldWinner)
-      VGT:SendPlayerAddonCommand(oldWinner, VGT.Commands.UNASSIGN_ITEM, itemData.id)
-      self:Refresh()
+      self:UnassignItem(itemData)
     end)
     self.scroll:AddChild(unassignButton)
 
@@ -483,12 +540,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
             standingButton:SetText(sText)
             standingButton:SetCallback("OnClick", function()
               if #whitelist == 1 then
-                itemData.winner = whitelist[1]
-                itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
-                itemData.traded = UnitIsUnit(itemData.winner, "player")
-                VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
-                self:SendGroupMessage(itemData.link .. " assigned to " .. itemData.winner .. " (" .. itemData.winningPrio .. " Prio)")
-                self:Refresh()
+                self:AssignItem(itemData, whitelist[1], "standard")
               else
                 self:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
               end
@@ -509,7 +561,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 
       local manualAssign = AceGUI:Create("Dropdown")
       manualAssign:SetLabel("Manual Assign")
-      self.scroll:AddChild(manualAssign)
+      manualAssign:SetFullWidth(true)
       local characters = {}
       for i, character in ipairs(creatureData.characters) do
         characters[character.Name] = VGT:ColorizeCharacterName(character)
@@ -517,27 +569,53 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       table.sort(characters)
       manualAssign:SetList(characters)
       manualAssign:SetCallback("OnValueChanged", function(s, e, value)
-        itemData.winner = value
-        itemData.winningPrio = self:TakePrioFromStandings(itemData.id, value)
-        itemData.traded = UnitIsUnit(value, "player")
-        VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id)
-        self:SendGroupMessage(itemData.link .. " assigned to " .. value)
-        self:Refresh()
+        self:AssignItem(itemData, value, "manual")
       end)
 
-      local deAssign = AceGUI:Create("Dropdown")
-      deAssign:SetLabel("Disenchant Assign")
-      deAssign:SetList(characters)
-      deAssign:SetCallback("OnValueChanged", function(s, e, value)
-        itemData.winner = value
-        itemData.winningPrio = self:TakePrioFromStandings(itemData.id, value)
-        itemData.traded = UnitIsUnit(value, "player")
-        itemData.disenchanted = true
-        VGT:SendPlayerAddonCommand(value, VGT.Commands.ASSIGN_ITEM, itemData.id, true)
-        self:SendGroupMessage(itemData.link .. " will be disenchanted by " .. value)
-        self:Refresh()
+      local hasAssignedDisenchanters
+
+      if self.char.disenchanters then
+        for char in pairs(self.char.disenchanters) do
+          if characters[char] then
+            hasAssignedDisenchanters = true
+            break
+          end
+        end
+      end
+
+      if hasAssignedDisenchanters then
+        for char in pairs(self.char.disenchanters) do
+          if characters[char] then
+            local deButton = AceGUI:Create("Button")
+            deButton:SetText("Disenchant By " .. char)
+            deButton:SetFullWidth(true)
+            deButton:SetCallback("OnClick", function()
+              self:AssignItem(itemData, char, "disenchant")
+            end)
+            self.scroll:AddChild(deButton)
+          end
+        end
+        self.scroll:AddChild(manualAssign)
+      else
+        local deAssign = AceGUI:Create("Dropdown")
+        deAssign:SetLabel("Disenchant Assign")
+        deAssign:SetList(characters)
+        deAssign:SetFullWidth(true)
+        deAssign:SetCallback("OnValueChanged", function(s, e, value)
+          self:AssignItem(itemData, value, "disenchant")
+        end)
+        self.scroll:AddChild(manualAssign)
+        self.scroll:AddChild(deAssign)
+      end
+
+      local destroyAssign = AceGUI:Create("Dropdown")
+      destroyAssign:SetLabel("Destroy Assign")
+      destroyAssign:SetFullWidth(true)
+      self.scroll:AddChild(destroyAssign)
+      destroyAssign:SetList(characters)
+      destroyAssign:SetCallback("OnValueChanged", function(s, e, value)
+        self:AssignItem(itemData, value, "destroy")
       end)
-      self.scroll:AddChild(deAssign)
 
       local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
 
@@ -625,6 +703,35 @@ function lootTracker:ConfigureHome()
     self:GroupVersionCheck()
   end)
   self.scroll:AddChild(vCheckButton)
+
+  local disenchantSelect = AceGUI:Create("Dropdown")
+  disenchantSelect:SetLabel("Raid Disenchanters")
+  disenchantSelect:SetMultiselect(true)
+  local characters = {}
+  for i, character in ipairs(VGT:GetCharacters()) do
+    characters[character.Name] = VGT:ColorizeCharacterName(character)
+  end
+  if self.char.disenchanters then
+    for char in pairs(self.char.disenchanters) do
+      if not characters[char] then
+        characters[char] = "|cffff0000" .. char .. "|r"
+      end
+    end
+    table.sort(characters)
+    disenchantSelect:SetList(characters)
+    for char in pairs(self.char.disenchanters) do
+      disenchantSelect:SetItemValue(char, true)
+    end
+  else
+    table.sort(characters)
+    disenchantSelect:SetList(characters)
+  end
+  disenchantSelect:SetCallback("OnValueChanged", function(s, e, value, checked)
+    self.char.disenchanters = self.char.disenchanters or {}
+    self.char.disenchanters[value] = checked and true or nil
+  end)
+  self.scroll:AddChild(disenchantSelect)
+
 
   local treeToggle = AceGUI:Create("CheckBox")
   treeToggle:SetLabel("Group By Winner")
@@ -812,6 +919,7 @@ function lootTracker:ForceClear()
   self.char.creatures = {}
   self.char.preemptiveResponses = {}
   self.char.standings = {}
+  self.char.disenchanters = {}
   self.tree:Select()
 end
 
@@ -873,7 +981,7 @@ function lootTracker:Refresh()
           if not item.traded then
             allTraded = false
           end
-          itemNode.text = (item.disenchanted and "|cff2196f3" or "|cff00ff00") .. item.name .. "|r"
+          itemNode.text = ((item.disenchanted or item.destroyed) and "|cff2196f3" or "|cff00ff00") .. item.name .. "|r"
         else
           allAssigned = false
           allTraded = false
@@ -1202,18 +1310,7 @@ function lootTracker:EndRoll()
     end
 
     if #winners == 1 then
-      itemData.winner = winners[1]
-      itemData.winningPrio = self:TakePrioFromStandings(itemData.id, itemData.winner)
-      itemData.traded = UnitIsUnit(itemData.winner, "player")
-      VGT:SendPlayerAddonCommand(itemData.winner, VGT.Commands.ASSIGN_ITEM, itemData.id)
-      local msg = itemData.link .. " won by " .. itemData.winner .. " (" .. topRoll
-      if itemData.winningPrio then
-        msg = msg .. " rolled, " .. itemData.winningPrio .. " prio)"
-      else
-        msg = msg .. " rolled)"
-      end
-
-      self:SendGroupMessage(msg)
+      self:AssignItem(itemData, winners[1], "standard", topRoll)
     else
       self.responses = {}
       self.rollWhitelist = winners
