@@ -16,7 +16,17 @@ function dropTracker:ClearAll()
   end)
 end
 
-function dropTracker:GetForItem(itemId)
+function dropTracker:GetAllForItem(itemId)
+  local results = {}
+  for _, item in ipairs(self.char.items) do
+    if item.id == itemId then
+      tinsert(results, item)
+    end
+  end
+  return results
+end
+
+function dropTracker:GetForItem(itemId, itemIndex, creatureId)
   for _, item in ipairs(self.char.items) do
     if item.id == itemId then
       return item
@@ -26,33 +36,47 @@ end
 
 function dropTracker:AllResponded()
   for _, item in ipairs(self.char.items) do
-    if not item.won and not item.passed and not item.interested then
+    if item.winCount == 0 and not item.passed and not item.interested then
       return false
     end
   end
   return true
 end
 
-function dropTracker:Track(itemId)
-  if not VGT:Equippable(itemId) then
-    return
-  end
-  self:ResetItems()
-  self.char.expiration = self.char.expiration or (GetTime() + 21600)
-  local trackedItem = self:GetForItem(itemId)
-  if not trackedItem then
-    trackedItem = {
-      id = itemId
-    }
-    tinsert(self.char.items, trackedItem)
+function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
+  local uniqueId = itemIndex .. creatureId
+  local existingItem = self:GetForItem(itemId)
+  if existingItem then
+    for _, id in ipairs(existingItem.uniqueIds) do
+      if id == uniqueId then
+        return
+      end
+    end
+    tinsert(existingItem.uniqueIds, uniqueId)
+    self:Refresh()
+  else
     local item = Item:CreateFromItemID(itemId)
     item:ContinueOnItemLoad(function()
-      trackedItem.name = item:GetItemName()
-      trackedItem.link = item:GetItemLink()
-      trackedItem.icon = item:GetItemIcon()
-      self:Refresh()
+      if not VGT:Equippable(itemId) then
+        return
+      end
+      self:ResetItems()
+      self.char.expiration = self.char.expiration or (GetTime() + 21600)
+      tinsert(self.char.items, {
+        id = itemId,
+        winCount = 0,
+        hasStanding = hasStanding,
+        name = item:GetItemName(),
+        link = item:GetItemLink(),
+        icon = item:GetItemIcon(),
+        uniqueIds = {uniqueId}
+      })
+      if self.profile.autoShow then
+        self:Show()
+      else
+        self:Refresh()
+      end
     end)
-    return true
   end
 end
 
@@ -65,7 +89,7 @@ function dropTracker:SetWon(itemId, won)
   end
   local item = self:GetForItem(itemId)
   if item then
-    item.won = won
+    item.winCount = item.winCount + (won and 1 or -1)
     self:Refresh()
   end
 end
@@ -112,8 +136,14 @@ function dropTracker:Refresh()
 
   for _, i in ipairs(self.char.items) do
     local item = i
+    if not item.winCount then
+      item.winCount = item.won and 1 or 0
+    end
+    if not item.uniqueIds then
+      item.uniqueIds = {""}
+    end
     local shouldShow = true
-    if item.won then
+    if item.winCount > 0 then
       shouldShow = self.profile.showWon
     elseif item.interested then
       shouldShow = self.profile.showInterested
@@ -128,8 +158,16 @@ function dropTracker:Refresh()
 
       local text = item.link
 
-      if item.won then
-        text = text .. " - |cff00ff00Won|r"
+      if item.hasStanding then
+        text = text .. " (On Your List)"
+      end
+
+      if item.winCount > 0 then
+        if #item.uniqueIds == 1 then
+          text = text .. " - |cff00ff00Won|r"
+        else
+          text = text .. " - |cff00ff00Won " .. item.winCount .. " of " .. #item.uniqueIds .. "|r"
+        end
       elseif item.passed then
         text = text .. " - |cffffff00Passing|r"
       elseif item.interested then
@@ -153,7 +191,7 @@ function dropTracker:Refresh()
       end)
       group:AddChild(label)
 
-      if not item.won then
+      if item.winCount < #item.uniqueIds then
         local interestedButton = AceGUI:Create("Button")
         interestedButton:SetText("Interested")
         interestedButton:SetHeight(24)
@@ -285,12 +323,15 @@ function dropTracker:UNASSIGN_ITEM(_, sender, id)
   self:SetWon(id, false)
 end
 
-function dropTracker:ITEM_TRACKED(_, sender, id)
-  Item:CreateFromItemID(id):ContinueOnItemLoad(function()
-    if self:Track(id) and self.profile.autoShow then
-      self:Show()
+function dropTracker:ITEM_TRACKED(_, sender, id, index, creature, charactersWithStandings)
+  local hasStanding
+  for _, name in ipairs(charactersWithStandings) do
+    if UnitIsUnit(name, "player") then
+      hasStanding = true
+      break
     end
-  end)
+  end
+  self:Track(id, index, creature, hasStanding)
 end
 
 function dropTracker:OnEnable()

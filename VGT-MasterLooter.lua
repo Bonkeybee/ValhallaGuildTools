@@ -139,6 +139,23 @@ function lootTracker:IncrementStandings(itemId, characters)
   end
 end
 
+function lootTracker:GetCharactersWithStandings(itemId)
+  local names = {}
+  local itemStandings = self.char.standings[itemId]
+  if itemStandings then
+    for _, standing in ipairs(itemStandings) do
+      for _, name in ipairs(standing.Names) do
+        names[name] = true
+      end
+    end
+  end
+  local namesArr = {}
+  for name in pairs(names) do
+    tinsert(namesArr, name)
+  end
+  return namesArr
+end
+
 function lootTracker:FindExpiringItems()
   local items = {}
   for bag = 0, 4 do
@@ -1191,7 +1208,7 @@ function lootTracker:Track(itemId, creatureId)
     self:Refresh()
   end)
 
-  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, creatureData.id)
+  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id, self:GetCharactersWithStandings(itemData.id))
 
   return creatureData, itemData
 end

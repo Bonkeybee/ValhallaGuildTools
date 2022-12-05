@@ -79,7 +79,7 @@ VGTScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
 
 local function serializeArg(arg)
   local t = type(arg)
-  if t == "nil" or t == "string" or t == "number" or t == "boolean" then
+  if t == "nil" or t == "string" or t == "number" or t == "boolean" or t == "table" then
     return json.encode(arg)
   else
     error("Unsupported argument type " .. t)
