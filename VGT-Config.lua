@@ -210,6 +210,20 @@ function VGT:InitializeOptions()
         type = "group",
         order = 1,
         args = {
+          about = {
+            name = "Valhalla Guild Tools",
+            type = "description",
+            order = 0,
+            fontSize = "large",
+            width = "full"
+          },
+          version = {
+            name = "Version " .. VGT.version,
+            type = "description",
+            order = 0,
+            fontSize = "medium",
+            width = "full"
+          },
           minimap = {
             name = "Show Minimap Button",
             type = "toggle",
