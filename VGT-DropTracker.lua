@@ -3,7 +3,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
 function dropTracker:ResetItems(force)
-  if force or (self.char.expiration and GetTime() > self.char.expiration) then
+  if force or not self.char.expiration or GetTime() > self.char.expiration then
     self.char.expiration = nil
     self.char.items = {}
   end
@@ -16,17 +16,7 @@ function dropTracker:ClearAll()
   end)
 end
 
-function dropTracker:GetAllForItem(itemId)
-  local results = {}
-  for _, item in ipairs(self.char.items) do
-    if item.id == itemId then
-      tinsert(results, item)
-    end
-  end
-  return results
-end
-
-function dropTracker:GetForItem(itemId, itemIndex, creatureId)
+function dropTracker:GetForItem(itemId)
   for _, item in ipairs(self.char.items) do
     if item.id == itemId then
       return item
@@ -44,6 +34,8 @@ function dropTracker:AllResponded()
 end
 
 function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
+  self:ResetItems()
+  self.char.expiration = self.char.expiration or (GetTime() + 21600)
   local uniqueId = itemIndex .. creatureId
   local existingItem = self:GetForItem(itemId)
   if existingItem then
@@ -60,8 +52,6 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
       if not VGT:Equippable(itemId) then
         return
       end
-      self:ResetItems()
-      self.char.expiration = self.char.expiration or (GetTime() + 21600)
       tinsert(self.char.items, {
         id = itemId,
         winCount = 0,
@@ -331,6 +321,7 @@ function dropTracker:ITEM_TRACKED(_, sender, id, index, creature, charactersWith
       break
     end
   end
+  VGT.LogTrace("Track message received from %s for %s", sender, id)
   self:Track(id, index, creature, hasStanding)
 end
 

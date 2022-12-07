@@ -1193,6 +1193,8 @@ function lootTracker:Track(itemId, creatureId)
 
   self.char.expiration = (GetTime() + 21600)
 
+  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id, self:GetCharactersWithStandings(itemData.id))
+
   Item:CreateFromItemID(itemId):ContinueOnItemLoad(function()
     local bindType = select(14, GetItemInfo(itemId))
     itemData.unbound = bindType ~= LE_ITEM_BIND_ON_ACQUIRE and bindType ~= LE_ITEM_BIND_QUEST
@@ -1204,8 +1206,6 @@ function lootTracker:Track(itemId, creatureId)
     end
     self:Refresh()
   end)
-
-  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id, self:GetCharactersWithStandings(itemData.id))
 
   return creatureData, itemData
 end
