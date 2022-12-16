@@ -1035,7 +1035,7 @@ function lootTracker:Refresh()
       icon = "Interface\\Buttons\\UI-HomeButton.blp"
     }}
 
-    if self.char.expiration and GetTime() > self.char.expiration then
+    if self.char.expiration and time() > self.char.expiration then
       self:ForceClear()
     end
 
@@ -1191,7 +1191,7 @@ function lootTracker:Track(itemId, creatureId)
 
   self:IncrementStandings(itemId, creatureData.characters)
 
-  self.char.expiration = (GetTime() + 21600)
+  self.char.expiration = (time() + 21600)
 
   VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id, self:GetCharactersWithStandings(itemData.id))
 

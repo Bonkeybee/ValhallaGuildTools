@@ -3,7 +3,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
 function dropTracker:ResetItems(force)
-  if force or not self.char.expiration or GetTime() > self.char.expiration then
+  if force or not self.char.expiration or time() > self.char.expiration then
     self.char.expiration = nil
     self.char.items = {}
   end
@@ -35,7 +35,7 @@ end
 
 function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
   self:ResetItems()
-  self.char.expiration = self.char.expiration or (GetTime() + 21600)
+  self.char.expiration = self.char.expiration or (time() + 21600)
   local uniqueId = itemIndex .. creatureId
   local existingItem = self:GetForItem(itemId)
   if existingItem then
