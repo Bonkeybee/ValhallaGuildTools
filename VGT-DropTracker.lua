@@ -119,7 +119,7 @@ function dropTracker:Refresh()
     local label = AceGUI:Create("Label")
     label:SetText("No items have dropped yet.")
     label:SetFullWidth(true)
-    label:SetFont(GameFontHighlight:GetFont(), 16)
+    label:SetFont(GameFontHighlight:GetFont(), 16, "")
     self.scroll:AddChild(label)
     return
   end
@@ -165,7 +165,7 @@ function dropTracker:Refresh()
       end
 
       local label = AceGUI:Create("InteractiveLabel")
-      label:SetFont(GameFontHighlight:GetFont(), 16)
+      label:SetFont(GameFontHighlight:GetFont(), 16, "")
       label:SetImage(item.icon)
       label:SetImageSize(24, 24)
       label:SetHeight(24)

@@ -159,10 +159,10 @@ end
 function lootTracker:FindExpiringItems()
   local items = {}
   for bag = 0, 4 do
-    for slot = 1, GetContainerNumSlots(bag) do
-      local containerItemId = GetContainerItemID(bag, slot)
+    for slot = 1, C_Container.GetContainerNumSlots(bag) do
+      local containerItemId = C_Container.GetContainerItemID(bag, slot)
       if containerItemId then
-        local icon, _, _, _, _, _, itemLink = GetContainerItemInfo(bag, slot)
+        local icon, _, _, _, _, _, itemLink = C_Container.GetContainerItemInfo(bag, slot)
         VGTScanningTooltip:ClearLines()
         VGTScanningTooltip:SetBagItem(bag, slot)
         local isSoulbound = false
@@ -256,7 +256,7 @@ function lootTracker:ConfigureEncounter(creatureGuid)
   local label = AceGUI:Create("InteractiveLabel")
   label:SetText("Unknown")
   label:SetFullWidth(true)
-  label:SetFont(GameFontHighlight:GetFont(), 16)
+  label:SetFont(GameFontHighlight:GetFont(), 16, "")
   self.scroll:AddChild(label)
 
   local spacer = AceGUI:Create("InteractiveLabel")
@@ -369,7 +369,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   label:SetImageSize(24, 24)
   label:SetText(itemData.link)
   label:SetFullWidth(true)
-  label:SetFont(GameFontHighlight:GetFont(), 16)
+  label:SetFont(GameFontHighlight:GetFont(), 16, "")
   label:SetCallback("OnEnter", function()
     GameTooltip:SetOwner(label.frame, "ANCHOR_CURSOR_RIGHT")
     GameTooltip:SetHyperlink("item:" .. itemId)
@@ -383,7 +383,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   if itemData.unbound then
     label = AceGUI:Create("Label")
     label:SetFullWidth(true)
-    label:SetFont(GameFontHighlight:GetFont(), 16)
+    label:SetFont(GameFontHighlight:GetFont(), 16, "")
     label:SetColor(1, 1, 0)
     label:SetText(ITEM_BIND_ON_EQUIP)
     self.scroll:AddChild(label)
@@ -391,7 +391,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 
   label = AceGUI:Create("Label")
   label:SetFullWidth(true)
-  label:SetFont(GameFontHighlight:GetFont(), 16)
+  label:SetFont(GameFontHighlight:GetFont(), 16, "")
   label:SetText(self:BuildItemStatusText(itemData))
   self.scroll:AddChild(label)
 
@@ -522,7 +522,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       else
         local label = AceGUI:Create("Label")
         label:SetFullWidth(true)
-        label:SetFont(GameFontHighlight:GetFont(), 16)
+        label:SetFont(GameFontHighlight:GetFont(), 16, "")
         label:SetText("|cffff0000Currently rolling on " .. rollItem.name .. "|r")
         self.scroll:AddChild(label)
 
@@ -824,7 +824,7 @@ function lootTracker:ConfigureCharacter(characterName)
   local label = AceGUI:Create("InteractiveLabel")
   label:SetText(characterName or "Unassigned")
   label:SetFullWidth(true)
-  label:SetFont(GameFontHighlight:GetFont(), 16)
+  label:SetFont(GameFontHighlight:GetFont(), 16, "")
   self.scroll:AddChild(label)
 end
 
@@ -1527,9 +1527,9 @@ end
 
 function lootTracker:FindEligibleItemLoc(itemId)
   for bag = 0, 4 do
-    for slot = 1, GetContainerNumSlots(bag) do
+    for slot = 1, C_Container.GetContainerNumSlots(bag) do
       if not self:BagSlotActive(bag, slot) then
-        local containerItemId = GetContainerItemID(bag, slot)
+        local containerItemId = C_Container.GetContainerItemID(bag, slot)
         if containerItemId == itemId then
           VGTScanningTooltip:ClearLines()
           VGTScanningTooltip:SetBagItem(bag, slot)
@@ -1614,7 +1614,7 @@ function lootTracker:TRADE_SHOW()
             C_Timer.After(thisSlot / 10, function()
               VGT.LogTrace("Assigning %s (bag %s, slot %s) to trade slot %s", itemData.link, bagId, slotId, targetSlot)
               ClearCursor()
-              PickupContainerItem(bagId, slotId)
+              C_Container.PickupContainerItem(bagId, slotId)
               ClickTradeButton(thisSlot)
               self.currentTrades[thisSlot] = itemData
               self.activeSlots[thisSlot] = bagId .. "," .. slotId

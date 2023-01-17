@@ -78,7 +78,7 @@ function roller:Build()
   -- title:SetPoint("BOTTOMRIGHT", self.rollWindow, "BOTTOMRIGHT")
   title:SetTextColor(1, 1, 1, 1)
   title:SetText(" ")
-  title:SetFont(GameFontHighlight:GetFont(), 16)
+  title:SetFont(GameFontHighlight:GetFont(), 16, "")
   title:Show()
   self.rollWindow.Title = title
 
