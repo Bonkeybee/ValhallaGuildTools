@@ -445,7 +445,7 @@ function VGT:ShowInputDialog(title, text, callback)
       local editBox = _G[self:GetName() .. "WideEditBox"] or _G[self:GetName() .. "EditBox"]
       editBox:SetText(dlg.inputText or "")
       editBox:SetFocus()
-      editBox:HighlightText(false)
+      editBox:HighlightText(0, -1)
 
       if not dlg.callback then
         local button = _G[self:GetName() .. "Button2"]
