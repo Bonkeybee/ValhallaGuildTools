@@ -1346,6 +1346,7 @@ function lootTracker:EndRoll()
           msg = msg .. ", "
         end
         msg = msg .. v
+        VGT:SendPlayerAddonCommand(v, VGT.Commands.START_ROLL, itemData.id, true)
       end
 
       self:SendGroupMessage(msg)
