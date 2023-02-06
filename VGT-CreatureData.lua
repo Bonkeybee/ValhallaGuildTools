@@ -159,48 +159,65 @@ addCreature(193967, "Alexstrasza's Gift")
 addCreature(193905, "Alexstrasza's Gift")
 
 -- Ulduar
--- Chests
+--- Chests
+---- Flame Leviathan
+addCreature(279649, "Cache of the Leviathan")
+addCreature(297844, "Cache of the Leviathan")
+---- XT-002
+addCreature(279651, "Cache of Toys")
+addCreature(281367, "Cache of Toys")
+addCreature(297899, "Cache of Toys")
+---- Iron Council
+addCreature(297851, "Iron Cache")
+addCreature(297852, "Iron Cache")
+addCreature(297850, "Iron Cache")
+---- Kologarn
 addCreature(195046, "Cache of Living Stone")
 addCreature(195047, "Cache of Living Stone")
-addCreature(194200, "Rare Cache of Winter")
-addCreature(194201, "Rare Cache of Winter")
+---- Hodir
 addCreature(194307, "Cache of Winter")
 addCreature(194308, "Cache of Winter")
+addCreature(194200, "Rare Cache of Winter")
+addCreature(194201, "Rare Cache of Winter")
+---- Thorim
 addCreature(194312, "Cache of Storms")
+addCreature(194313, "Cache of Storms")
+addCreature(194314, "Cache of Storms")
 addCreature(194315, "Cache of Storms")
-addCreature(194789, "Cache of Innovation")
-addCreature(194821, "Gift of the Observer")
-addCreature(194822, "Gift of the Observer")
+addCreature(279656, "Cache of Heroic Storms")
+---- Mimiron
 addCreature(194956, "Cache of Innovation")
 addCreature(194957, "Cache of Innovation")
 addCreature(194958, "Cache of Innovation")
+addCreature(194789, "Cache of Innovation")
 addCreature(281370, "Cache of Innovation")
-addCreature(195046, "Cache of Living Stone")
-addCreature(195047, "Cache of Living Stone")
+addCreature(279655, "Cache of Heroic Innovation")
+---- Freya
 addCreature(194324, "Freya's Gift")
+addCreature(194325, "Freya's Gift")
+addCreature(194326, "Freya's Gift")
+addCreature(194327, "Freya's Gift")
 addCreature(194328, "Freya's Gift")
+addCreature(194329, "Freya's Gift")
+addCreature(194330, "Freya's Gift")
+addCreature(194331, "Freya's Gift")
+addCreature(279654, "Freya's Heroic Gift")
+---- Vezax
+addCreature(279657, "General's Cache")
+addCreature(297860, "General's Cache")
+---- Yogg-Saron
 addCreature(297873, "Titan's Cache")
 addCreature(297871, "Titan's Cache")
-addCreature(279655, "Cache of Heroic Innovation")
-addCreature(279656, "Cache of Heroic Storms")
-addCreature(281367, "Cache of Toys")
-addCreature(279657, "General's Cache")
-addCreature(279654, "Freya's Heroic Gift")
 addCreature(297876, "Titan's Cache")
 addCreature(297869, "Titan's Cache")
 addCreature(297874, "Titan's Cache")
 addCreature(297870, "Titan's Cache")
-addCreature(297844, "Cache of the Leviathan")
-addCreature(297899, "Cache of Toys")
-addCreature(297851, "Iron Cache")
-addCreature(297852, "Iron Cache")
-addCreature(279649, "Cache of the Leviathan")
-addCreature(279651, "Cache of Toys")
-addCreature(297860, "General's Cache")
-addCreature(297850, "Iron Cache")
 addCreature(297877, "Titan's Cache")
 addCreature(297872, "Titan's Cache")
--- Creatures
+---- Algalon
+addCreature(194821, "Gift of the Observer")
+addCreature(194822, "Gift of the Observer")
+--- Creatures
 addCreature(32845, "Hodir")
 addCreature(32857, "Stormcaller Brundir")
 addCreature(32865, "Thorim")
