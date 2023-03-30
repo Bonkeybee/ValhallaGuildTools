@@ -283,9 +283,17 @@ function lootTracker:ConfigureEncounter(creatureGuid)
         [44569] = true, -- Key to the Focusing Iris
         [44577] = true -- Heroic Key to the Focusing Iris
       }
+      local forcedItems = {
+        [46052] = true, -- Reply-Code Alpha
+        [46053] = true -- Heroic Reply-Code Alpha
+      }
 
       for _, itemData in ipairs(creatureData.items) do
-        if (not itemData.class or itemData.quality == 4) and (not itemData.class or allowedClasses[itemData.class]) and not ignoredItems[itemData.id] then
+        if forcedItems[itemData.id] or
+          ((not itemData.class or itemData.quality == 4) and
+           (not itemData.class or allowedClasses[itemData.class]) and
+           not ignoredItems[itemData.id])
+        then
           tinsert(items, itemData.id)
         end
       end
