@@ -392,7 +392,7 @@ function VGT:Equippable(item, playerClass)
   end
 end
 
-function VGT:Confirm(func)
+function VGT:Confirm(func, text)
   local dialogId = "VLL_CONFIRM_DIALOG"
   local dlg = StaticPopupDialogs[dialogId]
   if not dlg then
@@ -405,6 +405,7 @@ function VGT:Confirm(func)
     StaticPopupDialogs[dialogId] = dlg
   end
   dlg.OnAccept = func
+  dlg.text = text or CONFIRM_CONTINUE
   StaticPopup_Show(dialogId)
 end
 

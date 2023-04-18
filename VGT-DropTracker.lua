@@ -2,6 +2,11 @@ local dropTracker = VGT:NewModule("dropTracker")
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
+function dropTracker:AutoPassing(itemId)
+  local ap = self.char.autoPasses[itemId]
+  return ap and ap.passed or false
+end
+
 function dropTracker:ResetItems(force)
   if force or not self.char.expiration or time() > self.char.expiration then
     self.char.expiration = nil
@@ -41,6 +46,9 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
   if existingItem then
     for _, id in ipairs(existingItem.uniqueIds) do
       if id == uniqueId then
+        if self:AutoPassing(itemId) then
+          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId)
+        end
         return
       end
     end
@@ -52,6 +60,7 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
       if not VGT:Equippable(itemId) then
         return
       end
+      local autoPassing = self:AutoPassing(itemId)
       tinsert(self.char.items, {
         id = itemId,
         winCount = 0,
@@ -59,12 +68,16 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
         name = item:GetItemName(),
         link = item:GetItemLink(),
         icon = item:GetItemIcon(),
-        uniqueIds = {uniqueId}
+        uniqueIds = {uniqueId},
+        passed = autoPassing
       })
-      if self.profile.autoShow then
+      if self.profile.autoShow and not autoPassing then
         self:Show()
       else
         self:Refresh()
+        if autoPassing then
+          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId)
+        end
       end
     end)
   end
@@ -194,11 +207,26 @@ function dropTracker:Refresh()
         local passButton = AceGUI:Create("Button")
         passButton:SetText("Pass")
         passButton:SetHeight(24)
-        passButton:SetWidth(100)
+        passButton:SetWidth(120)
         passButton:SetCallback("OnClick", function()
           self:NotifyPassing(item)
         end)
         group:AddChild(passButton)
+
+        local autoPassButton = AceGUI:Create("Button")
+        autoPassButton:SetText("Always Pass")
+        autoPassButton:SetHeight(24)
+        autoPassButton:SetWidth(100)
+        autoPassButton:SetCallback("OnClick", function()
+          VGT:Confirm(
+            function()
+              self:NotifyPassing(item)
+              self.char.autoPasses[item.id] = {passed = true, name = item.name, link = item.link}
+            end,
+            "Are you sure you want to auto-pass " .. item.link .. "? You will not be prompted to roll on this item again!"
+          )
+        end)
+        group:AddChild(autoPassButton)
       end
     end
   end

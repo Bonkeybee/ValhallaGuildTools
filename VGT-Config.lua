@@ -64,7 +64,8 @@ function VGT:InitializeOptions()
         disenchantTarget = ""
       },
       dropTracker = {
-        items = {}
+        items = {},
+        autoPasses = {}
       },
       lootTracker = {
         creatures = {},
@@ -488,6 +489,32 @@ function VGT:InitializeOptions()
             name = "Auto Hide on All Responded",
             type = "toggle",
             desc = "When enabled, the drop tracker will hide when you have responded to all iems.",
+            width = "full"
+          },
+          autoPassSingle = {
+            order = 4,
+            name = "Clear Auto-Pass for Item",
+            type = "select",
+            values = function ()
+              local items = {}
+              for itemId, ap in pairs(VGT.db.char.dropTracker.autoPasses) do
+                items[itemId] = ap.name
+              end
+              return items
+            end,
+            get = function() end,
+            set = function(_, id)
+              VGT.db.char.dropTracker.autoPasses[id] = nil
+            end,
+            width = "full"
+          },
+          autoPassAll = {
+            order = 5,
+            name = "Clear All Auto-Passes for Character",
+            type = "execute",
+            func = function ()
+              VGT.db.char.dropTracker.autoPasses = {}
+            end,
             width = "full"
           }
         }
