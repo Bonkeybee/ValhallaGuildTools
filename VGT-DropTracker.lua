@@ -216,7 +216,7 @@ function dropTracker:Refresh()
         local autoPassButton = AceGUI:Create("Button")
         autoPassButton:SetText("Always Pass")
         autoPassButton:SetHeight(24)
-        autoPassButton:SetWidth(100)
+        autoPassButton:SetWidth(120)
         autoPassButton:SetCallback("OnClick", function()
           VGT:Confirm(
             function()
