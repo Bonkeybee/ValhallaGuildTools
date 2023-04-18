@@ -494,6 +494,7 @@ function VGT:InitializeOptions()
           autoPassSingle = {
             order = 4,
             name = "Clear Auto-Pass for Item",
+            desc = "Picking an item in this list will clear your auto-pass preferences for it and allow you to see it for rolling on again",
             type = "select",
             values = function ()
               local items = {}
@@ -511,9 +512,10 @@ function VGT:InitializeOptions()
           autoPassAll = {
             order = 5,
             name = "Clear All Auto-Passes for Character",
+            desc = "Click to clear all auto-pass preferences for all items, allowing you to see them again for rolling on.",
             type = "execute",
             func = function ()
-              VGT.db.char.dropTracker.autoPasses = {}
+              VGT:Confirm(function() VGT.db.char.dropTracker.autoPasses = {} end, "Are you sure you want to clear all auto-pass preferences? All items you can equip will show up in the tracker again.")
             end,
             width = "full"
           }
