@@ -112,7 +112,7 @@ function VGT:OnInitialize()
   self:InitializeMinimapButton()
 
   if IsInGuild() then
-    GuildRoster()
+    C_GuildInfo.GuildRoster()
     self.LogTrace("Requesting addon version from guild")
     self:SendGuildAddonCommand(VGT.Commands.GET_VERSION)
   end
