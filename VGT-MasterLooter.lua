@@ -657,31 +657,51 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         self:AssignItem(itemData, value, "destroy")
       end)
 
-      if next(preemptiveResponses) then
-        local interested = {}
-        local passCount = 0
+      local interested = {}
+      --local passed = {}
+      local noResponse = {}
 
-        for name, response in pairs(preemptiveResponses) do
-          if response == VGT.PreemptiveResponses.INTERESTED then
-            tinsert(interested, name)
-          else
-            passCount = passCount + 1
-          end
-        end
-
-        if #interested > 0 then
-          table.sort(interested)
-          local label = AceGUI:Create("Label")
-          label:SetText("Wanted by: " .. strjoin(", ", unpack(interested)))
-          self.scroll:AddChild(label)
-        end
-
-        if passCount > 0 then
-          local label = AceGUI:Create("Label")
-          label:SetText("Passed by " .. passCount .. " of " .. #creatureData.characters .. " people.")
-          self.scroll:AddChild(label)
+      for _, character in ipairs(creatureData.characters) do
+        local pr = preemptiveResponses[character.Name]
+        if pr == VGT.PreemptiveResponses.INTERESTED then
+          tinsert(interested, character.Name)
+        elseif pr == VGT.PreemptiveResponses.SOFT_PASS or pr == VGT.PreemptiveResponses.HARD_PASS then
+          --tinsert(passed, character.Name)
+        else
+          tinsert(noResponse, character.Name)
         end
       end
+
+      if #interested > 0 then
+        table.sort(interested)
+        label = AceGUI:Create("Label")
+        if #interested > 5 then
+          label:SetText("Wanted by " .. #interested .. " players.")
+        else
+          label:SetText("Wanted by " .. strjoin(", ", unpack(interested)))
+        end
+        self.scroll:AddChild(label)
+      end
+
+      --[[
+      if #passed > 0 then
+        label = AceGUI:Create("Label")
+        label:SetText(#passed == #creatureData.characters and "Passed by all" or ("Passed by " .. #passed .. " of " .. #creatureData.characters))
+        self.scroll:AddChild(label)
+      end
+      ]]
+
+      label = AceGUI:Create("Label")
+      if #noResponse == 0 then
+        label:SetText("|cff00ff00All players have responded.|r")
+      elseif #noResponse == 1 and noResponse[1] == UnitName("player") then
+        label:SetText("|cff00ff00All but yourself have responded.|r")
+      elseif #noResponse > 5 then
+        label:SetText("Awaiting response from " .. #noResponse .. " players.")
+      else
+        label:SetText("Awaiting response from " .. strjoin(", ", unpack(noResponse)))
+      end
+      self.scroll:AddChild(label)
     end
   end
 end
@@ -1209,7 +1229,7 @@ function lootTracker:Track(itemId, creatureId)
     local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemId)
     for _, character in ipairs(creatureData.characters) do
       if not VGT:Equippable(itemId, select(2, VGT:CharacterClassInfo(character))) then
-        preemptiveResponses[character.Name] = false
+        preemptiveResponses[character.Name] = VGT.PreemptiveResponses.HARD_PASS
       end
     end
     self:Refresh()
