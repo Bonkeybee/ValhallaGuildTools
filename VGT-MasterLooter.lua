@@ -554,7 +554,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           end
 
           for _, character in ipairs(creatureData.characters) do
-            if lookup[character.Name] then
+            if lookup[character.Name] and preemptiveResponses[character.Name] ~= VGT.PreemptiveResponses.HARD_PASS then
               tinsert(whitelist, character.Name)
             end
           end
@@ -571,9 +571,9 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
               end
               addComma = true
               local pr = preemptiveResponses[name]
-              if pr == true then
+              if pr == VGT.PreemptiveResponses.INTERESTED then
                 sText = sText .. "|cff00ff00" .. name .. "|r"
-              elseif pr == false then
+              elseif pr == VGT.PreemptiveResponses.SOFT_PASS then
                 sText = sText .. "|cffff0000" .. name .. "|r"
               else
                 sText = sText .. name
@@ -662,7 +662,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         local passCount = 0
 
         for name, response in pairs(preemptiveResponses) do
-          if response then
+          if response == VGT.PreemptiveResponses.INTERESTED then
             tinsert(interested, name)
           else
             passCount = passCount + 1
@@ -1668,17 +1668,17 @@ function lootTracker:NOTIFY_INTERESTED(_, sender, id)
   if lootmethod == "master" and masterlooterPartyID == 0 then
     VGT.LogTrace("Received interested message from %s for %s", sender, id)
     local itemResponses = self:GetOrCreatePreemtiveResponse(id)
-    itemResponses[sender] = true
+    itemResponses[sender] = VGT.PreemptiveResponses.INTERESTED
     self:Refresh()
   end
 end
 
-function lootTracker:NOTIFY_PASSING(_, sender, id)
+function lootTracker:NOTIFY_PASSING(_, sender, id, hardPass)
   local lootmethod, masterlooterPartyID = GetLootMethod()
   if lootmethod == "master" and masterlooterPartyID == 0 then
     VGT.LogTrace("Received preemptive pass message from %s for %s", sender, id)
     local itemResponses = self:GetOrCreatePreemtiveResponse(id)
-    itemResponses[sender] = false
+    itemResponses[sender] = hardPass and VGT.PreemptiveResponses.HARD_PASS or VGT.PreemptiveResponses.SOFT_PASS
     self:Refresh()
   end
 end

@@ -47,7 +47,7 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
     for _, id in ipairs(existingItem.uniqueIds) do
       if id == uniqueId then
         if self:AutoPassing(itemId) then
-          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId)
+          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId, true)
         end
         return
       end
@@ -76,7 +76,7 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
       else
         self:Refresh()
         if autoPassing then
-          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId)
+          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId, true)
         end
       end
     end)
@@ -109,11 +109,11 @@ function dropTracker:NotifyInterested(item)
   end
 end
 
-function dropTracker:NotifyPassing(item)
+function dropTracker:NotifyPassing(item, hardPass)
   local previouslyResponded = item.passed or item.interested
   item.passed = true
   item.interested = nil
-  VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, item.id)
+  VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, item.id, hardPass)
   if self.profile.autoClose and not previouslyResponded and self:AllResponded() then
     self.frame:Hide()
   else
@@ -220,7 +220,7 @@ function dropTracker:Refresh()
         autoPassButton:SetCallback("OnClick", function()
           VGT:Confirm(
             function()
-              self:NotifyPassing(item)
+              self:NotifyPassing(item, true)
               self.char.autoPasses[item.id] = {passed = true, name = item.name, link = item.link}
             end,
             "Are you sure you want to auto-pass " .. item.link .. "? You will not be prompted to roll on this item again!"

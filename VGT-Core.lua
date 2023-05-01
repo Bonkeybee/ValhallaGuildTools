@@ -68,6 +68,12 @@ VGT.Commands = {
   ITEM_TRACKED = "IT"
 }
 
+VGT.PreemptiveResponses = {
+  INTERESTED = 1,
+  SOFT_PASS = 2,
+  HARD_PASS = 3
+}
+
 VGT.CommandNames = {}
 
 for name, id in pairs(VGT.Commands) do
