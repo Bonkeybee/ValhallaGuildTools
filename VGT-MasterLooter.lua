@@ -1277,7 +1277,8 @@ function lootTracker:OpenRoll(creatureId, itemId, itemIndex)
 
     local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
     for _, character in ipairs(creatureData.characters) do
-      if preemptiveResponses[character.Name] == false then
+      local pr = preemptiveResponses[character.Name]
+      if pr == VGT.PreemptiveResponses.HARD_PASS or pr == VGT.PreemptiveResponses.SOFT_PASS then
         local ended = self:RecordPassResponse(character.Name)
         if ended then
           return
