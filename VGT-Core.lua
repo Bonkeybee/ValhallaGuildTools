@@ -2,7 +2,12 @@ local VGT_ADDON_NAME, ValhallaGuildTools = ...
 local COMMAND_MODULE = "VGT-CMD"
 
 VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceEvent-3.0")
-VGT.version = tonumber(GetAddOnMetadata(VGT_ADDON_NAME, "Version"))
+
+do
+  local func = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+  VGT.version = tonumber(func(VGT_ADDON_NAME, "Version"))
+end
+
 VGT:SetDefaultModuleState(true)
 VGT:SetDefaultModuleLibraries("AceEvent-3.0")
 
