@@ -285,7 +285,9 @@ function lootTracker:ConfigureEncounter(creatureGuid)
       }
       local forcedItems = {
         [46052] = true, -- Reply-Code Alpha
-        [46053] = true -- Heroic Reply-Code Alpha
+        [46053] = true, -- Heroic Reply-Code Alpha
+        [49643] = true, -- Head of Onyxia
+        [49644] = true -- Head of Onyxia
       }
 
       for _, itemData in ipairs(creatureData.items) do
