@@ -1684,9 +1684,14 @@ function lootTracker:UI_INFO_MESSAGE(_, arg1, arg2)
   end
 end
 
-function lootTracker:NOTIFY_INTERESTED(_, sender, id)
+function lootTracker:PLAYER_ROLES_ASSIGNED()
   local lootmethod, masterlooterPartyID = GetLootMethod()
-  if lootmethod == "master" and masterlooterPartyID == 0 then
+  self.isMasterLooter = (lootmethod == "master" and masterlooterPartyID == 0)
+  self:Refresh()
+end
+
+function lootTracker:NOTIFY_INTERESTED(_, sender, id)
+  if self.isMasterLooter then
     VGT.LogTrace("Received interested message from %s for %s", sender, id)
     local itemResponses = self:GetOrCreatePreemtiveResponse(id)
     itemResponses[sender] = VGT.PreemptiveResponses.INTERESTED
@@ -1695,8 +1700,7 @@ function lootTracker:NOTIFY_INTERESTED(_, sender, id)
 end
 
 function lootTracker:NOTIFY_PASSING(_, sender, id, hardPass)
-  local lootmethod, masterlooterPartyID = GetLootMethod()
-  if lootmethod == "master" and masterlooterPartyID == 0 then
+  if self.isMasterLooter then
     VGT.LogTrace("Received preemptive pass message from %s for %s", sender, id)
     local itemResponses = self:GetOrCreatePreemtiveResponse(id)
     itemResponses[sender] = hardPass and VGT.PreemptiveResponses.HARD_PASS or VGT.PreemptiveResponses.SOFT_PASS
@@ -1722,8 +1726,10 @@ function lootTracker:OnEnable()
   self:RegisterEvent("TRADE_SHOW")
   self:RegisterEvent("TRADE_PLAYER_ITEM_CHANGED")
   self:RegisterEvent("UI_INFO_MESSAGE")
+  self:RegisterEvent("PLAYER_ROLES_ASSIGNED")
   self:RegisterMessage("VGT_MASTER_LOOT_READY", "TrackLoot")
   self:RegisterCommand(VGT.Commands.NOTIFY_INTERESTED)
   self:RegisterCommand(VGT.Commands.NOTIFY_PASSING)
   self:RegisterCommand(VGT.Commands.ROLL_PASS)
+  self:PLAYER_ROLES_ASSIGNED()
 end
