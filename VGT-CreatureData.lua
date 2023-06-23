@@ -442,7 +442,9 @@ addCreature(33343, "XS-013 Scrapbot")
 -- Trial of the Crusader
 -- Chests
 addCreature(195631, "Champions' Cache")
+addCreature(195632, "Champions' Cache")
 addCreature(195633, "Champions' Cache")
+addCreature(195635, "Champions' Cache")
 -- Creatures
 addCreature(34564, "Anub'arak")
 addCreature(34743, "Val'kyr Twins Bullet Controller")
