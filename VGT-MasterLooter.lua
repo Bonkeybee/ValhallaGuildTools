@@ -3,7 +3,6 @@ local AceGUI = LibStub("AceGUI-3.0")
 
 lootTracker.currentTrades = {}
 lootTracker.activeSlots = {}
-lootTracker.responses = {}
 
 -- https://wowpedia.fandom.com/wiki/InstanceID
 lootTracker.trackedInstances = {
@@ -80,10 +79,6 @@ function lootTracker:ReadData(creatureGuid, itemId, itemIndex)
       return creatureData
     end
   end
-end
-
-function lootTracker:GetRollData()
-  return self:ReadData(self.rollCreature, self.rollItem, self.rollIndex)
 end
 
 function lootTracker:AddPrioToStandings(itemId, name, prio)
@@ -197,7 +192,7 @@ function lootTracker:FindExpiringItems()
   return items
 end
 
-function lootTracker:AssignItem(itemData, winner, mode, roll)
+function lootTracker:AssignItem(itemData, winner, mode, roll, unassignName)
   itemData.winner = winner
   itemData.winningPrio = self:TakePrioFromStandings(itemData.id, winner)
   itemData.traded = UnitIsUnit(winner, "player")
@@ -217,6 +212,32 @@ function lootTracker:AssignItem(itemData, winner, mode, roll)
     else
       fmt = "%1$s assigned to %2$s"
     end
+  elseif mode == "reassign" then
+    if unassignName then
+      if roll then
+        if itemData.winningPrio ~= nil then
+          fmt = "%1$s reassigned from %5$s to %2$s (Rolled %3$s, %4$s Prio)"
+        else
+          fmt = "%1$s reassigned from %5$s to %2$s (Rolled %3$s)"
+        end
+      elseif itemData.winningPrio ~= nil then
+        fmt = "%1$s reassigned from %5$s to %2$s (%4$s Prio)"
+      else
+        fmt = "%1$s reassigned from %5$s to %2$s"
+      end
+    else
+      if roll then
+        if itemData.winningPrio ~= nil then
+          fmt = "%1$s reassigned to %2$s (Rolled %3$s, %4$s Prio)"
+        else
+          fmt = "%1$s reassigned to %2$s (Rolled %3$s)"
+        end
+      elseif itemData.winningPrio ~= nil then
+        fmt = "%1$s reassigned to %2$s (%4$s Prio)"
+      else
+        fmt = "%1$s reassigned to %2$s"
+      end
+    end
   elseif mode == "manual" then
     fmt = "%1$s assigned to %2$s"
   elseif mode == "disenchant" then
@@ -230,7 +251,7 @@ function lootTracker:AssignItem(itemData, winner, mode, roll)
   end
 
   VGT:SendPlayerAddonCommand(winner, VGT.Commands.ASSIGN_ITEM, itemData.id, itemData.disenchanted or itemData.destroyed)
-  self:SendGroupMessage(VGT.Format(fmt, itemData.link, winner, roll, itemData.winningPrio))
+  self:SendGroupMessage(VGT.Format(fmt, itemData.link, winner, roll, itemData.winningPrio, unassignName))
   self:Refresh()
 end
 
@@ -242,6 +263,8 @@ function lootTracker:UnassignItem(itemData)
   itemData.winningPrio = nil
   itemData.disenchanted = nil
   itemData.destroyed = nil
+  itemData.responses = {}
+  itemData.whitelist = nil
 
   if oldPrio then
     self:AddPrioToStandings(itemData.id, oldWinner, oldPrio)
@@ -411,13 +434,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   self.scroll:AddChild(spacer)
 
   if itemData.winner then
-    local unassignButton = AceGUI:Create("Button")
-    unassignButton:SetText("Unassign Item")
-    unassignButton:SetFullWidth(true)
-    unassignButton:SetCallback("OnClick", function()
-      self:UnassignItem(itemData)
-    end)
-    self.scroll:AddChild(unassignButton)
 
     local toggleTradeButton = AceGUI:Create("CheckBox")
     toggleTradeButton:SetLabel("Traded")
@@ -427,11 +443,45 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       self:Refresh()
     end)
     self.scroll:AddChild(toggleTradeButton)
-  else
-    local rollCreature, rollItem = self:GetRollData()
 
-    if rollCreature and rollItem then
-      if rollItem == itemData then
+    local function GetAlternateRolls()
+      if itemData.responses then
+        local orderedResponses = {}
+        for name, response in pairs(itemData.responses) do
+          if name ~= itemData.winner and not response.pass then
+            table.insert(orderedResponses, {name=name,roll=response.roll})
+          end
+        end
+        if #orderedResponses > 0 then
+          table.sort(orderedResponses, function(l,r) return l.roll > r.roll end)
+          return orderedResponses
+        end
+      end
+    end
+    local alternateRolls = GetAlternateRolls()
+    if alternateRolls then
+      local originalWinner = itemData.winner
+      for _, alt in ipairs(alternateRolls) do
+        local reassignButton = AceGUI:Create("Button")
+        reassignButton:SetText("Reassign to " .. alt.name .. " (Rolled " .. alt.roll .. ")")
+        reassignButton:SetFullWidth(true)
+        reassignButton:SetCallback("OnClick", function()
+          self:AssignItem(itemData, alt.name, "reassign", alt.roll, originalWinner)
+        end)
+        self.scroll:AddChild(reassignButton)
+      end
+    end
+
+    local unassignButton = AceGUI:Create("Button")
+    unassignButton:SetText("Unassign Item")
+    unassignButton:SetFullWidth(true)
+    unassignButton:SetCallback("OnClick", function()
+      self:UnassignItem(itemData)
+    end)
+    self.scroll:AddChild(unassignButton)
+  else
+    if self.rollCreature and self.rollItem then
+      if self.rollItem == itemData then
         local stopButton = AceGUI:Create("Button")
         stopButton:SetText("End Rolling")
         stopButton:SetCallback("OnClick", function()
@@ -472,10 +522,10 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         local orderedResponses = {}
         local responseCount, totalCount = 0, 0
 
-        if self.rollWhitelist then
-          for _, name in ipairs(self.rollWhitelist) do
+        if self.rollItem.whitelist then
+          for _, name in ipairs(self.rollItem.whitelist) do
             totalCount = totalCount + 1
-            local response = self.responses[name]
+            local response = self.rollItem.responses[name]
             if response then
               responseCount = responseCount + 1
               tinsert(orderedResponses, response)
@@ -486,9 +536,9 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
             end
           end
         else
-          for _, character in ipairs(rollCreature.characters) do
+          for _, character in ipairs(self.rollCreature.characters) do
             totalCount = totalCount + 1
-            local response = self.responses[character.Name]
+            local response = self.rollItem.responses[character.Name]
             if response then
               responseCount = responseCount + 1
               tinsert(orderedResponses, response)
@@ -533,7 +583,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         local label = AceGUI:Create("Label")
         label:SetFullWidth(true)
         label:SetFont(GameFontHighlight:GetFont(), 16, "")
-        label:SetText("|cffff0000Currently rolling on " .. rollItem.name .. "|r")
+        label:SetText("|cffff0000Currently rolling on " .. self.rollItem.name .. "|r")
         self.scroll:AddChild(label)
 
         local spacer = AceGUI:Create("Label")
@@ -587,7 +637,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
               if #whitelist == 1 then
                 self:AssignItem(itemData, whitelist[1], "standard")
               else
-                self:LimitedRoll(creatureData.id, itemData.id, itemData.index, whitelist)
+                self:LimitedRoll(creatureData, itemData, whitelist)
               end
             end)
 
@@ -600,7 +650,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       rollButton:SetText("Open Roll")
       rollButton:SetFullWidth(true)
       rollButton:SetCallback("OnClick", function()
-        self:OpenRoll(creatureId, itemId, itemIndex)
+        self:OpenRoll(creatureData, itemData)
       end)
       self.scroll:AddChild(rollButton)
 
@@ -1240,14 +1290,12 @@ function lootTracker:Track(itemId, creatureId)
   return creatureData, itemData
 end
 
-function lootTracker:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
-  local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
-
-  if (creatureData and itemData) then
-    self.rollCreature = creatureId
-    self.rollItem = itemId
-    self.rollIndex = itemIndex
-    self.rollWhitelist = whitelist
+function lootTracker:LimitedRoll(creatureData, itemData, whitelist)
+  if creatureData and itemData then
+    self.rollCreature = creatureData
+    self.rollItem = itemData
+    itemData.whitelist = whitelist
+    itemData.responses = {}
 
     local text = "Roll on " .. itemData.link .. " for "
     local addComma = false
@@ -1268,14 +1316,12 @@ function lootTracker:LimitedRoll(creatureId, itemId, itemIndex, whitelist)
   end
 end
 
-function lootTracker:OpenRoll(creatureId, itemId, itemIndex)
-  local creatureData, itemData = self:ReadData(creatureId, itemId, itemIndex)
-
-  if (creatureData and itemData) then
-    self.rollCreature = creatureId
-    self.rollItem = itemId
-    self.rollIndex = itemIndex
-    self.rollWhitelist = nil
+function lootTracker:OpenRoll(creatureData, itemData)
+  if creatureData and itemData then
+    self.rollCreature = creatureData
+    self.rollItem = itemData
+    itemData.whitelist = nil
+    itemData.responses = {}
 
     local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
     for _, character in ipairs(creatureData.characters) do
@@ -1291,7 +1337,7 @@ function lootTracker:OpenRoll(creatureId, itemId, itemIndex)
     self:Refresh()
     self:SendGroupMessage("Open Roll on " .. itemData.link)
     self:SendGroupMessage("/roll or type \"pass\" in chat", true)
-    VGT:SendGroupAddonCommand(VGT.Commands.START_ROLL, itemId)
+    VGT:SendGroupAddonCommand(VGT.Commands.START_ROLL, itemData.id)
   end
 end
 
@@ -1300,14 +1346,14 @@ function lootTracker:CountdownRoll(t)
     self:EndRoll()
     return
   end
-  local creatureData, itemData = self:GetRollData()
-  if not creatureData or not itemData then
+
+  if not self.rollCreature or not self.rollItem then
     return
   end
 
   self.countdownRemaining = t
   self.countdownTimer = self:ScheduleRepeatingTimer("CountdownTick", 1)
-  self:SendGroupMessage("Ending rolls on " .. itemData.link .. " in " .. t)
+  self:SendGroupMessage("Ending rolls on " .. self.rollItem.link .. " in " .. t)
 end
 
 function lootTracker:CountdownTick()
@@ -1332,15 +1378,14 @@ function lootTracker:CountdownTick()
 end
 
 function lootTracker:EndRoll()
-  local creatureData, itemData = self:GetRollData()
 
-  if not itemData then
+  if not self.rollItem then
     return
   end
 
   local hasRoll
 
-  for _, response in pairs(self.responses) do
+  for _, response in pairs(self.rollItem.responses) do
     if response.roll and not response.pass then
       hasRoll = true
       break
@@ -1350,7 +1395,7 @@ function lootTracker:EndRoll()
   if hasRoll then
     local topRoll = 0
 
-    for _, response in pairs(self.responses) do
+    for _, response in pairs(self.rollItem.responses) do
       if not response.pass and response.roll and response.roll > topRoll then
         topRoll = response.roll
       end
@@ -1358,17 +1403,17 @@ function lootTracker:EndRoll()
 
     local winners = {}
 
-    for _, response in pairs(self.responses) do
+    for _, response in pairs(self.rollItem.responses) do
       if response.roll == topRoll then
         tinsert(winners, response.name)
       end
     end
 
     if #winners == 1 then
-      self:AssignItem(itemData, winners[1], "standard", topRoll)
+      self:AssignItem(self.rollItem, winners[1], "standard", topRoll)
     else
-      self.responses = {}
-      self.rollWhitelist = winners
+      self.rollItem.responses = {}
+      self.rollItem.whitelist = winners
 
       local msg = "Reroll: "
 
@@ -1377,7 +1422,7 @@ function lootTracker:EndRoll()
           msg = msg .. ", "
         end
         msg = msg .. v
-        VGT:SendPlayerAddonCommand(v, VGT.Commands.START_ROLL, itemData.id, true)
+        VGT:SendPlayerAddonCommand(v, VGT.Commands.START_ROLL, self.rollItem.id, true)
       end
 
       self:SendGroupMessage(msg)
@@ -1385,28 +1430,23 @@ function lootTracker:EndRoll()
       return
     end
   else
-    self:SendGroupMessage(itemData.link .. " passed by all.")
+    self:SendGroupMessage(self.rollItem.link .. " passed by all.")
   end
 
   self.rollCreature = nil
   self.rollItem = nil
-  self.rollIndex = nil
-  self.responses = {}
-  self.rollWhitelist = nil
   self:Refresh()
   VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
 end
 
 function lootTracker:RemindRoll()
-  local creatureData, itemData = self:GetRollData()
+  if self.rollCreature and self.rollItem then
+    local msg = "Rolling on " .. self.rollItem.link .. "."
 
-  if creatureData and itemData then
-    local msg = "Rolling on " .. itemData.link .. "."
-
-    if #self.responses > 0 then
+    if #self.rollItem.responses > 0 then
       local topRoll = 0
 
-      for _, response in pairs(self.responses) do
+      for _, response in pairs(self.rollItem.responses) do
         if not response.pass and response.roll and response.roll > topRoll then
           topRoll = response.roll
         end
@@ -1414,7 +1454,7 @@ function lootTracker:RemindRoll()
 
       local winners = {}
 
-      for _, response in pairs(self.responses) do
+      for _, response in pairs(self.rollItem.responses) do
         if response.roll == topRoll then
           tinsert(winners, response.name)
         end
@@ -1439,9 +1479,9 @@ function lootTracker:RemindRoll()
 
     local needsComma
 
-    if self.rollWhitelist then
-      for _, name in ipairs(self.rollWhitelist) do
-        if not self.responses[name] then
+    if self.rollItem.whitelist then
+      for _, name in ipairs(self.rollItem.whitelist) do
+        if not self.rollItem.responses[name] then
           if needsComma then
             msg = msg .. ", "
           end
@@ -1450,8 +1490,8 @@ function lootTracker:RemindRoll()
         end
       end
     else
-      for _, character in ipairs(creatureData.characters) do
-        if not self.responses[character.Name] then
+      for _, character in ipairs(self.rollCreature.characters) do
+        if not self.rollItem.responses[character.Name] then
           if needsComma then
             msg = msg .. ", "
           end
@@ -1467,17 +1507,13 @@ function lootTracker:RemindRoll()
 end
 
 function lootTracker:CancelRoll()
-  local creatureData, itemData = self:GetRollData()
-
-  if (creatureData and itemData) then
+  if self.rollCreature and self.rollItem then
+    local link = self.rollItem.link
     self.rollCreature = nil
     self.rollItem = nil
-    self.rollIndex = nil
-    self.responses = {}
-    self.rollWhitelist = nil
     self:Refresh()
     VGT:SendGroupAddonCommand(VGT.Commands.CANCEL_ROLL)
-    self:SendGroupMessage("Roll for " .. itemData.link .. " cancelled.")
+    self:SendGroupMessage("Roll for " .. link .. " cancelled.")
   end
 end
 
@@ -1489,11 +1525,15 @@ function lootTracker:AddDummyData()
 end
 
 function lootTracker:Whitelisted(name)
-  if not self.rollWhitelist then
+  if not self.rollItem then
+    return false
+  end
+
+  if not self.rollItem.whitelist then
     return true
   end
 
-  for _, name2 in ipairs(self.rollWhitelist) do
+  for _, name2 in ipairs(self.rollItem.whitelist) do
     if name == name2 then
       return true
     end
@@ -1502,12 +1542,12 @@ end
 
 function lootTracker:GetOrCreateResponse(name)
   if self:Whitelisted(name) then
-    local response = self.responses[name]
+    local response = self.rollItem.responses[name]
     if not response then
       response = {
         name = name
       }
-      self.responses[name] = response
+      self.rollItem.responses[name] = response
     end
     return response
   end
@@ -1515,18 +1555,16 @@ end
 
 function lootTracker:TryEndRoll()
   if self.profile.autoEndRoll then
-    local creatureData, itemData = self:GetRollData()
-
-    if creatureData and itemData then
-      if self.rollWhitelist then
-        for _, name in ipairs(self.rollWhitelist) do
-          if not self.responses[name] then
+    if self.rollCreature and self.rollItem then
+      if self.rollItem.whitelist then
+        for _, name in ipairs(self.rollItem.whitelist) do
+          if not self.rollItem.responses[name] then
             return
           end
         end
       else
-        for _, character in ipairs(creatureData.characters) do
-          if not self.responses[character.Name] then
+        for _, character in ipairs(self.rollCreature.characters) do
+          if not self.rollItem.responses[character.Name] then
             return
           end
         end
@@ -1613,7 +1651,7 @@ function lootTracker:CHAT_MSG_SYSTEM(_, text)
         local response = self:GetOrCreateResponse(name)
         if response then
           VGT.LogTrace("Recorded %s's roll message", name)
-          local preemptiveResponses = self:GetOrCreatePreemtiveResponse(self.rollItem)
+          local preemptiveResponses = self:GetOrCreatePreemtiveResponse(self.rollItem.id)
           preemptiveResponses[name] = nil
           response.pass = false
           response.roll = response.roll or roll
@@ -1712,7 +1750,7 @@ end
 
 function lootTracker:ROLL_PASS(_, sender, id)
   VGT.LogTrace("Received pass message from %s for %s", sender, id)
-  if self.rollItem and self.rollItem == tonumber(id) then
+  if self.rollItem and self.rollItem.id and self.rollItem.id == tonumber(id) then
     VGT.LogTrace("%s's pass message is valid for %s", sender, id)
     self:RecordPassResponse(sender)
   end
