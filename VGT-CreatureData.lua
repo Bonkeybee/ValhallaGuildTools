@@ -441,10 +441,22 @@ addCreature(33343, "XS-013 Scrapbot")
 
 -- Trial of the Crusader
 -- Chests
+addCreature(195323, "Champions' Cache")
+addCreature(195324, "Champions' Cache")
+addCreature(195709, "Champions' Cache")
+addCreature(195710, "Champions' Cache")
 addCreature(195631, "Champions' Cache")
 addCreature(195632, "Champions' Cache")
 addCreature(195633, "Champions' Cache")
 addCreature(195635, "Champions' Cache")
+addCreature(195665, "Argent Crusade Tribute Chest")
+addCreature(195666, "Argent Crusade Tribute Chest")
+addCreature(195667, "Argent Crusade Tribute Chest")
+addCreature(195668, "Argent Crusade Tribute Chest")
+addCreature(195669, "Argent Crusade Tribute Chest")
+addCreature(195670, "Argent Crusade Tribute Chest")
+addCreature(195671, "Argent Crusade Tribute Chest")
+addCreature(195672, "Argent Crusade Tribute Chest")
 -- Creatures
 addCreature(34564, "Anub'arak")
 addCreature(34743, "Val'kyr Twins Bullet Controller")
