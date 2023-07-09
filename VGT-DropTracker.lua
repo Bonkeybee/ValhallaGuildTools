@@ -42,21 +42,21 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
   self:ResetItems()
   self.char.expiration = self.char.expiration or (time() + 21600)
   local uniqueId = itemIndex .. creatureId
-  local existingItem = self:GetForItem(itemId)
-  if existingItem then
-    for _, id in ipairs(existingItem.uniqueIds) do
-      if id == uniqueId then
-        if self:AutoPassing(itemId) then
-          VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId, true)
+  local item = Item:CreateFromItemID(itemId)
+  item:ContinueOnItemLoad(function()
+    local existingItem = self:GetForItem(itemId)
+    if existingItem then
+      for _, id in ipairs(existingItem.uniqueIds) do
+        if id == uniqueId then
+          if self:AutoPassing(itemId) then
+            VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId, true)
+          end
+          return
         end
-        return
       end
-    end
-    tinsert(existingItem.uniqueIds, uniqueId)
-    self:Refresh()
-  else
-    local item = Item:CreateFromItemID(itemId)
-    item:ContinueOnItemLoad(function()
+      tinsert(existingItem.uniqueIds, uniqueId)
+      self:Refresh()
+    else
       if not VGT:Equippable(itemId) then
         return
       end
@@ -79,8 +79,8 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
           VGT:SendGroupAddonCommand(VGT.Commands.NOTIFY_PASSING, itemId, true)
         end
       end
-    end)
-  end
+    end
+  end)
 end
 
 function dropTracker:SetWon(itemId, won)
