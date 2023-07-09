@@ -503,6 +503,18 @@ function VGT:InitializeOptions()
               end
               return items
             end,
+            sorting = function()
+              local sortedItems = {}
+              for itemId, ap in pairs(VGT.db.char.dropTracker.autoPasses) do
+                table.insert(sortedItems, {id=itemId,name=ap.name})
+              end
+              table.sort(sortedItems, function(l,r) return l.name < r.name end)
+              local array = {}
+              for i,v in ipairs(sortedItems) do
+                array[i] = v.id
+              end
+              return array
+            end,
             get = function() end,
             set = function(_, id)
               VGT.db.char.dropTracker.autoPasses[id] = nil
