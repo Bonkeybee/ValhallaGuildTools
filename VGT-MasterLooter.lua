@@ -81,6 +81,28 @@ function lootTracker:ReadData(creatureGuid, itemId, itemIndex)
   end
 end
 
+function lootTracker:GetCreatureForItem(item)
+  for _, creatureData in ipairs(self.char.creatures) do
+    for _, itemData in ipairs(creatureData.items) do
+      if item == itemData then
+        return creatureData
+      end
+    end
+  end
+end
+
+function lootTracker:GetOtherUnassigned(item)
+  local items = {item}
+  for _, creatureData in ipairs(self.char.creatures) do
+    for _, itemData in ipairs(creatureData.items) do
+      if itemData.id == item.id and not itemData.winner and item ~= itemData then
+        table.insert(items, itemData)
+      end
+    end
+  end
+  return items
+end
+
 function lootTracker:AddPrioToStandings(itemId, name, prio)
   local itemStandings = self.char.standings[itemId]
   if itemStandings then
@@ -1393,41 +1415,63 @@ function lootTracker:EndRoll()
   end
 
   if hasRoll then
-    local topRoll = 0
+    local rollGroups = {}
 
     for _, response in pairs(self.rollItem.responses) do
-      if not response.pass and response.roll and response.roll > topRoll then
-        topRoll = response.roll
-      end
-    end
-
-    local winners = {}
-
-    for _, response in pairs(self.rollItem.responses) do
-      if response.roll == topRoll then
-        tinsert(winners, response.name)
-      end
-    end
-
-    if #winners == 1 then
-      self:AssignItem(self.rollItem, winners[1], "standard", topRoll)
-    else
-      self.rollItem.responses = {}
-      self.rollItem.whitelist = winners
-
-      local msg = "Reroll: "
-
-      for i, v in ipairs(winners) do
-        if i > 1 then
-          msg = msg .. ", "
+      if not response.pass and response.roll then
+        local inserted
+        for _, rollGroup in ipairs(rollGroups) do
+          if rollGroup.roll == response.roll then
+            table.insert(rollGroup.names, response.name)
+            inserted = true
+            break
+          end
         end
-        msg = msg .. v
-        VGT:SendPlayerAddonCommand(v, VGT.Commands.START_ROLL, self.rollItem.id, true)
+        if not inserted then
+          table.insert(rollGroups, { roll = response.roll, names = {response.name}})
+        end
       end
+    end
 
-      self:SendGroupMessage(msg)
-      self:Refresh()
-      return
+    table.sort(rollGroups, function(l,r) return l.roll > r.roll end)
+
+    local availableItems = self:GetOtherUnassigned(self.rollItem)
+
+    for _, rollGroup in ipairs(rollGroups) do
+      if #availableItems == 0 then
+        break
+      end
+      if #availableItems >= #rollGroup.names then
+        for _, name in ipairs(rollGroup.names) do
+          local item = availableItems[1]
+          item.responses = self.rollItem.responses
+          table.remove(availableItems, 1)
+          self:AssignItem(item, name, "standard", rollGroup.roll)
+        end
+      else
+        if availableItems[1] ~= self.rollItem then
+          self.rollItem = availableItems[1]
+          self.rollCreature = self:GetCreatureForItem(self.rollItem)
+          self.groupId = "encounter+" .. self.rollCreature.id .. "\001" .. self.rollCreature.id .. "+" .. self.rollItem.id .. "+" .. self.rollItem.index
+          self.tree:Select(self.groupId)
+        end
+        self.rollItem.responses = {}
+        self.rollItem.whitelist = rollGroup.names
+
+        local msg = "Reroll: "
+
+        for i, v in ipairs(rollGroup.names) do
+          if i > 1 then
+            msg = msg .. ", "
+          end
+          msg = msg .. v
+          VGT:SendPlayerAddonCommand(v, VGT.Commands.START_ROLL, self.rollItem.id, true)
+        end
+
+        self:SendGroupMessage(msg)
+        self:Refresh()
+        return
+      end
     end
   else
     self:SendGroupMessage(self.rollItem.link .. " passed by all.")
