@@ -318,7 +318,7 @@ function lootTracker:ConfigureEncounter(creatureGuid)
     exportButton:SetText("Export Items")
     exportButton:SetFullWidth(true)
     exportButton:SetCallback("OnClick", function()
-      local items = {}
+      local drops = {}
       local allowedClasses = {
         [2] = true, -- Weapon
         [4] = true, -- Armor
@@ -341,11 +341,15 @@ function lootTracker:ConfigureEncounter(creatureGuid)
            (not itemData.class or allowedClasses[itemData.class]) and
            not ignoredItems[itemData.id])
         then
-          tinsert(items, itemData.id)
+          table.insert(drops, {
+            ItemId = itemData.id,
+            WinnerName = itemData.winner,
+            Disenchanted = itemData.disenchanted or itemData.destroyed
+          })
         end
       end
 
-      VGT:ShowKillExport(items, creatureData.characters)
+      VGT:ShowKillExport(drops, creatureData.characters, creatureData.timestamp)
     end)
     self.scroll:AddChild(exportButton)
 
@@ -1193,8 +1197,6 @@ function lootTracker:Refresh()
 end
 
 function lootTracker:TrackUnknown(itemId, creatureId)
-  creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
-  VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId)
   local creatureData, itemData = self:Track(itemId, creatureId)
   local item = Item:CreateFromItemID(itemId)
   item:ContinueOnItemLoad(function()
@@ -1203,7 +1205,7 @@ function lootTracker:TrackUnknown(itemId, creatureId)
     itemData.icon = item:GetItemIcon()
     itemData.quality = item:GetItemQuality()
     itemData.class = select(6, GetItemInfoInstant(itemId))
-    self.tree:Select("encounter+" .. creatureId)
+    self.tree:Select("encounter+" .. creatureData.id)
     self:Refresh()
   end)
   return creatureData, itemData
@@ -1253,8 +1255,13 @@ function lootTracker:TrackLoot()
 end
 
 function lootTracker:Track(itemId, creatureId)
-  creatureId = creatureId or "Unknown-0-0-0-0-0-0-0"
   local creatureData, newCreature
+
+  if not creatureId then
+    creatureId = "Unknown-0-0-0-0-0-0-0"
+  end
+
+  VGT.LogTrace("Tracking item:%s for %s", itemId, creatureId)
 
   for i, v in ipairs(self.char.creatures) do
     if v.id == creatureId then
@@ -1268,7 +1275,8 @@ function lootTracker:Track(itemId, creatureId)
       id = creatureId,
       name = VGT:UnitNameFromGuid(creatureId),
       items = {},
-      characters = VGT:GetCharacters()
+      characters = VGT:GetCharacters(),
+      timestamp = GetServerTime()
     }
     newCreature = true
   end

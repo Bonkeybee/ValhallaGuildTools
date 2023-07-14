@@ -560,13 +560,14 @@ function VGT:ShowRaidStartExport()
   self:ShowInputDialog("Export Raid Start", VGT:ExportRaidStart())
 end
 
-function VGT:ExportKill(items, characters)
+function VGT:ExportKill(drops, characters, timestamp)
   return json.encode({
-    Items = items,
-    Characters = characters or self:GetCharacters()
+    Drops = drops,
+    Characters = characters or self:GetCharacters(),
+    Timestamp = timestamp
   })
 end
 
-function VGT:ShowKillExport(items, characters)
-  self:ShowInputDialog("Export Kill", self:ExportKill(items, characters))
+function VGT:ShowKillExport(drops, characters, timestamp)
+  self:ShowInputDialog("Export Kill", self:ExportKill(drops, characters, timestamp))
 end
