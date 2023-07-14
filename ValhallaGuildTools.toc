@@ -38,6 +38,7 @@ VGT-VersionChecker.lua
 VGT-UserFinder.lua
 VGT-CreatureData.lua
 VGT-DungeonData.lua
+VGT-ItemData.lua
 VGT-Map.lua
 VGT-SlashCommand.lua
 VGT-AutoMasterLoot.lua

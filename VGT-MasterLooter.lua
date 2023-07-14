@@ -103,54 +103,133 @@ function lootTracker:GetOtherUnassigned(item)
   return items
 end
 
+function lootTracker:GetStandingsForItem(itemId)
+  local standings = {}
+  VGT.LogTrace("Looking for standings for item:%s", itemId)
+
+  VGT:RepeatForAllRelatedItems(itemId, function(id)
+    local itemStandings = self.char.standings[id]
+    if itemStandings then
+      VGT.LogTrace("Found %s standings with item:%s", #itemStandings, id)
+      for _, standing in ipairs(itemStandings) do
+
+        for i, existingStanding in ipairs(standings) do
+          if existingStanding.prio == standing.prio then
+            for name in pairs(standing.names) do
+              existingStanding.names[name] = true
+            end
+            return
+          elseif existingStanding.prio < standing.prio then
+            local newStanding = {}
+            newStanding.prio = standing.prio
+            newStanding.names = {}
+            for name in pairs(standing.names) do
+              newStanding.names[name] = true
+            end
+            table.insert(standings, i, newStanding)
+            return
+          end
+        end
+
+        local newStanding = {}
+        newStanding.prio = standing.prio
+        newStanding.names = {}
+        for name in pairs(standing.names) do
+          newStanding.names[name] = true
+        end
+        table.insert(standings, newStanding)
+
+      end
+    end
+  end)
+
+  if #standings > 0 then
+    VGT.LogTrace("%s standings imported", #standings)
+    return standings
+  end
+end
+
 function lootTracker:AddPrioToStandings(itemId, name, prio)
   local itemStandings = self.char.standings[itemId]
   if itemStandings then
     for i, standing in ipairs(itemStandings) do
-      if standing.Prio == prio then
-        tinsert(standing.Names, name)
+      if standing.prio == prio then
+        standing.names[name] = true
         return
-      elseif standing.Prio < prio then
-        tinsert(itemStandings, i, {
-          Prio = prio,
-          Names = {name}
-        })
+      elseif standing.prio < prio then
+        local newStanding = {}
+        newStanding.prio = prio
+        newStanding.names = {}
+        newStanding.names[name] = true
+        table.insert(itemStandings, i, newStanding)
         return
       end
     end
+
+    local newStanding = {}
+    newStanding.prio = prio
+    newStanding.names = {}
+    newStanding.names[name] = true
+    table.insert(itemStandings, newStanding)
   end
 end
 
-function lootTracker:TakePrioFromStandings(itemId, name)
-  local itemStandings = self.char.standings[itemId]
+function lootTracker:TakePrioFromStandings(itemOrTokenId, name)
+  local itemStandings = self.char.standings[itemOrTokenId]
   if itemStandings then
     for _, standing in ipairs(itemStandings) do
-      for i, n in ipairs(standing.Names) do
+      for n in pairs(standing.names) do
         if n == name then
-          tremove(standing.Names, i)
-          return standing.Prio
+          standing.names[name] = nil
+          VGT.LogTrace("Took standing value %s from item:%s for %s", standing.prio, itemOrTokenId, name)
+          return standing.prio, itemOrTokenId -- itemOrTokenId is itemId
         end
       end
+    end
+  end
+
+  local tokenRewards = VGT:GetItemsForToken(itemOrTokenId)
+  if tokenRewards then
+    VGT.LogTrace("Item is a token with %s rewards", #tokenRewards)
+    local topItemStanding, topItemId
+
+    for _, rewardId in ipairs(tokenRewards) do
+      local rewardStandings = self.char.standings[rewardId]
+      if rewardStandings then
+        for _, standing in ipairs(rewardStandings) do
+          if standing.names[name] and (not topItemStanding or topItemStanding.prio < standing.prio) then
+            topItemId = rewardId
+            topItemStanding = standing
+            break
+          end
+        end
+      end
+    end
+
+    if topItemStanding then
+      topItemStanding.names[name] = nil
+      VGT.LogTrace("Took standing value %s from item:%s for %s", topItemStanding.prio, topItemId, name)
+      return topItemStanding.prio, topItemId -- itemOrTokenId is tokenId, return actual itemId
     end
   end
 end
 
 function lootTracker:IncrementStandings(itemId, characters)
   for _, character in ipairs(characters) do
-    local prios = {}
+    local removals = {}
 
     while true do
-      local prio = self:TakePrioFromStandings(itemId, character.Name)
-      if type(prio) == "number" then
-        tinsert(prios, prio)
+      local prio, actualItemId = self:TakePrioFromStandings(itemId, character.Name)
+      if type(prio) == "number" and actualItemId then
+        table.insert(removals, {prio=prio,itemId=actualItemId})
       else
         break
       end
     end
 
-    if #prios > 0 then
-      for _, prio in ipairs(prios) do
-        self:AddPrioToStandings(itemId, character.Name, prio + 1)
+    if #removals > 0 then
+      for _, removal in ipairs(removals) do
+        self:AddPrioToStandings(removal.itemId, character.Name, removal.prio + 1)
       end
     end
   end
@@ -158,14 +237,18 @@ end
 
 function lootTracker:GetCharactersWithStandings(itemId)
   local names = {}
-  local itemStandings = self.char.standings[itemId]
-  if itemStandings then
-    for _, standing in ipairs(itemStandings) do
-      for _, name in ipairs(standing.Names) do
-        names[name] = true
+
+  VGT:RepeatForAllRelatedItems(itemId, function(id)
+    local itemStandings = self.char.standings[id]
+    if itemStandings then
+      for _, standing in ipairs(itemStandings) do
+        for name in pairs(standing.names) do
+          names[name] = true
+        end
       end
     end
-  end
+  end)
+
   local namesArr = {}
   for name in pairs(names) do
     tinsert(namesArr, name)
@@ -216,7 +299,7 @@ end
 
 function lootTracker:AssignItem(itemData, winner, mode, roll, unassignName)
   itemData.winner = winner
-  itemData.winningPrio = self:TakePrioFromStandings(itemData.id, winner)
+  itemData.winningPrio, itemData.rewardId = self:TakePrioFromStandings(itemData.id, winner)
   itemData.traded = UnitIsUnit(winner, "player")
   itemData.disenchanted = nil
   itemData.destroyed = nil
@@ -280,16 +363,18 @@ end
 function lootTracker:UnassignItem(itemData)
   local oldWinner = itemData.winner
   local oldPrio = itemData.winningPrio
+  local oldItemId = itemData.rewardId or itemData.id
   itemData.winner = nil
   itemData.traded = nil
   itemData.winningPrio = nil
+  itemData.rewardId = nil
   itemData.disenchanted = nil
   itemData.destroyed = nil
   itemData.responses = {}
   itemData.whitelist = nil
 
   if oldPrio then
-    self:AddPrioToStandings(itemData.id, oldWinner, oldPrio)
+    self:AddPrioToStandings(oldItemId, oldWinner, oldPrio)
   end
 
   self:SendGroupMessage(itemData.link .. " unassigned from " .. oldWinner)
@@ -619,20 +704,15 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       end
     else
       local preemptiveResponses = self:GetOrCreatePreemtiveResponse(itemData.id)
-      local itemStandings = self.char.standings[itemData.id]
+      local itemStandings = self:GetStandingsForItem(itemData.id)
 
       if itemStandings then
         for _, s in ipairs(itemStandings) do
           local standing = s
           local whitelist = {}
-          local lookup = {}
-
-          for _, name in ipairs(standing.Names) do
-            lookup[name] = true
-          end
 
           for _, character in ipairs(creatureData.characters) do
-            if lookup[character.Name] and preemptiveResponses[character.Name] ~= VGT.PreemptiveResponses.HARD_PASS then
+            if standing.names[character.Name] and preemptiveResponses[character.Name] ~= VGT.PreemptiveResponses.HARD_PASS then
               tinsert(whitelist, character.Name)
             end
           end
@@ -640,7 +720,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           if #whitelist > 0 then
             local standingButton = AceGUI:Create("Button")
             standingButton:SetFullWidth(true)
-            local sText = standing.Prio .. ": "
+            local sText = standing.prio .. ": "
             local addComma = false
 
             for _, name in ipairs(whitelist) do
@@ -798,12 +878,24 @@ function lootTracker:ConfigureHome()
     VGT:ShowInputDialog("Import Standings", "", function(text)
       local success = pcall(function()
         local standings = {}
-        local items = json.decode(text)
-        for _, item in ipairs(items) do
-          standings[item.Id] = item.Standings
+        local jsonItems = json.decode(text)
+        for _, jsonItem in ipairs(jsonItems) do
+          local itemStandings = {}
+
+          for _, jsonStanding in ipairs(jsonItem.Standings) do
+            local standing = {}
+            standing.prio = jsonStanding.Prio
+            standing.names = {}
+            for _, jsonName in ipairs(jsonStanding.Names) do
+              standing.names[jsonName] = true
+            end
+            table.insert(itemStandings, standing)
+          end
+
+          standings[jsonItem.Id] = itemStandings
         end
         self.char.standings = standings
-        VGT.LogSystem("Imported standings for %s items.", #items)
+        VGT.LogSystem("Imported standings for %s items.", #jsonItems)
         self:Refresh()
       end)
       if not success then
