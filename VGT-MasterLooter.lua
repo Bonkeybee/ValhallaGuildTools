@@ -411,7 +411,8 @@ function lootTracker:ConfigureEncounter(creatureGuid)
       }
       local ignoredItems = {
         [44569] = true, -- Key to the Focusing Iris
-        [44577] = true -- Heroic Key to the Focusing Iris
+        [44577] = true, -- Heroic Key to the Focusing Iris
+        [49294] = true, -- Ashen Sack of Gems
       }
       local forcedItems = {
         [46052] = true, -- Reply-Code Alpha
