@@ -7,55 +7,6 @@ LSM:Register("sound", "What Can I Do For Ya", "Interface\\Addons\\ValhallaGuildT
 LSM:Register("sound", "Tatl Hey", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\tatlhey.ogg")
 LSM:Register("sound", "Tatl Listen", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\tatllisten.ogg")
 
-local function MigrateOptionsToDB(db)
-  if VGT_OPTIONS and not VGT_OPTIONS.migrated then
-    if VGT_OPTIONS.LOGGING then
-      db.profile.logging.enabled = VGT_OPTIONS.LOGGING.enabled
-      db.profile.logging.level = VGT_OPTIONS.LOGGING.level
-    end
-    if VGT_OPTIONS.MAP then
-      db.profile.map.enabled = VGT_OPTIONS.MAP.enabled
-      db.profile.map.sendMyLocation = VGT_OPTIONS.MAP.sendMyLocation
-      if VGT_OPTIONS.MAP.mode == "map" then
-        db.profile.map.mode = VGT.MapOutput.MAP
-      elseif VGT_OPTIONS.MAP.mode == "minimap" then
-        db.profile.map.mode = VGT.MapOutput.MINIMAP
-      else
-        db.profile.map.mode = VGT.MapOutput.BOTH
-      end
-    end
-    if VGT_OPTIONS.LOOTLIST then
-      db.profile.autoMasterLoot.enabled = VGT_OPTIONS.LOOTLIST.autoMasterLoot
-      db.profile.autoMasterLoot.ignoredItems = VGT_OPTIONS.LOOTLIST.ignoredItems
-      db.char.autoMasterLoot.target = VGT_OPTIONS.LOOTLIST.masterLootTarget
-      db.char.autoMasterLoot.disenchantTarget = VGT_OPTIONS.LOOTLIST.masterLootDisenchantTarget
-      db.profile.lootTracker.x = VGT_OPTIONS.LOOTLIST.X
-      db.profile.lootTracker.y = VGT_OPTIONS.LOOTLIST.Y
-      db.profile.lootTracker.width = VGT_OPTIONS.LOOTLIST.Width
-      db.profile.lootTracker.height = VGT_OPTIONS.LOOTLIST.Height
-      db.profile.lootTracker.point = VGT_OPTIONS.LOOTLIST.Point
-    end
-    if VGT_OPTIONS.MINIMAP then
-      db.profile.minimapButton.hide = VGT_OPTIONS.MINIMAP.hide
-    end
-    if VGT_OPTIONS.AUTOTRADE then
-      db.profile.lootTracker.autoTrade = VGT_OPTIONS.AUTOTRADE.enabled
-    end
-    if VGT_OPTIONS.ROLL then
-      db.profile.roller.enabled = VGT_OPTIONS.ROLL.enabled
-      db.profile.roller.sound = VGT_OPTIONS.ROLL.sound
-      db.profile.roller.x = VGT_OPTIONS.ROLL.X
-      db.profile.roller.y = VGT_OPTIONS.ROLL.Y
-      db.profile.roller.point = VGT_OPTIONS.ROLL.Point
-    end
-    if VGT_OPTIONS.oldIcon then
-      db.profile.minimapButton.oldIcon = true
-    end
-    VGT_OPTIONS.migrated = true
-    VGT.LogInfo("Migrated options from previous addon version.")
-  end
-end
-
 function VGT:InitializeOptions()
   local defaults = {
     char = {
@@ -138,7 +89,6 @@ function VGT:InitializeOptions()
   self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
   self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
   self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
-  MigrateOptionsToDB(self.db)
 
   local function GetValue(db, info)
     local v = VGT.db[db]
@@ -565,6 +515,6 @@ function VGT:InitializeOptions()
     }
   }
   options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
-  LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(self.name, options, SLASH_VGT1)
+  LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(self.name, options)
   VGT.menu = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.name, self.name)
 end
