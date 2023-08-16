@@ -1,7 +1,10 @@
-function VGT.ColorGradient(perc, ...)
+---@param perc number
+---@param ... number
+---@return number r, number g, number b
+local function colorGradient(perc, ...)
   if perc >= 1 then
     local r, g, b = select(select("#", ...) - 2, ...)
-    return r, g, b
+    return r, g --[[@as number]], b --[[@as number]]
   elseif perc <= 0 then
     local r, g, b = ...
     return r, g, b
@@ -12,6 +15,11 @@ function VGT.ColorGradient(perc, ...)
   return r1 + (r2 - r1) * relperc, g1 + (g2 - g1) * relperc, b1 + (b2 - b1) * relperc
 end
 
+---Converts RGB magnitude valus to their hexadecimal representation
+---@param r number 0-1 red value
+---@param g number 0-1 green value
+---@param b number 0-1 blue value
+---@return string result Hexadecimal string representation of the color
 function VGT.RGBToHex(r, g, b)
   r = r <= 1 and r >= 0 and r or 0
   g = g <= 1 and g >= 0 and g or 0
@@ -19,19 +27,40 @@ function VGT.RGBToHex(r, g, b)
   return string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
 end
 
-function VGT.Round(number, decimals)
-  if (number == nil) then
-    number = 0
-  end
-  if (decimals == nil) then
-    decimals = 0
-  end
-  return (("%%.%df"):format(decimals)):format(number)
+---Converts a percentage value to a hexadecimal representation of a color gradient from red to green
+---@param percentage number
+---@return string
+function VGT.GetColorGradientHex(percentage)
+  return VGT.RGBToHex(colorGradient(percentage, 1, 0, 0, 1, 1, 0, 0, 1, 0))
 end
 
+---Rounds a number to a specified decimal
+---@param number integer
+---@param decimals integer|nil
+---@return string
+function VGT.Round(number, decimals)
+  local fmt
+  if decimals == nil or decimals <= 0 then
+    fmt = "%.0f"
+  elseif decimals == 1 then
+    fmt = "%.1f"
+  elseif decimals == 2 then
+    fmt = "%.2f"
+  else
+    fmt = string.format("%%.%df", decimals)
+  end
+  return string.format(fmt, number or 0)
+end
+
+---@alias ItemRestriction boolean|table<string, true>
+
+---@type table<integer|string,ItemRestriction>
 VGT.overrideEquipTable = {}
 local classesPrefix = ITEM_CLASSES_ALLOWED:gsub("%%s", "(.*)")
 
+---@private
+---@param itemId integer|string
+---@return ItemRestriction
 function VGT:BuildRestrictions(itemId)
   VGTScanningTooltip:ClearLines()
   VGTScanningTooltip:SetHyperlink("item:" .. itemId .. ":0:0:0:0:0:0:0")
@@ -57,6 +86,9 @@ function VGT:BuildRestrictions(itemId)
   return true
 end
 
+---@private
+---@param itemId integer|string
+---@return ItemRestriction
 function VGT:GetClassRestrictions(itemId)
   local overrideResult = VGT.overrideEquipTable[itemId]
   if not overrideResult then
@@ -66,6 +98,10 @@ function VGT:GetClassRestrictions(itemId)
   return overrideResult
 end
 
+---@class RestrictionLevel
+---@field [integer|string|"*"] RestrictionLevel|boolean
+
+---@type table<integer, RestrictionLevel|boolean>
 VGT.equipTable = {
   [Enum.ItemClass.Consumable] = true,
   [Enum.ItemClass.Container] = {
@@ -343,10 +379,16 @@ VGT.equipTable = {
   [Enum.ItemClass.WoWToken] = true
 }
 
+---@private
+---@param source RestrictionLevel|boolean
+---@param levels (string|integer)[]
+---@param level integer
+---@param playerClass string
+---@return boolean|nil
 local function GetNextLevel(source, levels, level, playerClass)
   if type(source) ~= "table" then
     VGT.LogTrace("Level %s was %s; returning as value", level, source)
-    return source
+    return source --[[@as boolean]]
   end
 
   if source[playerClass] then
@@ -378,6 +420,10 @@ local function GetNextLevel(source, levels, level, playerClass)
   return GetNextLevel(nextSource, levels, level + 1, playerClass)
 end
 
+---Gets a value indicating whether an item is equippable by a class.
+---@param item string|integer The id, name, or link for an item.
+---@param playerClass string|nil
+---@return boolean|nil
 function VGT:Equippable(item, playerClass)
   local itemId, _, _, equipLocId, _, classId, subclassId = GetItemInfoInstant(item)
   playerClass = playerClass or UnitClassBase("player")
@@ -392,6 +438,9 @@ function VGT:Equippable(item, playerClass)
   end
 end
 
+---Shows a confirmation dialog, then runs an action if it was confirmed.
+---@param func fun() The function to run if an `ACCEPT` button is clicked.
+---@param text string|nil The text to show in the dialog. If `nil`, the default confirmation text is used.
 function VGT:Confirm(func, text)
   local dialogId = "VLL_CONFIRM_DIALOG"
   local dlg = StaticPopupDialogs[dialogId]
@@ -409,12 +458,15 @@ function VGT:Confirm(func, text)
   StaticPopup_Show(dialogId)
 end
 
+---Shows an input dialog
+---@param title string The title of the dialog
+---@param text string The initial text in the dialog
+---@param callback fun(text:string)|nil The callback for when the dialog closes with an `OKAY` button. When nil, no `OKAY` button is shown.
 function VGT:ShowInputDialog(title, text, callback)
   local dialogId = "VLL_INPUT_DIALOG"
   local dlg = StaticPopupDialogs[dialogId]
   if not dlg then
     local function NOP()
-      return
     end
     dlg = {
       hasEditBox = 1,
@@ -487,6 +539,7 @@ local classLookup = {
   [11] = 1024 -- Druid
 }
 
+---@type table<integer, integer>
 local reverseClassLookup = {}
 
 for k, v in pairs(classLookup) do
@@ -501,6 +554,8 @@ local raceLookup = {
   [11] = 4 -- Draenei
 }
 
+---@param character JsonCharacter
+---@return string
 function VGT:ColorizeCharacterName(character)
   local _, _, _, color = GetClassColor(select(2, self:CharacterClassInfo(character)))
   if not color then
@@ -510,30 +565,36 @@ function VGT:ColorizeCharacterName(character)
   end
 end
 
+---@param character JsonCharacter
+---@return string? className, string? classFile, number? classId
 function VGT:CharacterClassInfo(character)
   return GetClassInfo(reverseClassLookup[character.Class])
 end
 
+---@return JsonCharacter[]
 function VGT:GetCharacters()
 
+  ---@param characters JsonCharacter[]
+  ---@param id string
   local function insertCharacter(characters, id)
     local name, _ = UnitName(id)
     if (name) then
       local _, _, raceId = UnitRace(id)
-      local gender = UnitSex(id)
       local _, _, classId = UnitClass(id)
 
-      if (raceId and gender and classId) then
-        table.insert(characters, {
+      if (raceId and classId) then
+        ---@class JsonCharacter
+        local character = {
           Name = name,
-          Gender = gender - 2,
           Class = classLookup[classId],
           Race = raceLookup[raceId]
-        })
+        }
+        table.insert(characters, character)
       end
     end
   end
 
+  ---@type JsonCharacter[]
   local characters = {}
   if UnitInRaid("player") then
     for i = 1, 40 do

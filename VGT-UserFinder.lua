@@ -1,3 +1,4 @@
+---@class UserFinderModule : Module
 local userFinder = VGT:NewModule("userFinder")
 
 userFinder.results = {}

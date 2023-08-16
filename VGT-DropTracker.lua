@@ -1,3 +1,4 @@
+---@class DropTrackerModule : Module, { char: DropTrackerCharacterSettings, profile: DropTrackerProfileSettings }
 local dropTracker = VGT:NewModule("dropTracker")
 local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -38,6 +39,10 @@ function dropTracker:AllResponded()
   return true
 end
 
+---@param itemId integer
+---@param itemIndex integer
+---@param creatureId string
+---@param hasStanding boolean
 function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
   self:ResetItems()
   self.char.expiration = self.char.expiration or (time() + 21600)
@@ -61,16 +66,21 @@ function dropTracker:Track(itemId, itemIndex, creatureId, hasStanding)
         return
       end
       local autoPassing = self:AutoPassing(itemId)
-      tinsert(self.char.items, {
+      ---@class DropTrackerItem
+      ---@field interested boolean?
+      local dropTrackerItem = {
         id = itemId,
         winCount = 0,
         hasStanding = hasStanding,
         name = item:GetItemName(),
         link = item:GetItemLink(),
+        ---@type string|number
         icon = item:GetItemIcon(),
+        ---@type string[]
         uniqueIds = {uniqueId},
         passed = autoPassing
-      })
+      }
+      tinsert(self.char.items, dropTrackerItem)
       if self.profile.autoShow and not autoPassing then
         self:Show()
       else
@@ -129,7 +139,7 @@ function dropTracker:Refresh()
   local currentScroll = self.scroll.localstatus.scrollvalue
   self.scroll:ReleaseChildren()
   if not next(self.char.items) then
-    local label = AceGUI:Create("Label")
+    local label = AceGUI:Create("Label") --[[@as AceGUILabel]]
     label:SetText("No items have dropped yet.")
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16, "")
@@ -140,7 +150,7 @@ function dropTracker:Refresh()
   for _, i in ipairs(self.char.items) do
     local item = i
     if not item.winCount then
-      item.winCount = item.won and 1 or 0
+      item.winCount = 0
     end
     if not item.uniqueIds then
       item.uniqueIds = {""}
@@ -154,7 +164,7 @@ function dropTracker:Refresh()
       shouldShow = self.profile.showPassed
     end
     if shouldShow then
-      local group = AceGUI:Create("InlineGroup")
+      local group = AceGUI:Create("InlineGroup") --[[@as AceGUIInlineGroup]]
       group:SetFullWidth(true)
       group:SetLayout("Flow")
       self.scroll:AddChild(group)
@@ -177,7 +187,7 @@ function dropTracker:Refresh()
         text = text .. " - |cff00ff00Interested|r"
       end
 
-      local label = AceGUI:Create("InteractiveLabel")
+      local label = AceGUI:Create("InteractiveLabel") --[[@as AceGUIInteractiveLabel]]
       label:SetFont(GameFontHighlight:GetFont(), 16, "")
       label:SetImage(item.icon)
       label:SetImageSize(24, 24)
@@ -195,7 +205,7 @@ function dropTracker:Refresh()
       group:AddChild(label)
 
       if item.winCount < #item.uniqueIds then
-        local interestedButton = AceGUI:Create("Button")
+        local interestedButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         interestedButton:SetText("Interested")
         interestedButton:SetHeight(24)
         interestedButton:SetWidth(100)
@@ -204,7 +214,7 @@ function dropTracker:Refresh()
         end)
         group:AddChild(interestedButton)
 
-        local passButton = AceGUI:Create("Button")
+        local passButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         passButton:SetText("Pass")
         passButton:SetHeight(24)
         passButton:SetWidth(120)
@@ -213,7 +223,7 @@ function dropTracker:Refresh()
         end)
         group:AddChild(passButton)
 
-        local autoPassButton = AceGUI:Create("Button")
+        local autoPassButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         autoPassButton:SetText("Always Pass")
         autoPassButton:SetHeight(24)
         autoPassButton:SetWidth(120)
@@ -221,7 +231,12 @@ function dropTracker:Refresh()
           VGT:Confirm(
             function()
               self:NotifyPassing(item, true)
-              self.char.autoPasses[item.id] = {passed = true, name = item.name, link = item.link}
+              ---@class DropTrackerPass
+              self.char.autoPasses[item.id] = {
+                passed = true,
+                name = item.name,
+                link = item.link
+              }
             end,
             "Are you sure you want to auto-pass " .. item.link .. "? You will not be prompted to roll on this item again!"
           )
@@ -231,7 +246,7 @@ function dropTracker:Refresh()
     end
   end
 
-  local showPassedToggle = AceGUI:Create("CheckBox")
+  local showPassedToggle = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
   showPassedToggle:SetLabel("Show Passed Items")
   showPassedToggle:SetValue(self.profile.showPassed and true or false)
   showPassedToggle:SetCallback("OnValueChanged", function()
@@ -240,7 +255,7 @@ function dropTracker:Refresh()
   end)
   self.scroll:AddChild(showPassedToggle)
 
-  local showInterestedToggle = AceGUI:Create("CheckBox")
+  local showInterestedToggle = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
   showInterestedToggle:SetLabel("Show Interested Items")
   showInterestedToggle:SetValue(self.profile.showInterested and true or false)
   showInterestedToggle:SetCallback("OnValueChanged", function()
@@ -249,7 +264,7 @@ function dropTracker:Refresh()
   end)
   self.scroll:AddChild(showInterestedToggle)
 
-  local showWonToggle = AceGUI:Create("CheckBox")
+  local showWonToggle = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
   showWonToggle:SetLabel("Show Won Items")
   showWonToggle:SetValue(self.profile.showWon and true or false)
   showWonToggle:SetCallback("OnValueChanged", function()
@@ -258,7 +273,7 @@ function dropTracker:Refresh()
   end)
   self.scroll:AddChild(showWonToggle)
 
-  local resetButton = AceGUI:Create("Button")
+  local resetButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   resetButton:SetFullWidth(true)
   resetButton:SetText("Clear All")
   resetButton:SetCallback("OnClick", function()
@@ -296,7 +311,7 @@ function dropTracker:Show()
 end
 
 function dropTracker:BuildWindow()
-  self.frame = AceGUI:Create("Window")
+  self.frame = AceGUI:Create("Window") --[[@as AceGUIWindow]]
   self.frame:SetTitle("Valhalla Drop Tracker")
   self.frame:SetLayout("Fill")
   self:RefreshConfig() -- SetPoint, SetWidth, SetHeight
@@ -308,14 +323,14 @@ function dropTracker:BuildWindow()
     self.profile.width = self.frame.frame:GetWidth()
     self.profile.height = self.frame.frame:GetHeight()
   end)
-  local scrollcontainer = AceGUI:Create("SimpleGroup")
+  local scrollcontainer = AceGUI:Create("SimpleGroup") --[[@as AceGUISimpleGroup]]
   scrollcontainer:SetFullWidth(true)
   scrollcontainer:SetFullHeight(true)
   scrollcontainer:SetLayout("Fill")
 
   self.frame:AddChild(scrollcontainer)
 
-  self.scroll = AceGUI:Create("ScrollFrame")
+  self.scroll = AceGUI:Create("ScrollFrame") --[[@as AceGUIScrollFrame]]
   self.scroll:SetLayout("Flow")
   scrollcontainer:AddChild(self.scroll)
   self:Refresh()

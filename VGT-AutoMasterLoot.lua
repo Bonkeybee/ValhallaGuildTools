@@ -1,3 +1,4 @@
+---@class AutoMasterLootModule : Module, { char: AutoMasterLootCharacterSettings }
 local autoMasterLoot = VGT:NewModule("autoMasterLoot")
 
 function autoMasterLoot:ShouldIgnore(ignores, link)
@@ -25,13 +26,13 @@ function autoMasterLoot:GetAutoMasterLootTarget(ignores, lootIndex)
   local target
 
   if quality < 4 then
-    target = VGT.db.char.autoMasterLoot.disenchantTarget
+    target = self.char.disenchantTarget
     if UnitExists(target) then
       return target
     end
   end
 
-  target = VGT.db.char.autoMasterLoot.target
+  target = self.char.target
   if UnitExists(target) then
     return target
   end

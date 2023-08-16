@@ -8,44 +8,69 @@ LSM:Register("sound", "Tatl Hey", "Interface\\Addons\\ValhallaGuildTools\\Sounds
 LSM:Register("sound", "Tatl Listen", "Interface\\Addons\\ValhallaGuildTools\\Sounds\\tatllisten.ogg")
 
 function VGT:InitializeOptions()
+  ---@class VGT.db : AceDBObject-3.0
   local defaults = {
+    ---@class CharacterSettings
     char = {
+      ---@class AutoMasterLootCharacterSettings
       autoMasterLoot = {
+        ---@type string
         target = "",
+        ---@type string
         disenchantTarget = ""
       },
+      ---@class DropTrackerCharacterSettings
       dropTracker = {
+        ---@type DropTrackerItem[]
         items = {},
-        autoPasses = {}
-      },
-      lootTracker = {
-        creatures = {},
-        preemptiveResponses = {},
-        standings = {},
+        ---@type table<integer, DropTrackerPass>
+        autoPasses = {},
+        ---@type number?
         expiration = nil
+      },
+      ---@class LootTrackerCharacterSettings
+      lootTracker = {
+        ---@type CreatureData[]
+        creatures = {},
+        ---@type table<integer, table<string, VGT.PreemptiveResponse>>
+        preemptiveResponses = {},
+        ---@type Standing[][]
+        standings = {},
+        ---@type number?
+        expiration = nil,
+        ---@type table<string, true>
+        disenchanters = {}
       }
     },
+    ---@class ProfileSettings
     profile = {
+      ---@class MinimapButtonProfileSettings : LibDBIcon.button.DB
       minimapButton = {
         hide = false,
         oldIcon = false
       },
+      ---@class LoggingProfileSettings
       logging = {
         enabled = false,
+        ---@type VGT.LogLevel
         level = VGT.LogLevel.INFO
       },
+      ---@class MapProfileSettings
       map = {
         enabled = true,
         sendMyLocation = true,
+        ---@type VGT.MapOutput
         mode = VGT.MapOutput.BOTH,
         improveBlizzardPins = true,
         useClassColor = false,
         size = 14
       },
+      ---@class AutoMasterLootProfileSettings
       autoMasterLoot = {
         enabled = false,
         ignoredItems = ""
       },
+      ---@class LootTrackerProfileSettings
       lootTracker = {
         enabled = true,
         autoTrade = true,
@@ -60,6 +85,7 @@ function VGT:InitializeOptions()
         height = 240,
         point = "CENTER"
       },
+      ---@class RollerProfileSettings
       roller = {
         enabled = true,
         showPasses = false,
@@ -68,6 +94,7 @@ function VGT:InitializeOptions()
         y = 0,
         point = "CENTER"
       },
+      ---@class DropTrackerProfileSettings
       dropTracker = {
         enabled = true,
         wonSound = "An Awesome Choice",
@@ -239,7 +266,7 @@ function VGT:InitializeOptions()
             max = 32,
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:GetModule("map"):RefreshPinSizeAndColor()
+              VGT:GetModule("map")--[[@as MapModule]]:RefreshPinSizeAndColor()
             end
           },
           sendMyLocation = {
@@ -261,7 +288,7 @@ function VGT:InitializeOptions()
             type = "toggle",
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:GetModule("map"):RefreshPinSizeAndColor()
+              VGT:GetModule("map")--[[@as MapModule]]:RefreshPinSizeAndColor()
             end
           }
         }

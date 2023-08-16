@@ -1,6 +1,17 @@
+---@private
+---@type table<string|number, InstanceInfo>
 VGT._instances = {}
 
+---@private
+---@param instanceId integer
+---@param instanceName string
+---@param isRaid boolean
+---@param x number
+---@param y number
+---@param continentId integer
+---@return InstanceInfo
 function VGT:RegisterInstance(instanceId, instanceName, isRaid, x, y, continentId)
+  ---@class InstanceInfo
   local instance = {
     Name = instanceName,
     Id = instanceId,
@@ -9,10 +20,15 @@ function VGT:RegisterInstance(instanceId, instanceName, isRaid, x, y, continentI
     X = x,
     Y = y,
     ContinentId = continentId,
+    ---@type EncounterInfo[]
     Encounters = {}
   };
 
+  ---Adds an encounter to this instance
+  ---@param encounterId integer
+  ---@param encounterName string
   function instance:AddEncounter(encounterId, encounterName)
+    ---@class EncounterInfo
     local encounter = {
       Name = encounterName,
       Id = encounterId
@@ -26,6 +42,9 @@ function VGT:RegisterInstance(instanceId, instanceName, isRaid, x, y, continentI
   return instance;
 end
 
+---Gets an instance by its name or id
+---@param nameOrId string|integer
+---@return InstanceInfo?
 function VGT:GetInstance(nameOrId)
   return self._instances[nameOrId];
 end

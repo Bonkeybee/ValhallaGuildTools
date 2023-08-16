@@ -1,5 +1,5 @@
+---@class RollerModule : Module, { profile: RollerProfileSettings }
 local roller = VGT:NewModule("roller")
-local AceGUI = LibStub("AceGUI-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 
 function roller:Show(itemId, auto, forceShow)
@@ -17,7 +17,7 @@ function roller:Show(itemId, auto, forceShow)
         end
 
         if not self.profile.showPasses then
-          local dropTracker = VGT:GetModule("dropTracker")
+          local dropTracker = VGT:GetModule("dropTracker") --[[@as DropTrackerModule]]
           if dropTracker.enabledState then
             dropTracker:ResetItems()
             local existingItem = dropTracker:GetForItem(itemId)
@@ -48,12 +48,18 @@ function roller:Show(itemId, auto, forceShow)
 end
 
 function roller:Build()
+  ---@class RollWindow : BackdropTemplate, Frame
+  ---@field item ItemMixin?
   self.rollWindow = CreateFrame("Frame", "VgtRollFrame", UIParent, "BackdropTemplate")
   self.rollWindow:SetFrameStrata("DIALOG")
-  self.rollWindow:SetBackdrop({
+  self.rollWindow--[[@as BackdropTemplate]]:SetBackdrop({
     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", -- 131071
     tile = true,
-    tileSize = 16
+    tileSize = 16,
+    edgeFile = "",
+    edgeSize = 0,
+    tileEdge = false,
+    insets = {left = 0, right = 0, bottom = 0, top = 0}
   })
   self:RefreshConfig() -- SetPoint
   self.rollWindow:SetSize(400, 24)

@@ -1,19 +1,17 @@
 local VGT_ADDON_NAME, ValhallaGuildTools = ...
 local COMMAND_MODULE = "VGT-CMD"
 
+---@class VGT : AceAddon, AceEvent-3.0, AceComm-3.0, { db: VGT.db }
 VGT = LibStub("AceAddon-3.0"):NewAddon(ValhallaGuildTools, VGT_ADDON_NAME, "AceComm-3.0", "AceEvent-3.0")
-
-do
-  local func = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-  VGT.version = tonumber(func(VGT_ADDON_NAME, "Version"))
-end
+VGT.version = tonumber(C_AddOns.GetAddOnMetadata(VGT_ADDON_NAME, "Version"))
 
 VGT:SetDefaultModuleState(true)
 VGT:SetDefaultModuleLibraries("AceEvent-3.0")
 
--- Module proto
+---@class Module : AceModule, AceEvent-3.0
 local Module = {}
 
+---@private
 function Module:OnInitialize()
   VGT.LogTrace("Initialized module %q", self.moduleName)
   self.profile = VGT.db.profile[self.moduleName]
@@ -23,6 +21,9 @@ function Module:OnInitialize()
   end
 end
 
+---Registers this module to handle an addon command
+---@param command VGT.Command The command to handle
+---@param handler string|fun(...)? The callback to invoke when this command is received. Can also be the name of a function on this module. If `nil`, a function with the name of the command on this module is used instead.
 function Module:RegisterCommand(command, handler)
   local commandName = VGT.CommandNames[command]
   if not commandName then
@@ -32,6 +33,8 @@ function Module:RegisterCommand(command, handler)
   self:RegisterMessage("VGT_CMD_" .. commandName, handler or commandName)
 end
 
+---Unregisters any command handlers on this module for a command
+---@param command VGT.Command the command to unregister
 function Module:UnregisterCommand(command)
   local commandName = VGT.CommandNames[command]
   if not commandName then
@@ -45,12 +48,14 @@ VGT:SetDefaultModulePrototype(Module)
 
 -- Define enums
 
+---@enum VGT.MapOutput
 VGT.MapOutput = {
   MAP = 1,
   MINIMAP = 2,
   BOTH = 3
 }
 
+---@enum VGT.LogLevel
 VGT.LogLevel = {
   TRACE = 1,
   DEBUG = 2,
@@ -60,6 +65,7 @@ VGT.LogLevel = {
   SYSTEM = 6
 }
 
+---@enum VGT.Command
 VGT.Commands = {
   GET_VERSION = "GV",
   VERSION_RESPOND = "VR",
@@ -73,19 +79,21 @@ VGT.Commands = {
   ITEM_TRACKED = "IT"
 }
 
+---@enum VGT.PreemptiveResponse
 VGT.PreemptiveResponses = {
   INTERESTED = 1,
   SOFT_PASS = 2,
   HARD_PASS = 3
 }
 
+---@type table<string, string>
 VGT.CommandNames = {}
 
 for name, id in pairs(VGT.Commands) do
   VGT.CommandNames[id] = name
 end
 
-VGTScanningTooltip = CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate")
+VGTScanningTooltip = CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate") --[[@as GameTooltip]]
 VGTScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
 
 local function serializeArg(arg)
@@ -151,6 +159,9 @@ function VGT:RefreshConfig()
   end
 end
 
+---Sends a command to everyone in the guild
+---@param command VGT.Command The command to send
+---@param ... any The parameters of the command
 function VGT:SendGuildAddonCommand(command, ...)
   if IsInGuild() then
     self:SendAddonCommand("GUILD", nil, command, ...)
@@ -159,6 +170,9 @@ function VGT:SendGuildAddonCommand(command, ...)
   end
 end
 
+---Sends a command to everyone in the current raid or party
+---@param command VGT.Command The command to send
+---@param ... any The parameters of the command
 function VGT:SendGroupAddonCommand(command, ...)
   local channel
   if UnitInRaid("player") then
@@ -174,10 +188,18 @@ function VGT:SendGroupAddonCommand(command, ...)
   end
 end
 
+---Sends a command to the target player
+---@param command VGT.Command The command to send
+---@param ... any The parameters of the command
 function VGT:SendPlayerAddonCommand(player, command, ...)
   self:SendAddonCommand("WHISPER", player, command, ...)
 end
 
+---Sends a command to everyone in the current raid or party
+---@param channel string The channel to send the command over
+---@param target string|nil The name of the target when sending a whisper; the name of a channel when sent over a custom channel; otherwise ignored.
+---@param command VGT.Command The command to send
+---@param ... any The parameters of the command
 function VGT:SendAddonCommand(channel, target, command, ...)
   local message = command
   local paramCount = select("#", ...)
@@ -189,6 +211,7 @@ function VGT:SendAddonCommand(channel, target, command, ...)
   self:SendCommMessage(COMMAND_MODULE, message, channel, target)
 end
 
+---@private
 function VGT:HandleCommand(module, message, channel, sender)
   local command, rest = strsplit("\001", message, 2)
   if not command then
@@ -204,6 +227,7 @@ function VGT:HandleCommand(module, message, channel, sender)
   end
 end
 
+---@private
 function VGT:LOOT_READY(_, autoLoot)
   self.LogTrace("Loot ready. Auto-Loot is %s", autoLoot)
   local lootmethod, masterlooterPartyID, _ = GetLootMethod()

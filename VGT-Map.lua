@@ -1,3 +1,4 @@
+---@class MapModule : Module, AceComm-3.0, AceTimer-3.0, { profile: MapProfileSettings }
 local map = VGT:NewModule("map", "AceComm-3.0", "AceTimer-3.0")
 
 local MODULE_NAME = "VGT-Map"
@@ -84,7 +85,7 @@ function map:FormatPlayerTooltip(player)
   local text = "|c" .. select(4, GetClassColor(player.class)) .. player.name .. "|r"
 
   if (player.hp ~= nil) then
-    text = text .. " |cffffffff-|r |cff" .. VGT.RGBToHex(VGT.ColorGradient(tonumber(player.hp), 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.Round(player.hp * 100, 0) .. "%|r"
+    text = text .. " |cffffffff-|r |cff" .. VGT.GetColorGradientHex(player.hp) .. VGT.Round(player.hp * 100, 0) .. "%|r"
   end
   return text
 end
@@ -106,17 +107,15 @@ function map:FormatTooltip(player, distance)
 end
 
 function map:SendMyLocation(target)
-  if (IsInGuild() and self.profile.sendMyLocation) then
+  if IsInGuild() and self.profile.sendMyLocation then
     local x, y, continent = HereBeDragons:GetPlayerWorldPosition()
-    x = VGT.Round(x, 0)
-    y = VGT.Round(y, 0)
     local hp = UnitHealth("player") / UnitHealthMax("player")
-    if (continent ~= nil and x ~= nil and y ~= nil and hp ~= nil) then
-      local data = continent .. DELIMITER .. x .. DELIMITER .. y .. DELIMITER .. hp
-      if (target ~= nil) then
+    if continent and x and y then
+      local data = string.format("%.0f:%.2f:%.2f:%.3f", continent, x, y, hp)
+      if target ~= nil then
         VGT.LogTrace("Sending map location to %s", target)
         VGT:SendCommMessage(MODULE_NAME, data, "WHISPER", target)
-      elseif (IsInGuild()) then
+      else
         VGT.LogTrace("Sending map location to guild")
         VGT:SendCommMessage(MODULE_NAME, data, "GUILD")
       end
@@ -308,6 +307,8 @@ function map:PLAYER_FLAGS_CHANGED(_, arg)
 end
 
 map.originalUpdateUnitTooltips = UnitPositionFrameMixin.UpdateUnitTooltips
+---@param self any
+---@param tooltipFrame GameTooltip
 function map.newUpdateUnitTooltips(self, tooltipFrame)
   local tooltipText = ""
   local prefix = ""
@@ -315,7 +316,7 @@ function map.newUpdateUnitTooltips(self, tooltipFrame)
 
   for unit in pairs(self.currentMouseOverUnits) do
     local unitName = UnitName(unit)
-    if not self:IsMouseOverUnitExcluded(unit) then
+    if unitName and not self:IsMouseOverUnitExcluded(unit) then
       local formattedUnitName = GetIsPVPInactive(unit, timeNow) and format(PLAYER_IS_PVP_AFK, unitName) or ("|c" .. select(4, GetClassColor(select(2, UnitClass(unit)))) .. unitName .. "|r")
 
       tooltipText = tooltipText .. prefix .. formattedUnitName
@@ -323,7 +324,7 @@ function map.newUpdateUnitTooltips(self, tooltipFrame)
       local unitHp = UnitHealth(unitName)
       if type(unitHp) == "number" then
         unitHp = unitHp / UnitHealthMax(unitName)
-        tooltipText = tooltipText .. " |cffffffff-|r |cff" .. VGT.RGBToHex(VGT.ColorGradient(unitHp, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.Round(unitHp * 100, 0) .. "%|r"
+        tooltipText = tooltipText .. " |cffffffff-|r |cff" .. VGT.GetColorGradientHex(unitHp) .. VGT.Round(unitHp * 100, 0) .. "%|r"
       end
 
       prefix = "\n"
@@ -348,6 +349,11 @@ function map.newUpdateUnitTooltips(self, tooltipFrame)
 end
 
 map.originalGetUnitColor = UnitPositionFrameMixin.GetUnitColor
+---@param self any
+---@param timeNow number
+---@param unit UnitId
+---@param appearanceData table
+---@return boolean, number?, number?, number?
 function map.newGetUnitColor(self, timeNow, unit, appearanceData)
   if appearanceData.shouldShow then
     local r, g, b = 1, 1, 1

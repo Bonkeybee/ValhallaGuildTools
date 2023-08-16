@@ -26,13 +26,13 @@ SlashCmdList["VGT"] = function(message)
   elseif (command == "about") then
     VGT.PrintAbout()
   elseif (command == "users") then
-    VGT:GetModule("userFinder"):PrintUserCount(arg1 == "by" and arg2 or nil)
+    VGT:GetModule("userFinder")--[[@as UserFinderModule]]:PrintUserCount(arg1 == "by" and arg2 or nil)
   elseif (command == "raidstart") then
     VGT:ShowRaidStartExport()
   elseif (command == "loot" or command == "drops") then
-    VGT:GetModule("dropTracker"):Toggle()
+    VGT:GetModule("dropTracker")--[[@as DropTrackerModule]]:Toggle()
   elseif (command == "ml" or command == "masterlooter") then
-    VGT:GetModule("lootTracker"):Toggle()
+    VGT:GetModule("lootTracker")--[[@as LootTrackerModule]]:Toggle()
   else
     VGT.LogError("invalid command - type `/vgt help` for a list of commands")
   end

@@ -1,3 +1,4 @@
+---@class VersionCheckerModule : Module
 local versionChecker = VGT:NewModule("versionChecker")
 
 versionChecker.latestVersion = VGT.version

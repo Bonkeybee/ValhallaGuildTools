@@ -1,24 +1,22 @@
+---@type table<integer, integer[]>
 VGT._itemsForToken = {}
+---@type table<integer, integer>
 VGT._tokenForItem = {}
 
----@class IntArray
----@field [integer] integer
-
 ---@param tokenId integer
----@return IntArray|nil
+---@return integer[]?
 function VGT:GetItemsForToken(tokenId)
   return self._itemsForToken[tokenId]
 end
 
 ---@param itemId integer
----@return integer|nil
+---@return integer?
 function VGT:GetTokenForItem(itemId)
   return self._tokenForItem[itemId]
 end
 
 ---@param itemOrTokenId integer
 ---@param action fun(id:integer)
----@return nil
 function VGT:RepeatForAllRelatedItems(itemOrTokenId, action)
   action(itemOrTokenId)
   local tokenRewards = VGT:GetItemsForToken(itemOrTokenId)
@@ -33,6 +31,8 @@ function VGT:RepeatForAllRelatedItems(itemOrTokenId, action)
   end
 end
 
+---@param tokenId integer
+---@param rewards integer[]
 local function AddToken(tokenId, rewards)
   VGT._itemsForToken[tokenId] = rewards
 

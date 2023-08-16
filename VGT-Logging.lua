@@ -23,7 +23,7 @@ local function Sanitize(param)
   if t == "string" or t == "number" then
     return param
   elseif t == "nil" then
-    return "nil"
+    return ""
   elseif t == "boolean" then
     return param and "true" or "false"
   elseif t == "table" then
@@ -55,14 +55,23 @@ local function SanitizeParams(...)
   end
 end
 
+---Formats a string.
+---* `string` and `number` values are treated the same as with `string.format`
+---* `nil` is treated as an empty string
+---* `boolean` values are treated as "true" and "false" strings
+---* `table` arrays are unpacked and have their values displayed comma-separated
+---* All other types go through the `tostring` function
+---@param message string
+---@param ... any
+---@return string
 function VGT.Format(message, ...)
   return string.format(message, SanitizeParams(...))
 end
 
--- Logs (prints) a given message at the specified log level
---  level: the log level to print at
---  message: the unformatted message
---  ...: values to format the message with
+---Logs (prints) a given message at the specified log level
+---@param level VGT.LogLevel the log level to print at
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.Log(level, message, ...)
   if ShouldLog(level) then
     if select("#", ...) > 0 then
@@ -73,26 +82,50 @@ function VGT.Log(level, message, ...)
   end
 end
 
+---Logs (prints) a trace message
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogTrace(message, ...)
   VGT.Log(VGT.LogLevel.TRACE, message, ...)
 end
 
+---Logs (prints) a debug message
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogDebug(message, ...)
   VGT.Log(VGT.LogLevel.DEBUG, message, ...)
 end
 
+---Logs (prints) an informational message
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogInfo(message, ...)
   VGT.Log(VGT.LogLevel.INFO, message, ...)
 end
 
+---Logs (prints) a warning message
+---
+---This message cannot be filtered
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogWarning(message, ...)
   VGT.Log(VGT.LogLevel.WARN, message, ...)
 end
 
+---Logs (prints) an error message
+---
+---This message cannot be filtered
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogError(message, ...)
   VGT.Log(VGT.LogLevel.ERROR, message, ...)
 end
 
+---Logs (prints) a system message
+---
+---This message cannot be filtered
+---@param message string the unformatted message
+---@param ... any values to format the message with
 function VGT.LogSystem(message, ...)
   VGT.Log(VGT.LogLevel.SYSTEM, message, ...)
 end

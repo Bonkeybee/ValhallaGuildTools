@@ -1,8 +1,10 @@
+
+---@class LootTrackerModule : Module, AceTimer-3.0, { char: LootTrackerCharacterSettings, profile: LootTrackerProfileSettings }
 local lootTracker = VGT:NewModule("lootTracker", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 
-lootTracker.currentTrades = {}
-lootTracker.activeSlots = {}
+---@type TradeInfo[]
+lootTracker.trades = {}
 
 -- https://wowpedia.fandom.com/wiki/InstanceID
 lootTracker.trackedInstances = {
@@ -104,6 +106,7 @@ function lootTracker:GetOtherUnassigned(item)
 end
 
 function lootTracker:GetStandingsForItem(itemId)
+  --- @type Standing[]
   local standings = {}
   VGT.LogTrace("Looking for standings for item:%s", itemId)
 
@@ -120,9 +123,11 @@ function lootTracker:GetStandingsForItem(itemId)
             end
             return
           elseif existingStanding.prio < standing.prio then
-            local newStanding = {}
-            newStanding.prio = standing.prio
-            newStanding.names = {}
+            --- @type Standing
+            local newStanding = {
+              prio = standing.prio,
+              names = {}
+            }
             for name in pairs(standing.names) do
               newStanding.names[name] = true
             end
@@ -256,47 +261,6 @@ function lootTracker:GetCharactersWithStandings(itemId)
   return namesArr
 end
 
-function lootTracker:FindExpiringItems()
-  local items = {}
-  for bag = 0, 4 do
-    for slot = 1, C_Container.GetContainerNumSlots(bag) do
-      local containerItemId = C_Container.GetContainerItemID(bag, slot)
-      if containerItemId then
-        local icon, _, _, _, _, _, itemLink = C_Container.GetContainerItemInfo(bag, slot)
-        VGTScanningTooltip:ClearLines()
-        VGTScanningTooltip:SetBagItem(bag, slot)
-        local isSoulbound = false
-        local tradableText
-        for i = 1, VGTScanningTooltip:NumLines() do
-          local line = _G["VGTScanningTooltipTextLeft" .. i]
-          local text = line and line:GetText() or ""
-          if text == ITEM_SOULBOUND then
-            isSoulbound = true
-          elseif isSoulbound and VGT.IsBindTimeRemainingLine(text) then
-            tradableText = text
-            break
-          end
-        end
-        if tradableText then
-          local timeRemaining = VGT.ExtractSoulboundTimeRemaining(tradableText)
-          if timeRemaining and timeRemaining > 0 then
-            tinsert(items, {
-              id = containerItemId,
-              expiration = timeRemaining,
-              icon = icon,
-              link = itemLink
-            })
-          end
-        end
-      end
-    end
-  end
-  table.sort(items, function(l, r)
-    return l.expiration < r.expiration
-  end)
-  return items
-end
-
 function lootTracker:AssignItem(itemData, winner, mode, roll, unassignName)
   itemData.winner = winner
   itemData.winningPrio, itemData.rewardId = self:TakePrioFromStandings(itemData.id, winner)
@@ -383,13 +347,13 @@ function lootTracker:UnassignItem(itemData)
 end
 
 function lootTracker:ConfigureEncounter(creatureGuid)
-  local label = AceGUI:Create("InteractiveLabel")
+  local label = AceGUI:Create("InteractiveLabel") --[[@as AceGUIInteractiveLabel]]
   label:SetText("Unknown")
   label:SetFullWidth(true)
   label:SetFont(GameFontHighlight:GetFont(), 16, "")
   self.scroll:AddChild(label)
 
-  local spacer = AceGUI:Create("InteractiveLabel")
+  local spacer = AceGUI:Create("InteractiveLabel") --[[@as AceGUIInteractiveLabel]]
   spacer:SetFullWidth(true)
   spacer:SetText(" ")
   self.scroll:AddChild(spacer)
@@ -399,7 +363,7 @@ function lootTracker:ConfigureEncounter(creatureGuid)
   if creatureData then
     label:SetText(creatureData.name or VGT:UnitNameFromGuid(creatureGuid))
 
-    local exportButton = AceGUI:Create("Button")
+    local exportButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
     exportButton:SetText("Export Items")
     exportButton:SetFullWidth(true)
     exportButton:SetCallback("OnClick", function()
@@ -440,7 +404,7 @@ function lootTracker:ConfigureEncounter(creatureGuid)
     self.scroll:AddChild(exportButton)
 
     if strsplit("-", creatureData.id, 2) == "Unknown" then
-      local renameButton = AceGUI:Create("Button")
+      local renameButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
       renameButton:SetText("Rename")
       renameButton:SetFullWidth(true)
       renameButton:SetCallback("OnClick", function()
@@ -454,14 +418,14 @@ function lootTracker:ConfigureEncounter(creatureGuid)
               newId = "Unknown-0-0-0-0-0-0-" .. i
             end
             creatureData.id = newId
-            self.tree:Select("encounter+" .. newId)
+            self.tree:SelectByValue("encounter+" .. newId)
           end
           self:Refresh()
         end)
       end)
       self.scroll:AddChild(renameButton)
 
-      local manualTrackButton = AceGUI:Create("Button")
+      local manualTrackButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
       manualTrackButton:SetText("Manual Track Item")
       manualTrackButton:SetFullWidth(true)
       manualTrackButton:SetCallback("OnClick", function()
@@ -476,7 +440,7 @@ function lootTracker:ConfigureEncounter(creatureGuid)
       self.scroll:AddChild(manualTrackButton)
     end
 
-    local deleteButton = AceGUI:Create("Button")
+    local deleteButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
     deleteButton:SetText("Delete")
     deleteButton:SetFullWidth(true)
     deleteButton:SetCallback("OnClick", function()
@@ -509,7 +473,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
     return
   end
 
-  local label = AceGUI:Create("InteractiveLabel")
+  local label = AceGUI:Create("InteractiveLabel") --[[@as AceGUILabel]]
   label:SetImage(itemData.icon)
   label:SetImageSize(24, 24)
   label:SetText(itemData.link)
@@ -526,7 +490,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   self.scroll:AddChild(label)
 
   if itemData.unbound then
-    label = AceGUI:Create("Label")
+    label = AceGUI:Create("Label") --[[@as AceGUILabel]]
     label:SetFullWidth(true)
     label:SetFont(GameFontHighlight:GetFont(), 16, "")
     label:SetColor(1, 1, 0)
@@ -534,20 +498,20 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
     self.scroll:AddChild(label)
   end
 
-  label = AceGUI:Create("Label")
+  label = AceGUI:Create("Label") --[[@as AceGUILabel]]
   label:SetFullWidth(true)
   label:SetFont(GameFontHighlight:GetFont(), 16, "")
   label:SetText(self:BuildItemStatusText(itemData))
   self.scroll:AddChild(label)
 
-  local spacer = AceGUI:Create("InteractiveLabel")
+  local spacer = AceGUI:Create("InteractiveLabel") --[[@as AceGUIInteractiveLabel]]
   spacer:SetFullWidth(true)
   spacer:SetText(" ")
   self.scroll:AddChild(spacer)
 
   if itemData.winner then
 
-    local toggleTradeButton = AceGUI:Create("CheckBox")
+    local toggleTradeButton = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
     toggleTradeButton:SetLabel("Traded")
     toggleTradeButton:SetValue(itemData.traded and true or false)
     toggleTradeButton:SetCallback("OnValueChanged", function()
@@ -574,7 +538,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
     if alternateRolls then
       local originalWinner = itemData.winner
       for _, alt in ipairs(alternateRolls) do
-        local reassignButton = AceGUI:Create("Button")
+        local reassignButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         reassignButton:SetText("Reassign to " .. alt.name .. " (Rolled " .. alt.roll .. ")")
         reassignButton:SetFullWidth(true)
         reassignButton:SetCallback("OnClick", function()
@@ -584,7 +548,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       end
     end
 
-    local unassignButton = AceGUI:Create("Button")
+    local unassignButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
     unassignButton:SetText("Unassign Item")
     unassignButton:SetFullWidth(true)
     unassignButton:SetCallback("OnClick", function()
@@ -594,14 +558,14 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   else
     if self.rollCreature and self.rollItem then
       if self.rollItem == itemData then
-        local stopButton = AceGUI:Create("Button")
+        local stopButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         stopButton:SetText("End Rolling")
         stopButton:SetCallback("OnClick", function()
           self:EndRoll()
         end)
         self.scroll:AddChild(stopButton)
 
-        local countdownSlider = AceGUI:Create("Slider")
+        local countdownSlider = AceGUI:Create("Slider") --[[@as AceGUISlider]]
         countdownSlider:SetLabel("Countdown Time")
         countdownSlider:SetValue(self.profile.countdownTimer)
         countdownSlider:SetSliderValues(5, 30, 5)
@@ -610,21 +574,21 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         end)
         self.scroll:AddChild(countdownSlider)
 
-        local countdownButton = AceGUI:Create("Button")
+        local countdownButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         countdownButton:SetText("Start Countdown")
         countdownButton:SetCallback("OnClick", function()
           self:CountdownRoll(self.profile.countdownTimer)
         end)
         self.scroll:AddChild(countdownButton)
 
-        local remindButton = AceGUI:Create("Button")
+        local remindButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         remindButton:SetText("Remind Rollers")
         remindButton:SetCallback("OnClick", function()
           self:RemindRoll()
         end)
         self.scroll:AddChild(remindButton)
 
-        local cancelButton = AceGUI:Create("Button")
+        local cancelButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
         cancelButton:SetText("Cancel Rolling")
         cancelButton:SetCallback("OnClick", function()
           self:CancelRoll()
@@ -672,7 +636,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           return (l.pass and 1 or 0) < (r.pass and 1 or 0)
         end)
 
-        local label = AceGUI:Create("Label")
+        local label = AceGUI:Create("Label") --[[@as AceGUILabel]]
         label:SetText(responseCount .. " of " .. totalCount .. " responded.")
         self.scroll:AddChild(label)
 
@@ -687,18 +651,18 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
             text = text .. " - |cffff0000no response|r"
           end
 
-          local label = AceGUI:Create("Label")
+          local label = AceGUI:Create("Label") --[[@as AceGUILabel]]
           label:SetText(text)
           self.scroll:AddChild(label)
         end
       else
-        local label = AceGUI:Create("Label")
+        local label = AceGUI:Create("Label") --[[@as AceGUILabel]]
         label:SetFullWidth(true)
         label:SetFont(GameFontHighlight:GetFont(), 16, "")
         label:SetText("|cffff0000Currently rolling on " .. self.rollItem.name .. "|r")
         self.scroll:AddChild(label)
 
-        local spacer = AceGUI:Create("Label")
+        local spacer = AceGUI:Create("Label") --[[@as AceGUILabel]]
         spacer:SetFullWidth(true)
         spacer:SetText(" ")
         self.scroll:AddChild(spacer)
@@ -719,7 +683,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           end
 
           if #whitelist > 0 then
-            local standingButton = AceGUI:Create("Button")
+            local standingButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
             standingButton:SetFullWidth(true)
             local sText = standing.prio .. ": "
             local addComma = false
@@ -753,7 +717,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         end
       end
 
-      local rollButton = AceGUI:Create("Button")
+      local rollButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
       rollButton:SetText("Open Roll")
       rollButton:SetFullWidth(true)
       rollButton:SetCallback("OnClick", function()
@@ -761,7 +725,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       end)
       self.scroll:AddChild(rollButton)
 
-      local manualAssign = AceGUI:Create("Dropdown")
+      local manualAssign = AceGUI:Create("Dropdown") --[[@as AceGUIDropdown]]
       manualAssign:SetLabel("Manual Assign")
       local characters = {}
       for i, character in ipairs(creatureData.characters) do
@@ -787,7 +751,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       if hasAssignedDisenchanters then
         for char in pairs(self.char.disenchanters) do
           if characters[char] then
-            local deButton = AceGUI:Create("Button")
+            local deButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
             deButton:SetText("Disenchant - " .. char)
             deButton:SetFullWidth(true)
             deButton:SetCallback("OnClick", function()
@@ -798,7 +762,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         end
         self.scroll:AddChild(manualAssign)
       else
-        local deAssign = AceGUI:Create("Dropdown")
+        local deAssign = AceGUI:Create("Dropdown") --[[@as AceGUIDropdown]]
         deAssign:SetLabel("Disenchant Assign")
         deAssign:SetList(characters)
         deAssign:SetCallback("OnValueChanged", function(s, e, value)
@@ -808,7 +772,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         self.scroll:AddChild(deAssign)
       end
 
-      local destroyAssign = AceGUI:Create("Dropdown")
+      local destroyAssign = AceGUI:Create("Dropdown") --[[@as AceGUIDropdown]]
       destroyAssign:SetLabel("Destroy Assign")
       self.scroll:AddChild(destroyAssign)
       destroyAssign:SetList(characters)
@@ -833,7 +797,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 
       if #interested > 0 then
         table.sort(interested)
-        label = AceGUI:Create("Label")
+        label = AceGUI:Create("Label") --[[@as AceGUILabel]]
         if #interested > 5 then
           label:SetText("Wanted by " .. #interested .. " players.")
         else
@@ -850,7 +814,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       end
       ]]
 
-      label = AceGUI:Create("Label")
+      label = AceGUI:Create("Label") --[[@as AceGUILabel]]
       if #noResponse == 0 then
         label:SetText("|cff00ff00All players have responded.|r")
       elseif #noResponse == 1 and noResponse[1] == UnitName("player") then
@@ -866,30 +830,36 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
 end
 
 function lootTracker:ConfigureHome()
-  local rsbutton = AceGUI:Create("Button")
+  local rsbutton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   rsbutton:SetText("Raid Start")
   rsbutton:SetCallback("OnClick", function()
     VGT:ShowRaidStartExport()
   end)
   self.scroll:AddChild(rsbutton)
 
-  local importButton = AceGUI:Create("Button")
+  local importButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   importButton:SetText("Import Standings")
   importButton:SetCallback("OnClick", function()
     VGT:ShowInputDialog("Import Standings", "", function(text)
       local success = pcall(function()
+        ---@type Standing[][]
         local standings = {}
         local jsonItems = json.decode(text)
         for _, jsonItem in ipairs(jsonItems) do
+          ---@type Standing[]
           local itemStandings = {}
 
           for _, jsonStanding in ipairs(jsonItem.Standings) do
-            local standing = {}
-            standing.prio = jsonStanding.Prio
-            standing.names = {}
+            ---@type { [string]: boolean }
+            local names = {}
             for _, jsonName in ipairs(jsonStanding.Names) do
-              standing.names[jsonName] = true
+              names[jsonName] = true
             end
+            ---@class Standing
+            local standing = {
+              prio = jsonStanding.Prio,
+              names = names
+            }
             table.insert(itemStandings, standing)
           end
 
@@ -906,7 +876,7 @@ function lootTracker:ConfigureHome()
   end)
   self.scroll:AddChild(importButton)
 
-  local manualTrackButton = AceGUI:Create("Button")
+  local manualTrackButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   manualTrackButton:SetText("Manual Track Item")
   manualTrackButton:SetCallback("OnClick", function()
     local infoType, itemId, itemLink = GetCursorInfo()
@@ -919,21 +889,21 @@ function lootTracker:ConfigureHome()
   end)
   self.scroll:AddChild(manualTrackButton)
 
-  local clearButton = AceGUI:Create("Button")
+  local clearButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   clearButton:SetText("Clear All")
   clearButton:SetCallback("OnClick", function()
     self:ClearAll()
   end)
   self.scroll:AddChild(clearButton)
 
-  local vCheckButton = AceGUI:Create("Button")
+  local vCheckButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
   vCheckButton:SetText("Check Group for Addon")
   vCheckButton:SetCallback("OnClick", function()
     self:GroupVersionCheck()
   end)
   self.scroll:AddChild(vCheckButton)
 
-  local disenchantSelect = AceGUI:Create("Dropdown")
+  local disenchantSelect = AceGUI:Create("Dropdown") --[[@as AceGUIDropdown]]
   disenchantSelect:SetLabel("Raid Disenchanters")
   disenchantSelect:SetMultiselect(true)
   local characters = {}
@@ -949,7 +919,7 @@ function lootTracker:ConfigureHome()
     table.sort(characters)
     disenchantSelect:SetList(characters)
     for char in pairs(self.char.disenchanters) do
-      disenchantSelect:SetItemValue(char, true)
+      disenchantSelect:SetItemValue(char, "true")
     end
   else
     table.sort(characters)
@@ -962,7 +932,7 @@ function lootTracker:ConfigureHome()
   self.scroll:AddChild(disenchantSelect)
 
 
-  local treeToggle = AceGUI:Create("CheckBox")
+  local treeToggle = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
   treeToggle:SetLabel("Group By Winner")
   treeToggle:SetValue(self.profile.groupByWinner and true or false)
   treeToggle:SetCallback("OnValueChanged", function()
@@ -994,33 +964,14 @@ function lootTracker:ConfigureHome()
       pendingTradeText = pendingTradeText .. name
     end
 
-    local label = AceGUI:Create("Label")
+    local label = AceGUI:Create("Label") --[[@as AceGUILabel]]
     label:SetText(pendingTradeText)
     self.scroll:AddChild(label)
   end
-
-  -- local expiringItems = self:FindExpiringItems()
-  --
-  -- if #expiringItems > 0 then
-  --    local expiringLabel = AceGUI:Create("Label")
-  --    expiringLabel:SetText("Expiring Items:")
-  --    self.scroll:AddChild(expiringLabel)
-  --    for _,v in ipairs(expiringItems) do
-  --        if v.expiration > 1800 then
-  --            --break
-  --        end 
-  --        local itemLabel = AceGUI:Create("Label")
-  --        itemLabel:SetImage(v.icon)
-  --        itemLabel:SetImageSize(16, 16)
-  --        itemLabel:SetText("(|cff" .. VGT.RGBToHex(VGT.ColorGradient(v.expiration / 7200, 1, 0, 0, 1, 1, 0, 0, 1, 0)) .. VGT.TimeToString(v.expiration) .. "|r) " .. v.link)
-  --        itemLabel:SetFullWidth(true)
-  --        self.scroll:AddChild(itemLabel)
-  --    end
-  -- end
 end
 
 function lootTracker:ConfigureCharacter(characterName)
-  local label = AceGUI:Create("InteractiveLabel")
+  local label = AceGUI:Create("InteractiveLabel") --[[@as AceGUIInteractiveLabel]]
   label:SetText(characterName or "Unassigned")
   label:SetFullWidth(true)
   label:SetFont(GameFontHighlight:GetFont(), 16, "")
@@ -1057,7 +1008,7 @@ function lootTracker:ConfigureSelection(groupId)
 end
 
 function lootTracker:CreateRoot()
-  self.root = AceGUI:Create("Window")
+  self.root = AceGUI:Create("Window") --[[@as AceGUIWindow]]
   self.root:SetTitle("Valhalla Master Looter")
   self.root:SetLayout("Fill")
   self:RefreshWindowConfig() -- SetPoint, SetWidth, SetHeight
@@ -1070,7 +1021,7 @@ function lootTracker:CreateRoot()
     self.profile.height = self.root.frame:GetHeight()
   end)
 
-  local tree = AceGUI:Create("TreeGroup")
+  local tree = AceGUI:Create("TreeGroup") --[[@as AceGUITreeGroup]]
   tree:EnableButtonTooltips(false)
   tree:SetFullWidth(true)
   tree:SetFullHeight(true)
@@ -1082,7 +1033,7 @@ function lootTracker:CreateRoot()
   self.root:AddChild(tree)
   self.tree = tree
 
-  local scroll = AceGUI:Create("ScrollFrame")
+  local scroll = AceGUI:Create("ScrollFrame") --[[@as AceGUIScrollFrame]]
   scroll:SetLayout("Flow")
   self.tree:AddChild(scroll)
   self.scroll = scroll
@@ -1114,7 +1065,7 @@ function lootTracker:GroupVersionCheck()
     return
   end
 
-  VGT:GetModule("userFinder"):EnumerateUsers(function(results)
+  VGT:GetModule("userFinder")--[[@as UserFinderModule]]:EnumerateUsers(function(results)
     local versions = {}
     for i = 1, maxUnits do
       local unitName = unitType .. i
@@ -1149,7 +1100,7 @@ function lootTracker:ForceClear()
   self.char.preemptiveResponses = {}
   self.char.standings = {}
   self.char.disenchanters = {}
-  self.tree:Select()
+  self.tree:SelectByPath()
 end
 
 function lootTracker:ClearAll()
@@ -1164,7 +1115,7 @@ function lootTracker:Delete(creatureGuid)
     for i, creature in ipairs(self.char.creatures) do
       if creature.id == creatureGuid then
         tremove(self.char.creatures, i)
-        self.tree:Select()
+        self.tree:SelectByPath()
         self:Refresh()
         return
       end
@@ -1298,7 +1249,7 @@ function lootTracker:TrackUnknown(itemId, creatureId)
     itemData.icon = item:GetItemIcon()
     itemData.quality = item:GetItemQuality()
     itemData.class = select(6, GetItemInfoInstant(itemId))
-    self.tree:Select("encounter+" .. creatureData.id)
+    self.tree:SelectByValue("encounter+" .. creatureData.id)
     self:Refresh()
   end)
   return creatureData, itemData
@@ -1326,7 +1277,7 @@ function lootTracker:TrackLoot()
           local itemId, _, _, _, _, classId = GetItemInfoInstant(link)
           if classId ~= 10 then -- 10 = Money (currency)
             local icon, name, _, currencyId, quality = GetLootSlotInfo(i)
-            if not currencyId and (quality == 4 or (self.profile.trackUncommon and quality > 1)) then
+            if icon and name and quality and not currencyId and (quality == 4 or (self.profile.trackUncommon and quality > 1)) then
               VGT.LogTrace("Tracking $s", link)
               local creatureData, itemData = self:Track(itemId, guid)
               itemData.name = name
@@ -1347,7 +1298,12 @@ function lootTracker:TrackLoot()
   end
 end
 
+---@param itemId integer
+---@param creatureId string
+---@return CreatureData
+---@return ItemData
 function lootTracker:Track(itemId, creatureId)
+  ---@type CreatureData, boolean
   local creatureData, newCreature
 
   if not creatureId then
@@ -1364,9 +1320,11 @@ function lootTracker:Track(itemId, creatureId)
   end
 
   if not creatureData then
+    ---@class CreatureData
     creatureData = {
       id = creatureId,
       name = VGT:UnitNameFromGuid(creatureId),
+      ---@type ItemData[]
       items = {},
       characters = VGT:GetCharacters(),
       timestamp = GetServerTime()
@@ -1382,15 +1340,27 @@ function lootTracker:Track(itemId, creatureId)
     end
   end
 
+  ---@class ItemData
+  ---@field name string
+  ---@field icon string|number
+  ---@field link string
+  ---@field class integer
+  ---@field quality Enum.ItemQuality
+  ---@field winner string
+  ---@field disenchanted boolean
+  ---@field destroyed boolean
+  ---@field traded boolean
+  ---@field unbound boolean
+  ---@field responses { [string]: ItemResponse? }
   local itemData = {
     id = itemId,
     index = nextItemIndex
   }
 
   if newCreature then
-    tinsert(self.char.creatures, creatureData)
+    table.insert(self.char.creatures, creatureData)
   end
-  tinsert(creatureData.items, itemData)
+  table.insert(creatureData.items, itemData)
 
   self:IncrementStandings(itemId, creatureData.characters)
 
@@ -1554,7 +1524,7 @@ function lootTracker:EndRoll()
           self.rollItem = availableItems[1]
           self.rollCreature = self:GetCreatureForItem(self.rollItem)
           self.groupId = "encounter+" .. self.rollCreature.id .. "\001" .. self.rollCreature.id .. "+" .. self.rollItem.id .. "+" .. self.rollItem.index
-          self.tree:Select(self.groupId)
+          self.tree:SelectByValue(self.groupId)
         end
         self.rollItem.responses = {}
         self.rollItem.whitelist = rollGroup.names
@@ -1685,10 +1655,15 @@ function lootTracker:Whitelisted(name)
   end
 end
 
+---@param name string
+---@return ItemResponse?
 function lootTracker:GetOrCreateResponse(name)
   if self:Whitelisted(name) then
     local response = self.rollItem.responses[name]
     if not response then
+      ---@class ItemResponse
+      ---@field roll integer?
+      ---@field pass boolean?
       response = {
         name = name
       }
@@ -1731,10 +1706,10 @@ function lootTracker:RecordPassResponse(name)
   end
 end
 
-function lootTracker:BagSlotActive(bag, slot)
-  local v = bag .. "," .. slot
+function lootTracker:BagSlotActive(bagId, slotId)
   for i = 1, 6 do
-    if self.activeSlots[i] == v then
+    local tradeInfo = self.trades[i]
+    if tradeInfo and tradeInfo.bagId == bagId and tradeInfo.slotId == slotId then
       return true
     end
   end
@@ -1768,9 +1743,9 @@ function lootTracker:FindEligibleItemLoc(itemId)
   end
 end
 
-function lootTracker:ClearTable(t)
+function lootTracker:ClearTrades()
   for i = 1, 6 do
-    t[i] = nil
+    self.trades[i] = nil
   end
 end
 
@@ -1810,8 +1785,7 @@ end
 
 function lootTracker:TRADE_SHOW()
   if self.profile.autoTrade then
-    self:ClearTable(self.currentTrades)
-    self:ClearTable(self.activeSlots)
+    self:ClearTrades()
     local name = UnitName("npc")
     local targetSlot = 1
     VGT.LogTrace("Checking autotrades for %s", name)
@@ -1831,8 +1805,12 @@ function lootTracker:TRADE_SHOW()
               ClearCursor()
               C_Container.PickupContainerItem(bagId, slotId)
               ClickTradeButton(thisSlot)
-              self.currentTrades[thisSlot] = itemData
-              self.activeSlots[thisSlot] = bagId .. "," .. slotId
+              ---@class TradeInfo
+              self.trades[thisSlot] = {
+                itemData = itemData,
+                slotId = slotId,
+                bagId = bagId
+              }
             end)
             targetSlot = targetSlot + 1
           end
@@ -1845,24 +1823,22 @@ end
 
 function lootTracker:TRADE_PLAYER_ITEM_CHANGED(_, slot)
   if self.profile.autoTrade then
-    local data = self.currentTrades[slot]
-    if data then
+    local tradeInfo = self.trades[slot]
+    if tradeInfo then
       VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
-      self.currentTrades[slot] = nil
+      self.trades[slot] = nil
     end
-    self.activeSlots[slot] = nil
   end
 end
 
 function lootTracker:UI_INFO_MESSAGE(_, arg1, arg2)
   if arg2 == ERR_TRADE_COMPLETE and self.profile.autoTrade then
     for i = 1, 6 do
-      local itemData = self.currentTrades[i]
-      self.currentTrades[i] = nil
-      self.activeSlots[i] = nil
-      if itemData then
-        VGT.LogTrace("Auto trade in slot %s for %s complete.", i, itemData.link)
-        itemData.traded = true
+      local tradeInfo = self.trades[i]
+      if tradeInfo then
+        self.trades[i] = nil
+        VGT.LogTrace("Auto trade in slot %s for %s complete.", i, tradeInfo.itemData.link)
+        tradeInfo.itemData.traded = true
       end
     end
     self:Refresh()
