@@ -551,6 +551,7 @@ addCreature(202178, "Gunship Armory")
 addCreature(202180, "Gunship Armory")
 addCreature(202177, "Gunship Armory")
 addCreature(202179, "Gunship Armory")
+addCreature(202339, "Cache of the Dreamwalker")
 -- Creatures
 addCreature(10404, "Pustulating Horror")
 addCreature(36597, "The Lich King")
