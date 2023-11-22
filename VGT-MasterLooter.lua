@@ -2,6 +2,7 @@
 ---@class LootTrackerModule : Module, AceTimer-3.0, { char: LootTrackerCharacterSettings, profile: LootTrackerProfileSettings }
 local lootTracker = VGT:NewModule("lootTracker", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
+local LibDeflate = LibStub:GetLibrary("LibDeflate")
 
 ---@type TradeInfo[]
 lootTracker.trades = {}
@@ -842,6 +843,13 @@ function lootTracker:ConfigureHome()
   importButton:SetCallback("OnClick", function()
     VGT:ShowInputDialog("Import Standings", "", function(text)
       local success = pcall(function()
+
+        -- If input is compressed, first character will never be '['.
+        -- Test for it, and if it's not '[' then we need to decompress the input into json.
+        if (string.byte(text, 1, 1) ~= 91) then
+          text = LibDeflate:DecompressDeflate(LibDeflate:DecodeForPrint(text))
+        end
+
         ---@type Standing[][]
         local standings = {}
         local jsonItems = json.decode(text)
@@ -1100,7 +1108,7 @@ function lootTracker:ForceClear()
   self.char.preemptiveResponses = {}
   self.char.standings = {}
   self.char.disenchanters = {}
-  self.tree:SelectByPath()
+  self.tree:SelectByPath("")
 end
 
 function lootTracker:ClearAll()
@@ -1115,7 +1123,7 @@ function lootTracker:Delete(creatureGuid)
     for i, creature in ipairs(self.char.creatures) do
       if creature.id == creatureGuid then
         tremove(self.char.creatures, i)
-        self.tree:SelectByPath()
+        self.tree:SelectByPath("")
         self:Refresh()
         return
       end
