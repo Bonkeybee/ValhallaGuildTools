@@ -1861,6 +1861,12 @@ function lootTracker:TRADE_SHOW()
         if itemData.winner and name == itemData.winner and not itemData.traded then
           VGT.LogTrace("%s needs to be traded %s", name, itemData.link)
           local bagId, slotId = self:FindEligibleItemLoc(itemData.id)
+          ---@class TradeInfo
+          self.trades[targetSlot] = {
+            itemData = itemData,
+            slotId = slotId,
+            bagId = bagId
+          }
           if bagId ~= nil and slotId ~= nil then
             local thisSlot = targetSlot
             C_Timer.After(thisSlot / 10, function()
@@ -1868,12 +1874,6 @@ function lootTracker:TRADE_SHOW()
               ClearCursor()
               C_Container.PickupContainerItem(bagId, slotId)
               ClickTradeButton(thisSlot)
-              ---@class TradeInfo
-              self.trades[thisSlot] = {
-                itemData = itemData,
-                slotId = slotId,
-                bagId = bagId
-              }
             end)
             targetSlot = targetSlot + 1
           end
