@@ -9,6 +9,7 @@ function VGT.PrintHelp()
   VGT.LogSystem("/vgt raidstart - shows raid start import code for loot masters")
   VGT.LogSystem("/vgt loot or /vgt drops - toggles the drop tracker window")
   VGT.LogSystem("/vgt ml or /vgt masterlooter - toggles the master loot tracker window")
+  VGT.LogSystem("/vgt track [Item] - Tracks an item in the master looter window. Item can be an item's id or its link.")
   VGT.LogSystem("/vgt users [by version] - shows how many people online in the guild are using the addon, and optionally lists their addon versions.")
 end
 
@@ -33,6 +34,17 @@ SlashCmdList["VGT"] = function(message)
     VGT:GetModule("dropTracker")--[[@as DropTrackerModule]]:Toggle()
   elseif (command == "ml" or command == "masterlooter") then
     VGT:GetModule("lootTracker")--[[@as LootTrackerModule]]:Toggle()
+  elseif (command == "track") then
+    if arg1 then
+      local itemId = GetItemInfoInstant(arg1)
+      if itemId and itemId > 0 then
+        VGT:GetModule("lootTracker")--[[@as LootTrackerModule]]:TrackUnknown(itemId)
+      else
+        VGT.LogError("Invalid item link or id")
+      end
+    else
+      VGT.LogError("No item link provided.")
+    end
   else
     VGT.LogError("invalid command - type `/vgt help` for a list of commands")
   end
