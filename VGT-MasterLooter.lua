@@ -63,6 +63,7 @@ function lootTracker:SendGroupMessage(message, nowarn)
   end
 end
 
+---@return CreatureData?, ItemData?
 function lootTracker:ReadData(creatureGuid, itemId, itemIndex)
   if not creatureGuid then
     return
@@ -675,17 +676,67 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       if itemStandings then
         for _, s in ipairs(itemStandings) do
           local standing = s
+          ---@type string[]
           local whitelist = {}
-
+          ---@type table<string, string>
+          local colorizedNames = {}
           for _, character in ipairs(creatureData.characters) do
             if standing.names[character.Name] and preemptiveResponses[character.Name] ~= VGT.PreemptiveResponses.HARD_PASS then
-              tinsert(whitelist, character.Name)
+              table.insert(whitelist, character.Name)
+              colorizedNames[character.Name] = VGT:ColorizeCharacterName(character)
             end
           end
 
           if #whitelist > 0 then
+            ---Sorts the whitelist by interested first, then alphabetically
+            table.sort(whitelist, function(l, r)
+              local lpr = preemptiveResponses[l] or 0
+              local rpr = preemptiveResponses[r] or 0
+              if lpr == rpr then
+                return l < r
+              end
+              return lpr < rpr
+            end)
+
             local standingButton = AceGUI:Create("Button") --[[@as AceGUIButton]]
             standingButton:SetFullWidth(true)
+            standingButton:SetCallback("OnEnter", function()
+              ---@type string[], string[], string[]
+              local wanted, passed, noResponse = {}, {}, {}
+              for _, name in ipairs(whitelist) do
+                local pr = preemptiveResponses[name]
+                if pr == VGT.PreemptiveResponses.INTERESTED then
+                  wanted[#wanted+1] = colorizedNames[name] or name
+                elseif pr == VGT.PreemptiveResponses.SOFT_PASS then
+                  passed[#passed+1] = colorizedNames[name] or name
+                else
+                  noResponse[#noResponse+1] = colorizedNames[name] or name
+                end
+              end
+
+              GameTooltip:SetOwner(label.frame, "ANCHOR_CURSOR_RIGHT")
+              GameTooltip:ClearLines()
+
+              if #wanted > 0 then
+                GameTooltip:AddLine("Wanted By: " .. table.concat(wanted, ", "), 0, 1, 0, true)
+                if #passed > 0 or #noResponse > 0 then
+                  GameTooltip:AddLine("")
+                end
+              end
+              if #passed > 0 then
+                GameTooltip:AddLine("Passed By: " .. table.concat(passed, ", "), 0, 1, 0, true)
+                if #noResponse > 0 then
+                  GameTooltip:AddLine("")
+                end
+              end
+              if #noResponse > 0 then
+                GameTooltip:AddLine("No Response: " .. table.concat(noResponse, ", "), 1, 1, 1, true)
+              end
+              GameTooltip:Show()
+            end)
+            standingButton:SetCallback("OnLeave", function()
+              GameTooltip:Hide()
+            end)
             local sText = standing.prio .. ": "
             local addComma = false
 
@@ -1329,10 +1380,14 @@ function lootTracker:Track(itemId, creatureId)
 
   if not creatureData then
     ---@class CreatureData
+    ---@field id string
+    ---@field name string
+    ---@field items ItemData[]
+    ---@field characters JsonCharacter[]
+    ---@field timestamp number
     creatureData = {
       id = creatureId,
       name = VGT:UnitNameFromGuid(creatureId),
-      ---@type ItemData[]
       items = {},
       characters = VGT:GetCharacters(),
       timestamp = GetServerTime()
