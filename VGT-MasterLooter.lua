@@ -1413,6 +1413,7 @@ function lootTracker:Track(itemId, creatureId)
   ---@field disenchanted boolean
   ---@field destroyed boolean
   ---@field traded boolean
+  ---@field trading boolean
   ---@field unbound boolean
   ---@field responses { [string]: ItemResponse? }
   local itemData = {
@@ -1808,7 +1809,11 @@ end
 
 function lootTracker:ClearTrades()
   for i = 1, 6 do
-    self.trades[i] = nil
+    local trade = self.trades[i]
+    if trade then
+      trade.itemData.trading = false
+      self.trades[i] = nil
+    end
   end
 end
 
@@ -1858,7 +1863,8 @@ function lootTracker:TRADE_SHOW()
           VGT.LogTrace("Reached autotrade limit")
           return
         end
-        if itemData.winner and name == itemData.winner and not itemData.traded then
+        if itemData.winner and name == itemData.winner and not itemData.traded and not itemData.trading then
+          itemData.trading = true
           VGT.LogTrace("%s needs to be traded %s", name, itemData.link)
           local bagId, slotId = self:FindEligibleItemLoc(itemData.id)
           ---@class TradeInfo
@@ -1888,8 +1894,15 @@ function lootTracker:TRADE_PLAYER_ITEM_CHANGED(_, slot)
   if self.profile.autoTrade then
     local tradeInfo = self.trades[slot]
     if tradeInfo then
-      VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
-      self.trades[slot] = nil
+      local itemLink = GetTradePlayerItemLink(slot)
+      if itemLink then
+        local itemId = GetItemInfoInstant(itemLink)
+        if itemId ~= tradeInfo.itemData.id then
+          VGT.LogTrace("Trade slot %s changed. Clearing autotrade info.", slot)
+          self.trades[slot] = nil
+          tradeInfo.itemData.trading = false
+        end
+      end
     end
   end
 end
@@ -1902,6 +1915,9 @@ function lootTracker:UI_INFO_MESSAGE(_, arg1, arg2)
         self.trades[i] = nil
         VGT.LogTrace("Auto trade in slot %s for %s complete.", i, tradeInfo.itemData.link)
         tradeInfo.itemData.traded = true
+        tradeInfo.itemData.trading = false
+      else
+        VGT.LogTrace("No item in trade slot %s.", i)
       end
     end
     self:Refresh()
