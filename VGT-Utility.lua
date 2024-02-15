@@ -554,9 +554,60 @@ local raceLookup = {
   [11] = 4 -- Draenei
 }
 
+function VGT:Merge(table1, table2)
+  local newTable = {}
+  for key, value in pairs(table1) do
+    newTable[key] = value
+  end
+  for key, value in pairs(table2) do
+    newTable[key] = value
+  end
+  return newTable
+end
+
+function VGT:GetMinMaxLevelParenthesis(minLevel, maxLevel)
+  if minLevel == maxLevel then
+    return string.format("(%d)", maxLevel)
+  end
+  return string.format("(%d - %d)", minLevel, maxLevel)
+end
+
+function VGT:IsSeason()
+  if tocVersion > 11500 and tocVersion < 19999 then
+    return true
+  end
+  return false
+end
+
+function VGT:ColorizeByLevel(name, playerLevel, minLevel, maxLevel)
+  local avgLevel = (minLevel + maxLevel) / 2
+  local levelDiff = playerLevel - avgLevel
+
+  if levelDiff >= 5 then
+    return "|cffC0C0C0"..name.."|r" -- Grey
+  elseif levelDiff >= 3 then
+    return "|cff42BF3C"..name.."|r" -- Green
+  elseif levelDiff >= -2 then
+    return "|cffFFFF00"..name.."|r" -- Yellow
+  elseif levelDiff >= -5 then
+    return "|cffFF803E"..name.."|r" -- Orange
+  else
+    return "|cffFF1819"..name.."|r" -- Red
+  end
+end
+
+function VGT:ColorizeCharacterName(name, class)
+  local _, _, _, color = GetClassColor(class)
+  if not color then
+    return name
+  else
+    return "|c" .. color .. name .. "|r"
+  end
+end
+
 ---@param character JsonCharacter
 ---@return string
-function VGT:ColorizeCharacterName(character)
+function VGT:ColorizeCharacter(character)
   local _, _, _, color = GetClassColor(select(2, self:CharacterClassInfo(character)))
   if not color then
     return character.Name
@@ -631,4 +682,13 @@ end
 
 function VGT:ShowKillExport(drops, characters, timestamp)
   self:ShowInputDialog("Export Kill", self:ExportKill(drops, characters, timestamp))
+end
+
+function VGT:TableContains(table, value)
+  for key, val in pairs(table) do
+    if val == value then
+      return true
+    end
+  end
+  return false
 end

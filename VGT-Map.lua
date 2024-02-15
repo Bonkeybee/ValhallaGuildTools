@@ -10,6 +10,7 @@ local MAP_ICON_DOT_TEXTURE = "Interface\\AddOns\\ValhallaGuildTools\\MapIconDot.
 local HereBeDragons = LibStub("HereBeDragons-2.0")
 local HereBeDragonsPins = LibStub("HereBeDragons-Pins-2.0")
 
+local _, _, _, tocVersion = GetBuildInfo()
 map.bufferPins = {}
 map.extendedGuildRoster = {
   members = {},
@@ -108,6 +109,13 @@ end
 
 function map:SendMyLocation(target)
   if IsInGuild() and self.profile.sendMyLocation then
+    if VGT:IsSeason() then
+      local zone = C_Map.GetBestMapForUnit("player")
+      if zone == 1434 or zone == 63 then -- hide locations if in Stranglethorn Vale or Ashenvale
+        VGT.LogTrace("Hiding map location from guild in world PVP zones")
+        return
+      end
+    end
     local x, y, continent = HereBeDragons:GetPlayerWorldPosition()
     local hp = UnitHealth("player") / UnitHealthMax("player")
     if continent and x and y then

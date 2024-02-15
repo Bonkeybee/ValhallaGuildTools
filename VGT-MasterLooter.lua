@@ -9,6 +9,9 @@ lootTracker.trades = {}
 
 -- https://wowpedia.fandom.com/wiki/InstanceID
 lootTracker.trackedInstances = {
+  [719] = true, -- Blackfathom Deeps (SOD)
+  [721] = true, -- Gnomeregan (SOD)
+
   [624] = true, -- Vault of Archavon
 
   [533] = true, -- Naxxramas
@@ -683,7 +686,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
           for _, character in ipairs(creatureData.characters) do
             if standing.names[character.Name] and preemptiveResponses[character.Name] ~= VGT.PreemptiveResponses.HARD_PASS then
               table.insert(whitelist, character.Name)
-              colorizedNames[character.Name] = VGT:ColorizeCharacterName(character)
+              colorizedNames[character.Name] = VGT:ColorizeCharacter(character)
             end
           end
 
@@ -781,7 +784,7 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
       manualAssign:SetLabel("Manual Assign")
       local characters = {}
       for i, character in ipairs(creatureData.characters) do
-        characters[character.Name] = VGT:ColorizeCharacterName(character)
+        characters[character.Name] = VGT:ColorizeCharacter(character)
       end
       table.sort(characters)
       manualAssign:SetList(characters)
@@ -967,7 +970,7 @@ function lootTracker:ConfigureHome()
   disenchantSelect:SetMultiselect(true)
   local characters = {}
   for i, character in ipairs(VGT:GetCharacters()) do
-    characters[character.Name] = VGT:ColorizeCharacterName(character)
+    characters[character.Name] = VGT:ColorizeCharacter(character)
   end
   if self.char.disenchanters then
     for char in pairs(self.char.disenchanters) do

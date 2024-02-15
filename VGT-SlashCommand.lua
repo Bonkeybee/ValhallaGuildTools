@@ -6,6 +6,7 @@ function VGT.PrintHelp()
   VGT.LogSystem("Command List:")
   VGT.LogSystem("/vgt about - version information")
   VGT.LogSystem("/vgt options - opens the VGT options window")
+  VGT.LogSystem("/vgt lfg or /vgt activities - opens the activities window")
   VGT.LogSystem("/vgt raidstart - shows raid start import code for loot masters")
   VGT.LogSystem("/vgt loot or /vgt drops - toggles the drop tracker window")
   VGT.LogSystem("/vgt ml or /vgt masterlooter - toggles the master loot tracker window")
@@ -45,6 +46,8 @@ SlashCmdList["VGT"] = function(message)
     else
       VGT.LogError("No item link provided.")
     end
+  elseif (command == "lfg" or command == "activities") then
+    VGT:GetModule("activities"):Toggle()
   else
     VGT.LogError("invalid command - type `/vgt help` for a list of commands")
   end

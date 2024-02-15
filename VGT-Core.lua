@@ -93,6 +93,8 @@ for name, id in pairs(VGT.Commands) do
   VGT.CommandNames[id] = name
 end
 
+VGT.guildRoster = {}
+
 VGTScanningTooltip = CreateFrame("GameTooltip", "VGTScanningTooltip", nil, "GameTooltipTemplate") --[[@as GameTooltip]]
 VGTScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
 
@@ -127,6 +129,7 @@ function VGT:OnInitialize()
 
   self:RegisterComm(COMMAND_MODULE, "HandleCommand")
   self:RegisterEvent("LOOT_READY")
+  self:RegisterEvent("GUILD_ROSTER_UPDATE")
 
   self:InitializeMinimapButton()
 
@@ -234,6 +237,16 @@ function VGT:LOOT_READY(_, autoLoot)
   if (GetNumLootItems() > 0 and lootmethod == "master" and masterlooterPartyID == 0) then
     if strsplit("-", GetLootSourceInfo(1) or "", 2) ~= "Item" then
       self:SendMessage("VGT_MASTER_LOOT_READY", autoLoot)
+    end
+  end
+end
+
+function VGT:GUILD_ROSTER_UPDATE()
+  if IsInGuild() then
+    for i = 1, GetNumGuildMembers() do
+      local name, _, _, level, _, _, _, _, _, _, class, _, _, _, _, _, guid = GetGuildRosterInfo(i)
+      name = strsplit("-", name, 2)
+      self.guildRoster[name] = {level = level, class = class}
     end
   end
 end

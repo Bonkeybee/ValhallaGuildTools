@@ -28,6 +28,10 @@ function VGT:InitializeOptions()
         ---@type number?
         expiration = nil
       },
+      activities = {
+        selectedRoles = {},
+        selectedActivities = {}
+      },
       ---@class LootTrackerCharacterSettings
       lootTracker = {
         ---@type CreatureData[]
@@ -108,6 +112,12 @@ function VGT:InitializeOptions()
         width = 512,
         height = 240,
         point = "LEFT"
+      },
+      activities = {
+        enabled = true,
+        x = 0,
+        y = 0,
+        point = "CENTER"
       }
     }
   }

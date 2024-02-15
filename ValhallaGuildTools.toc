@@ -1,11 +1,11 @@
-## Interface: 11500
+## Interface: 11501
 ## Title: ValhallaGuildTools
 ## Notes: Valhalla Guild Tools
 ## SavedVariables: VGT_OPTIONS, VGT_DB
 ## LoadOnDemand: 0
 ## DefaultState: enabled
 ## Author: Bonkeybee
-## Version: 117
+## Version: 118
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -37,6 +37,7 @@ VGT-Logging.lua
 VGT-Config.lua
 VGT-VersionChecker.lua
 VGT-UserFinder.lua
+VGT-ActivitiesWindow.lua
 VGT-CreatureData.lua
 VGT-DungeonData.lua
 VGT-ItemData.lua
