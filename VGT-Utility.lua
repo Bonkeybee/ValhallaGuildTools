@@ -572,6 +572,7 @@ function VGT:GetMinMaxLevelParenthesis(minLevel, maxLevel)
   return string.format("(%d - %d)", minLevel, maxLevel)
 end
 
+local _, _, _, tocVersion = GetBuildInfo()
 function VGT:IsSeason()
   if tocVersion > 11500 and tocVersion < 19999 then
     return true

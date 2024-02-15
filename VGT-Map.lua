@@ -10,7 +10,6 @@ local MAP_ICON_DOT_TEXTURE = "Interface\\AddOns\\ValhallaGuildTools\\MapIconDot.
 local HereBeDragons = LibStub("HereBeDragons-2.0")
 local HereBeDragonsPins = LibStub("HereBeDragons-Pins-2.0")
 
-local _, _, _, tocVersion = GetBuildInfo()
 map.bufferPins = {}
 map.extendedGuildRoster = {
   members = {},
