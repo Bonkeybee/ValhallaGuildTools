@@ -1,4 +1,3 @@
-
 ---@class LootTrackerModule : Module, AceTimer-3.0, { char: LootTrackerCharacterSettings, profile: LootTrackerProfileSettings }
 local lootTracker = VGT:NewModule("lootTracker", "AceTimer-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
@@ -25,7 +24,7 @@ lootTracker.trackedInstances = {
 
   [631] = true, -- Icecrown Citadel
 
-  [724] = true -- Ruby Sanctum
+  [724] = true  -- Ruby Sanctum
 }
 
 function lootTracker:GetOrCreatePreemtiveResponse(itemId)
@@ -99,7 +98,7 @@ function lootTracker:GetCreatureForItem(item)
 end
 
 function lootTracker:GetOtherUnassigned(item)
-  local items = {item}
+  local items = { item }
   for _, creatureData in ipairs(self.char.creatures) do
     for _, itemData in ipairs(creatureData.items) do
       if itemData.id == item.id and not itemData.winner and item ~= itemData then
@@ -120,7 +119,6 @@ function lootTracker:GetStandingsForItem(itemId)
     if itemStandings then
       VGT.LogTrace("Found %s standings with item:%s", #itemStandings, id)
       for _, standing in ipairs(itemStandings) do
-
         for i, existingStanding in ipairs(standings) do
           if existingStanding.prio == standing.prio then
             for name in pairs(standing.names) do
@@ -148,7 +146,6 @@ function lootTracker:GetStandingsForItem(itemId)
           newStanding.names[name] = true
         end
         table.insert(standings, newStanding)
-
       end
     end
   end)
@@ -231,7 +228,7 @@ function lootTracker:IncrementStandings(itemId, characters)
     while true do
       local prio, actualItemId = self:TakePrioFromStandings(itemId, character.Name)
       if type(prio) == "number" and actualItemId then
-        table.insert(removals, {prio=prio,itemId=actualItemId})
+        table.insert(removals, { prio = prio, itemId = actualItemId })
       else
         break
       end
@@ -387,14 +384,14 @@ function lootTracker:ConfigureEncounter(creatureGuid)
         [46052] = true, -- Reply-Code Alpha
         [46053] = true, -- Heroic Reply-Code Alpha
         [49643] = true, -- Head of Onyxia
-        [49644] = true -- Head of Onyxia
+        [49644] = true  -- Head of Onyxia
       }
 
       for _, itemData in ipairs(creatureData.items) do
         if forcedItems[itemData.id] or
-          ((not itemData.class or itemData.quality == 4) and
-           (not itemData.class or allowedClasses[itemData.class]) and
-           not ignoredItems[itemData.id])
+            ((not itemData.class or itemData.quality == 4) and
+              (not itemData.class or allowedClasses[itemData.class]) and
+              not ignoredItems[itemData.id])
         then
           table.insert(drops, {
             ItemId = itemData.id,
@@ -515,7 +512,6 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
   self.scroll:AddChild(spacer)
 
   if itemData.winner then
-
     local toggleTradeButton = AceGUI:Create("CheckBox") --[[@as AceGUICheckBox]]
     toggleTradeButton:SetLabel("Traded")
     toggleTradeButton:SetValue(itemData.traded and true or false)
@@ -530,11 +526,11 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
         local orderedResponses = {}
         for name, response in pairs(itemData.responses) do
           if name ~= itemData.winner and not response.pass then
-            table.insert(orderedResponses, {name=name,roll=response.roll})
+            table.insert(orderedResponses, { name = name, roll = response.roll })
           end
         end
         if #orderedResponses > 0 then
-          table.sort(orderedResponses, function(l,r) return l.roll > r.roll end)
+          table.sort(orderedResponses, function(l, r) return l.roll > r.roll end)
           return orderedResponses
         end
       end
@@ -709,11 +705,11 @@ function lootTracker:ConfigureItem(creatureId, itemId, itemIndex)
               for _, name in ipairs(whitelist) do
                 local pr = preemptiveResponses[name]
                 if pr == VGT.PreemptiveResponses.INTERESTED then
-                  wanted[#wanted+1] = colorizedNames[name] or name
+                  wanted[#wanted + 1] = colorizedNames[name] or name
                 elseif pr == VGT.PreemptiveResponses.SOFT_PASS then
-                  passed[#passed+1] = colorizedNames[name] or name
+                  passed[#passed + 1] = colorizedNames[name] or name
                 else
-                  noResponse[#noResponse+1] = colorizedNames[name] or name
+                  noResponse[#noResponse + 1] = colorizedNames[name] or name
                 end
               end
 
@@ -897,7 +893,6 @@ function lootTracker:ConfigureHome()
   importButton:SetCallback("OnClick", function()
     VGT:ShowInputDialog("Import Standings", "", function(text)
       local success = pcall(function()
-
         -- If input is compressed, first character will never be '['.
         -- Test for it, and if it's not '[' then we need to decompress the input into json.
         if (string.byte(text, 1, 1) ~= 91) then
@@ -1127,7 +1122,7 @@ function lootTracker:GroupVersionCheck()
     return
   end
 
-  VGT:GetModule("userFinder")--[[@as UserFinderModule]]:EnumerateUsers(function(results)
+  VGT:GetModule("userFinder") --[[@as UserFinderModule]]:EnumerateUsers(function(results)
     local versions = {}
     for i = 1, maxUnits do
       local unitName = unitType .. i
@@ -1139,7 +1134,7 @@ function lootTracker:GroupVersionCheck()
           if versionUsers then
             tinsert(versionUsers, name)
           else
-            versions[version or "Not installed"] = {name}
+            versions[version or "Not installed"] = { name }
           end
         end
       end
@@ -1241,11 +1236,11 @@ function lootTracker:Refresh()
       end
     end
 
-    local data = {{
+    local data = { {
       text = "Home",
       value = nil,
       icon = "Interface\\Buttons\\UI-HomeButton.blp"
-    }}
+    } }
 
     if self.char.expiration and time() > self.char.expiration then
       self:ForceClear()
@@ -1317,6 +1312,20 @@ function lootTracker:TrackUnknown(itemId, creatureId)
   return creatureData, itemData
 end
 
+---@param quality number
+function lootTracker:QualityIsTrackable(quality)
+  if quality == 4 then
+    return true -- Always track epics
+  end
+  if quality == 3 then
+    return self.profile.trackRare
+  end
+  if quality == 2 then
+    return self.profile.trackUncommon
+  end
+  return false
+end
+
 function lootTracker:TrackLoot()
   local guid = GetLootSourceInfo(1)
   VGT.LogTrace("Tracking loot for %s", guid)
@@ -1339,7 +1348,7 @@ function lootTracker:TrackLoot()
           local itemId, _, _, _, _, classId = GetItemInfoInstant(link)
           if classId ~= 10 then -- 10 = Money (currency)
             local icon, name, _, currencyId, quality = GetLootSlotInfo(i)
-            if icon and name and quality and not currencyId and (quality == 4 or (self.profile.trackUncommon and quality > 1)) then
+            if icon and name and quality and not currencyId and self:QualityIsTrackable(quality) then
               VGT.LogTrace("Tracking $s", link)
               local creatureData, itemData = self:Track(itemId, guid)
               itemData.name = name
@@ -1433,7 +1442,8 @@ function lootTracker:Track(itemId, creatureId)
 
   self.char.expiration = (time() + 21600)
 
-  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id, self:GetCharactersWithStandings(itemData.id))
+  VGT:SendGroupAddonCommand(VGT.Commands.ITEM_TRACKED, itemData.id, itemData.index, creatureData.id,
+    self:GetCharactersWithStandings(itemData.id))
 
   Item:CreateFromItemID(itemId):ContinueOnItemLoad(function()
     local bindType = select(14, GetItemInfo(itemId))
@@ -1538,7 +1548,6 @@ function lootTracker:CountdownTick()
 end
 
 function lootTracker:EndRoll()
-
   if not self.rollItem then
     return
   end
@@ -1566,12 +1575,12 @@ function lootTracker:EndRoll()
           end
         end
         if not inserted then
-          table.insert(rollGroups, { roll = response.roll, names = {response.name}})
+          table.insert(rollGroups, { roll = response.roll, names = { response.name } })
         end
       end
     end
 
-    table.sort(rollGroups, function(l,r) return l.roll > r.roll end)
+    table.sort(rollGroups, function(l, r) return l.roll > r.roll end)
 
     local availableItems = self:GetOtherUnassigned(self.rollItem)
 
@@ -1590,7 +1599,9 @@ function lootTracker:EndRoll()
         if availableItems[1] ~= self.rollItem then
           self.rollItem = availableItems[1]
           self.rollCreature = self:GetCreatureForItem(self.rollItem)
-          self.groupId = "encounter+" .. self.rollCreature.id .. "\001" .. self.rollCreature.id .. "+" .. self.rollItem.id .. "+" .. self.rollItem.index
+          self.groupId = "encounter+" ..
+              self.rollCreature.id .. "\001" .. self.rollCreature.id .. "+" .. self.rollItem.id .. "+" ..
+              self.rollItem.index
           self.tree:SelectByValue(self.groupId)
         end
         self.rollItem.responses = {}

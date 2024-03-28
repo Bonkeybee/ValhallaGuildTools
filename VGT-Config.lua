@@ -80,6 +80,7 @@ function VGT:InitializeOptions()
         autoTrade = true,
         trackAllInstances = false,
         trackUncommon = false,
+        trackRare = false,
         groupByWinner = false,
         autoEndRoll = true,
         countdownTimer = 5,
@@ -276,7 +277,7 @@ function VGT:InitializeOptions()
             max = 32,
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:GetModule("map")--[[@as MapModule]]:RefreshPinSizeAndColor()
+              VGT:GetModule("map") --[[@as MapModule]]:RefreshPinSizeAndColor()
             end
           },
           sendMyLocation = {
@@ -288,17 +289,19 @@ function VGT:InitializeOptions()
           improveBlizzardPins = {
             order = 5,
             name = "Configure Raid & Party Pins",
-            desc = "When checked, the minimap icons for raid and party members will match the style of the guild pins. Disabling this requires a UI reload.",
+            desc =
+            "When checked, the minimap icons for raid and party members will match the style of the guild pins. Disabling this requires a UI reload.",
             type = "toggle"
           },
           useClassColor = {
             order = 6,
             name = "Use Class Colors",
-            desc = "When checked, minimap icons will use the pin's class color instead of green for guild and blue for party or raid.",
+            desc =
+            "When checked, minimap icons will use the pin's class color instead of green for guild and blue for party or raid.",
             type = "toggle",
             set = function(info, value)
               SetProfileValue(info, value)
-              VGT:GetModule("map")--[[@as MapModule]]:RefreshPinSizeAndColor()
+              VGT:GetModule("map") --[[@as MapModule]]:RefreshPinSizeAndColor()
             end
           }
         }
@@ -330,7 +333,8 @@ function VGT:InitializeOptions()
           disenchantTarget = {
             order = 3,
             name = "Rare and Uncommon Target",
-            desc = "Who to send items with |cff0070ddRare|r and |cff1eff00Uncommon|r quality to. Leave blank to use the Master-Loot Target.",
+            desc =
+            "Who to send items with |cff0070ddRare|r and |cff1eff00Uncommon|r quality to. Leave blank to use the Master-Loot Target.",
             type = "input",
             get = GetCharValue,
             set = SetCharValue
@@ -338,7 +342,8 @@ function VGT:InitializeOptions()
           ignoredItems = {
             order = 4,
             name = "Ignored items",
-            desc = "A list of item links to ignore while auto-looting. Shift-click an item to add. Separate each entry with a semicolon (;)",
+            desc =
+            "A list of item links to ignore while auto-looting. Shift-click an item to add. Separate each entry with a semicolon (;)",
             type = "input",
             width = "full",
             multiline = 5
@@ -374,10 +379,16 @@ function VGT:InitializeOptions()
             desc = "When checked, all loot will be tracked regardless of what zone it was looted in.",
             type = "toggle"
           },
-          trackUncommon = {
+          trackRare = {
             order = 4,
-            name = "Track Rare and Uncommon",
-            desc = "When checked, |cff0070ddRare|r and |cff1eff00Uncommon|r items will be tracked.",
+            name = "Track |cff0070ddRare|r",
+            desc = "When checked, |cff0070ddRare|r items will be tracked.",
+            type = "toggle"
+          },
+          trackUncommon = {
+            order = 5,
+            name = "Track |cff1eff00Uncommon|r",
+            desc = "When checked, |cff1eff00Uncommon|r items will be tracked.",
             type = "toggle"
           }
         }
@@ -391,7 +402,8 @@ function VGT:InitializeOptions()
             order = 0,
             name = "Enable",
             type = "toggle",
-            desc = "When enabled, master looters opening rolls using VGT will show a roll window for easier rolling and passing."
+            desc =
+            "When enabled, master looters opening rolls using VGT will show a roll window for easier rolling and passing."
           },
           sep = {
             order = 1,
@@ -481,9 +493,10 @@ function VGT:InitializeOptions()
           autoPassSingle = {
             order = 4,
             name = "Clear Auto-Pass for Item",
-            desc = "Picking an item in this list will clear your auto-pass preferences for it and allow you to see it for rolling on again",
+            desc =
+            "Picking an item in this list will clear your auto-pass preferences for it and allow you to see it for rolling on again",
             type = "select",
-            values = function ()
+            values = function()
               local items = {}
               for itemId, ap in pairs(VGT.db.char.dropTracker.autoPasses) do
                 items[itemId] = ap.name
@@ -493,11 +506,11 @@ function VGT:InitializeOptions()
             sorting = function()
               local sortedItems = {}
               for itemId, ap in pairs(VGT.db.char.dropTracker.autoPasses) do
-                table.insert(sortedItems, {id=itemId,name=ap.name})
+                table.insert(sortedItems, { id = itemId, name = ap.name })
               end
-              table.sort(sortedItems, function(l,r) return l.name < r.name end)
+              table.sort(sortedItems, function(l, r) return l.name < r.name end)
               local array = {}
-              for i,v in ipairs(sortedItems) do
+              for i, v in ipairs(sortedItems) do
                 array[i] = v.id
               end
               return array
@@ -511,10 +524,12 @@ function VGT:InitializeOptions()
           autoPassAll = {
             order = 5,
             name = "Clear All Auto-Passes for Character",
-            desc = "Click to clear all auto-pass preferences for all items, allowing you to see them again for rolling on.",
+            desc =
+            "Click to clear all auto-pass preferences for all items, allowing you to see them again for rolling on.",
             type = "execute",
-            func = function ()
-              VGT:Confirm(function() VGT.db.char.dropTracker.autoPasses = {} end, "Are you sure you want to clear all auto-pass preferences? All items you can equip will show up in the tracker again.")
+            func = function()
+              VGT:Confirm(function() VGT.db.char.dropTracker.autoPasses = {} end,
+                "Are you sure you want to clear all auto-pass preferences? All items you can equip will show up in the tracker again.")
             end,
             width = "full"
           }
